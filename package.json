@@ -1,0 +1,27 @@
+{
+  "name": "pc2skystudio",
+  "version": "1.0.0",
+  "description": "This mod provides a way to adjust the sun and moon direction and lighting values in PC2",
+  "homepage": "https://github.com/evanpipta/PC2SkyStudio#readme",
+  "bugs": {
+    "url": "https://github.com/evanpipta/PC2SkyStudio/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evanpipta/PC2SkyStudio.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-ui": "tsc -p tsconfig.json && cd src/Main && python PPUIPkgFile.py -i skystudio.ppuipkg && cd ../../",
+    "pack": "python ../cobra-tools-master/pack_tool_cmd.py \"Planet Coaster 2\" PACK ./src \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Planet Coaster 2\\Win64\\ovldata\\Mod_SkyStudio\"",
+    "build-mod": "npm run build-ui && npm run pack"
+  },
+  "devDependencies": {
+    "preact": "^10.28.0",
+    "typescript": "^5.9.3"
+  }
+}
