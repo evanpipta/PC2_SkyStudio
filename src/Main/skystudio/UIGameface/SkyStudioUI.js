@@ -53,7 +53,7 @@ class _SkyStudioUI extends preact.Component {
             bUserSunUseLinearColors: 0,
             nUserMoonAzimuth: 0,
             nUserMoonLatitudeOffset: 0,
-            nUserMoonTimeOfDay: 0,
+            nUserMoonPhase: 0,
             nUserMoonColorR: 0,
             nUserMoonColorG: 0,
             nUserMoonColorB: 0,
@@ -66,7 +66,7 @@ class _SkyStudioUI extends preact.Component {
             bUserOverrideSunOrientation: false,
             bUserOverrideSunColorAndIntensity: false,
             bUserOverrideMoonOrientation: false,
-            bUserOverrideMoonTimeOfDay: false,
+            bUserOverrideMoonPhase: false,
             bUserOverrideMoonColorAndIntensity: false,
             bUserOverrideDayNightTransition: false,
             visibleTabIndex: 0,
@@ -129,14 +129,14 @@ class _SkyStudioUI extends preact.Component {
         clearInterval(focusDebuginterval);
     }
     render() {
-        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonTimeOfDay, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonTimeOfDay, bUserOverrideMoonColorAndIntensity, bUserOverrideDayNightTransition, visibleTabIndex, } = this.state;
+        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideDayNightTransition, visibleTabIndex, } = this.state;
         const useVanillaLighting = bUseVanillaLighting;
         const customLightingEnabled = !useVanillaLighting;
         const sunTimeOverrideOn = bUserOverrideSunTimeOfDay;
         const sunOrientationOverrideOn = bUserOverrideSunOrientation;
         const sunColorOverrideOn = bUserOverrideSunColorAndIntensity;
         const moonOrientationOverrideOn = bUserOverrideMoonOrientation;
-        const moonTimeOverrideOn = bUserOverrideMoonTimeOfDay;
+        const moonPhaseOverrideOn = bUserOverrideMoonPhase;
         const moonColorOverrideOn = bUserOverrideMoonColorAndIntensity;
         const dayNightOverrideOn = bUserOverrideDayNightTransition;
         const tabs = [
@@ -156,12 +156,10 @@ class _SkyStudioUI extends preact.Component {
             // TAB 0: Time of day + day/night transition
             preact.h("div", { key: "time", className: "skystudio_scrollPane" },
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Time of Day"), toggled: sunTimeOverrideOn, onToggle: (value) => {
-                            this.onToggleValueChanged("bUserOverrideSunTimeOfDay")(value);
-                            this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")(value);
-                        }, inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Time of Day"), toggled: sunTimeOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunTimeOfDay"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Time of Day"), min: -90, max: 270, step: 0.01, value: nUserSunTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserSunTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !sunTimeOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Time of Day"), min: -90, max: 270, step: 0.01, value: nUserMoonTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !moonTimeOverrideOn, focusable: true })),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Moon Phase"), toggled: moonPhaseOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonPhase"), inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Phase"), min: 0, max: 360, step: 0.01, value: nUserMoonPhase, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonPhase", newValue), editable: true, disabled: !customLightingEnabled || !moonPhaseOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Sun & Moon Orientation"), toggled: sunOrientationOverrideOn, onToggle: (value) => {
                             this.onToggleValueChanged("bUserOverrideSunOrientation")(value);

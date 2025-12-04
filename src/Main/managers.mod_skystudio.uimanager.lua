@@ -80,9 +80,9 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.nUserMoonLatitudeOffset = value
     end, self)
 
-    self.ui:SkyStudioChangedValue_nUserMoonTimeOfDay(function(_, value)
-      trace("SkyStudioChangedValue_nUserMoonTimeOfDay: " .. tostring(value))
-      SkyStudioDataStore.nUserMoonTimeOfDay = value
+    self.ui:SkyStudioChangedValue_nUserMoonPhase(function(_, value)
+      trace("SkyStudioChangedValue_nUserMoonPhase: " .. tostring(value))
+      SkyStudioDataStore.nUserMoonPhase = value
     end, self)
 
     self.ui:SkyStudioChangedValue_nUserMoonColorR(function(_, value)
@@ -147,9 +147,9 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.bUserOverrideMoonOrientation = value
     end, self)
 
-    self.ui:SkyStudioChangedValue_bUserOverrideMoonTimeOfDay(function(_, value)
-      trace("SkyStudioChangedValue_bUserOverrideMoonTimeOfDay: " .. tostring(value))
-      SkyStudioDataStore.bUserOverrideMoonTimeOfDay = value
+    self.ui:SkyStudioChangedValue_bUserOverrideMoonPhase(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideMoonPhase: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideMoonPhase = value
     end, self)
 
     self.ui:SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity(function(_, value)
@@ -175,7 +175,7 @@ function SkyStudioUIManager:Init()
       bUserSunUseLinearColors = SkyStudioDataStore.bUserSunUseLinearColors,
       nUserMoonAzimuth = SkyStudioDataStore.nUserMoonAzimuth,
       nUserMoonLatitudeOffset = SkyStudioDataStore.nUserMoonLatitudeOffset,
-      nUserMoonTimeOfDay = SkyStudioDataStore.nUserMoonTimeOfDay,
+      nUserMoonPhase = SkyStudioDataStore.nUserMoonPhase,
       nUserMoonColorR = SkyStudioDataStore.nUserMoonColorR,
       nUserMoonColorG = SkyStudioDataStore.nUserMoonColorG,
       nUserMoonColorB = SkyStudioDataStore.nUserMoonColorB,
@@ -188,7 +188,7 @@ function SkyStudioUIManager:Init()
       bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
       bUserOverrideSunColorAndIntensity = SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
       bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
-      bUserOverrideMoonTimeOfDay = SkyStudioDataStore.bUserOverrideMoonTimeOfDay,
+      bUserOverrideMoonPhase = SkyStudioDataStore.bUserOverrideMoonPhase,
       bUserOverrideMoonColorAndIntensity = SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
       bUserOverrideDayNightTransition = SkyStudioDataStore.bUserOverrideDayNightTransition
     })

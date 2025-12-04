@@ -36,7 +36,7 @@ type State = {
 
   nUserMoonAzimuth: number;
   nUserMoonLatitudeOffset: number;
-  nUserMoonTimeOfDay: number;
+  nUserMoonPhase: number;
   nUserMoonColorR: number;
   nUserMoonColorG: number;
   nUserMoonColorB: number;
@@ -51,7 +51,7 @@ type State = {
   bUserOverrideSunOrientation: boolean;
   bUserOverrideSunColorAndIntensity: boolean;
   bUserOverrideMoonOrientation: boolean;
-  bUserOverrideMoonTimeOfDay: boolean;
+  bUserOverrideMoonPhase: boolean;
   bUserOverrideMoonColorAndIntensity: boolean;
   bUserOverrideDayNightTransition: boolean;
 
@@ -127,7 +127,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     nUserMoonAzimuth: 0,
     nUserMoonLatitudeOffset: 0,
-    nUserMoonTimeOfDay: 0,
+    nUserMoonPhase: 0,
     nUserMoonColorR: 0,
     nUserMoonColorG: 0,
     nUserMoonColorB: 0,
@@ -142,7 +142,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     bUserOverrideSunOrientation: false,
     bUserOverrideSunColorAndIntensity: false,
     bUserOverrideMoonOrientation: false,
-    bUserOverrideMoonTimeOfDay: false,
+    bUserOverrideMoonPhase: false,
     bUserOverrideMoonColorAndIntensity: false,
     bUserOverrideDayNightTransition: false,
 
@@ -237,7 +237,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
       nUserMoonAzimuth,
       nUserMoonLatitudeOffset,
-      nUserMoonTimeOfDay,
+      nUserMoonPhase,
       nUserMoonColorR,
       nUserMoonColorG,
       nUserMoonColorB,
@@ -251,7 +251,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       bUserOverrideSunOrientation,
       bUserOverrideSunColorAndIntensity,
       bUserOverrideMoonOrientation,
-      bUserOverrideMoonTimeOfDay,
+      bUserOverrideMoonPhase,
       bUserOverrideMoonColorAndIntensity,
       bUserOverrideDayNightTransition,
 
@@ -266,7 +266,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const sunColorOverrideOn = bUserOverrideSunColorAndIntensity;
 
     const moonOrientationOverrideOn = bUserOverrideMoonOrientation;
-    const moonTimeOverrideOn = bUserOverrideMoonTimeOfDay;
+    const moonPhaseOverrideOn = bUserOverrideMoonPhase;
     const moonColorOverrideOn = bUserOverrideMoonColorAndIntensity;
 
     const dayNightOverrideOn = bUserOverrideDayNightTransition;
@@ -312,10 +312,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <ToggleRow
             label={Format.stringLiteral("Override Time of Day")}
             toggled={sunTimeOverrideOn}
-            onToggle={(value) => {
-              this.onToggleValueChanged("bUserOverrideSunTimeOfDay")(value);
-              this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")(value);
-            }}
+            onToggle={this.onToggleValueChanged("bUserOverrideSunTimeOfDay")}
             inputName={InputName.Select}
             disabled={!customLightingEnabled}
           />
@@ -337,20 +334,28 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
+          <ToggleRow
+            label={Format.stringLiteral("Override Moon Phase")}
+            toggled={moonPhaseOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideMoonPhase")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
           <SliderRow
-            label={Format.stringLiteral("Moon Time of Day")}
-            min={-90}
-            max={270}
+            label={Format.stringLiteral("Moon Phase")}
+            min={0}
+            max={360}
             step={0.01}
-            value={nUserMoonTimeOfDay}
+            value={nUserMoonPhase}
             onChange={(newValue: number) =>
               this.onNumericalValueChanged(
-                "nUserMoonTimeOfDay",
+                "nUserMoonPhase",
                 newValue as number
               )
             }
             editable={true}
-            disabled={!customLightingEnabled || !moonTimeOverrideOn}
+            disabled={!customLightingEnabled || !moonPhaseOverrideOn}
             focusable={true}
           />
         </PanelArea>

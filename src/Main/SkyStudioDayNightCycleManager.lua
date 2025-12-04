@@ -23,13 +23,13 @@ local SkyStudioDayNightCycleManager = {}
 --  LOCAL HELPERS
 ----------------------------------------------------------------------
 
-local function DegreesToRadians(d)
-  return d * math.pi / 180
+-- dawn = 0, noon = 90, dusk = 180, midnight = 270
+local function HoursToDegrees(d)
+  return (d * 15 - 90) % 360
 end
 
-local function HoursToRadians(t)
-    -- t is in hours, expected range -12 to +12
-    return t * (math.pi / 24)
+local function DegreesToRadians(d)
+  return d * math.pi / 180
 end
 
 local function TransformFromPosF(pos, forward)
@@ -438,14 +438,28 @@ function Patched.UpdateLighting(self, prop)
   end
 end
 
+-- Set custom lighting from user parameters
 function Patched.UpdateLightingFromUserParams(self)
-  -- Set custom lighting from user parameters
-
-  local parkTimeOfDay = self.ParkAPI:GetTimeOfDayLighting()
-
-  -- Set time of day degrees
   local nSunTimeOfDayDegrees = SkyStudioDataStore.nUserSunTimeOfDay
-  local nMoonTimeOfDayDegrees = SkyStudioDataStore.nUserMoonTimeOfDay
+
+  if not SkyStudioDataStore.bUserOverrideSunTimeOfDay then
+    nSunTimeOfDayDegrees = HoursToDegrees(self.ParkAPI:GetTimeOfDayLighting())
+  end
+
+  local nMoonPhaseDegrees = SkyStudioDataStore.nParkTodCycleMoonPhase
+  if SkyStudioDataStore.bUserOverrideMoonPhase then
+    nMoonPhaseDegrees = SkyStudioDataStore.nUserMoonPhase
+  end
+
+  -- TODO - Maybe add moon phasing over time ?
+  -- 
+  -- A full 360 rotation of the moon relative to a fixed point on earth is about 50 minutes longer than the sun
+  -- Or about 1.035 * the sun's day length
+  -- 
+  -- For now we will just make the moon take longer to cross the sky with the phase constant (configurable)
+  nMoonPhaseDegrees = (nSunTimeOfDayDegrees * 0.966 + nMoonPhaseDegrees) % 360
+
+  -- trace('UpdateLightingFromUserParams -- nSunTimeOfDayDegrees' .. tostring(nSunTimeOfDayDegrees) .. ' nMoonPhaseDegrees ' .. tostring(nMoonPhaseDegrees))
 
   -- Remap sun time of day agnle after sunset
   -- Because the sky shader's "twilight" feels short, this it he only way to make it longer afaik
@@ -453,7 +467,7 @@ function Patched.UpdateLightingFromUserParams(self)
   local nRemappedTwilightSunDegrees = RemapTwilightAngle(nSunTimeOfDayDegrees)
 
   local nSunTimeOfDayRadiansToUse = DegreesToRadians(nRemappedTwilightSunDegrees)
-  local nMoonTimeOfDayRadiansToUse = DegreesToRadians(nSunTimeOfDayDegrees) -- nMoonTimeOfDayDegrees
+  local nMoonPhaseRadiansToUse = DegreesToRadians(nMoonPhaseDegrees) -- nMoonPhaseDegrees
 
   -- Sun orientation switching: override vs from park / vanilla
   local vSunDir = nil
@@ -463,7 +477,7 @@ function Patched.UpdateLightingFromUserParams(self)
       DegreesToRadians(SkyStudioDataStore.nUserSunAzimuth),
       DegreesToRadians(SkyStudioDataStore.nUserSunLatitudeOffset),
       nSunTimeOfDayRadiansToUse
-    )
+    ) 
   else 
     -- Vanilla sun orientation
     vSunDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nSunTimeOfDayRadiansToUse):Normalised()
@@ -474,12 +488,12 @@ function Patched.UpdateLightingFromUserParams(self)
     vMoonDir = CalculateUserSunDirection(
       DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
       DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
-      DegreesToRadians(nMoonTimeOfDayDegrees)
+      nMoonPhaseRadiansToUse
     )
   else
-    -- For now, copy the sun dir but just offset the time somewhat so that the moon moves throughout the night
-    -- But we should do the math to figure out the actual moon axis from the park and make it progress through the sky here eventually
-    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeOfDayRadiansToUse - (math.pi * 0.8)):Normalised()
+    -- Because we have moonrise and moonset, we can just copy the sun's rotational axis and phase the moon along it
+    -- In reality we might want some more offset here but this works for now
+    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonPhaseRadiansToUse):Normalised()
   end
 
   local vSunColor       = Vector3:new(

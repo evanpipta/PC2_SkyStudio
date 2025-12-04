@@ -19,19 +19,24 @@ SkyStudioDataStore.nParkTodCycleDayNightTransitionNoon = 95       -- noon value
 SkyStudioDataStore.nParkTodCycleDayNightTransitionDusk = 45       -- dusk value
 
 SkyStudioDataStore.nParkTodCycleDayNightTransitionCurve = 2
-SkyStudioDataStore.nParkTodCycleTwilightLength = 10
+SkyStudioDataStore.nParkTodCycleTwilightLength = 30
 
 SkyStudioDataStore.nParkTodCycleMoonDuskFadeStart = -1
 SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd = 0.5
 
 SkyStudioDataStore.nParkTodCycleMoonDawnFadeStart = 179
-SkyStudioDataStore.nParkTodCycleMoonDawbFadeEnd = 180.5
+SkyStudioDataStore.nParkTodCycleMoonDawnFadeEnd = 180.5
 
 SkyStudioDataStore.nParkTodCycleSunDawnFadeStart = -0.5
 SkyStudioDataStore.nParkTodCycleSunDawnFadeEnd = 1
 
 SkyStudioDataStore.nParkTodCycleSunDuskFadeStart = 179
 SkyStudioDataStore.nParkTodCycleSunDuskFadeEnd = 180.5
+
+-- Moon's phase relative to the sun (180 = full moon opposite sun, 0 = new moon in front of sun)
+-- Default this to near 180 since we only have an almost full moon texture right now
+-- Not even sure if that can be changed, it's something to work on later
+SkyStudioDataStore.nParkTodCycleMoonPhase = 200
 
 -- Sun orientation in the sky
 SkyStudioDataStore.bUserOverrideSunOrientation = false
@@ -51,12 +56,12 @@ SkyStudioDataStore.nUserSunIntensity = 150               -- vanilla default: 128
 
 -- Moon orientation in the sky:
 SkyStudioDataStore.bUserOverrideMoonOrientation = false
-SkyStudioDataStore.nUserMoonAzimuth = 90                 -- Moon "rotation" in degrees
-SkyStudioDataStore.nUserMoonLatitudeOffset = 5           -- Moon "tilt" in degrees
+SkyStudioDataStore.nUserMoonAzimuth = 5                  -- Moon "rotation" in degrees
+SkyStudioDataStore.nUserMoonLatitudeOffset = 0           -- Moon "tilt" in degrees
 
 -- Moon "time of day"
-SkyStudioDataStore.bUserOverrideMoonTimeOfDay = false
-SkyStudioDataStore.nUserMoonTimeOfDay = 60               -- Moon progress across its "time of day" arc in degrees
+SkyStudioDataStore.bUserOverrideMoonPhase = false
+SkyStudioDataStore.nUserMoonPhase = 200                  -- 200 = moon rise ~2hrs before sunset
 
 -- Moon color and intensity:
 SkyStudioDataStore.bUserOverrideMoonColorAndIntensity = false
@@ -71,7 +76,5 @@ SkyStudioDataStore.bUserOverrideDayNightTransition = false
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
-
-
 
 return SkyStudioDataStore
