@@ -94,11 +94,10 @@ local function EaseIn(t, steepness)
 end
 
 local function LerpDayNightFadeByAngle(nDawnValue, nNoonValue, nDuskValue, nMidnightValue, nSunAngle, nEasingParameter, _nDawnFadeEndDegrees, _nDuskFadeStartDegrees, _nDuskFadeEndDegrees, _nDawnFadeStartDegrees)
-  -- Probably want to put these in the config file at some point
-  local nDawnFadeEndDegrees = _nDawnFadeEndDegrees or 80
-  local nDuskFadeStartDegrees = _nDuskFadeStartDegrees or 100
-  local nDuskFadeEndDegrees = _nDuskFadeEndDegrees or 190
-  local nDawnFadeStartDegrees = _nDawnFadeStartDegrees or 350
+  local nDawnFadeEndDegrees = _nDawnFadeEndDegrees or 90
+  local nDuskFadeStartDegrees = _nDuskFadeStartDegrees or 90
+  local nDuskFadeEndDegrees = _nDuskFadeEndDegrees or 270
+  local nDawnFadeStartDegrees = _nDawnFadeStartDegrees or 270
 
     local a = nSunAngle % 360
     nEasingParameter = nEasingParameter or 0.0
@@ -535,7 +534,11 @@ function Patched.UpdateLightingFromUserParams(self)
       SkyStudioDataStore.nParkTodCycleDayNightTransitionDusk,
       SkyStudioDataStore.nParkTodCycleDayNightTransitionMidnight,
       nSunTimeOfDayDegrees,
-      SkyStudioDataStore.nParkTodCycleDayNightTransitionCurve
+      SkyStudioDataStore.nParkTodCycleDayNightTransitionCurve,
+      SkyStudioDataStore.nParkTodCycleDayNightTransitionDawnEnd,
+      SkyStudioDataStore.nParkTodCycleDayNightTransitionDuskStart,
+      SkyStudioDataStore.nParkTodCycleDayNightTransitionDusk,
+      SkyStudioDataStore.nParkTodCycleDayNightTransitionDawnStart
     )
 
     renderParameterFade = RemapDayNightFadeValue(lerpedDayNightTransition / 100.0)
@@ -570,6 +573,8 @@ function Patched.UpdateLightingFromUserParams(self)
       SkyStudioDataStore.nParkTodCycleMoonDawnFadeStart
     )
   end
+
+  -- Todo: try adding a skylight in here! To make the ground brighter at dusk and dawn
 
   self.tCommonParameterSetter:ApplyDayNightParameters(1 - renderParameterFade)
   
