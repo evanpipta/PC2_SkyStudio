@@ -7,11 +7,10 @@ import { loadCSS } from "/js/common/util/CSSUtil.js";
 import { classNames } from "/js/common/lib/classnames.js";
 import { Panel } from "/js/project/components/panel/Panel.js";
 import { InputName } from "/js/common/core/InputTypes.js";
-import { PanelArea, PanelHeader } from "/js/project/components/PanelShared.js";
+import { PanelArea } from "/js/project/components/PanelShared.js";
 import { SliderRow } from "/js/project/components/SliderRow.js";
 import { ToggleRow } from "/js/project/components/ToggleRow.js";
 import { FocusableDataRow } from "/js/project/components/DataRow.js";
-import { ScrollPane } from "/js/common/components/ScrollPane.js";
 import { Tab } from "/js/common/components/Tab.js";
 import { SkyStudioButton } from "/SkyStudioButton.js";
 const DEBUG_MODE = false;
@@ -26,7 +25,7 @@ const ColorPickerRow = ({ label, r, g, b, disabled, }) => {
     const b255 = Math.round(clamp01(b) * 255);
     const swatchStyle = {
         width: "100%",
-        height: "32px",
+        height: "4rem",
         borderRadius: "2px",
         border: "1px solid rgba(255,255,255,0.25)",
         backgroundColor: `rgb(${r255}, ${g255}, ${b255})`,
@@ -141,65 +140,76 @@ class _SkyStudioUI extends preact.Component {
         const moonColorOverrideOn = bUserOverrideMoonColorAndIntensity;
         const dayNightOverrideOn = bUserOverrideDayNightTransition;
         const tabs = [
-            preact.h(Tab, { key: "time", label: Format.stringLiteral("Time / Transition"), outcome: "SkyStudio_Tab_Time" }),
-            preact.h(Tab, { key: "orientation", label: Format.stringLiteral("Orientation"), outcome: "SkyStudio_Tab_Orientation" }),
-            preact.h(Tab, { key: "color", label: Format.stringLiteral("Color & Intensity"), outcome: "SkyStudio_Tab_Color" }),
+            preact.h(Tab, { key: "time", icon: "img/icons/clock.svg", label: Format.stringLiteral("Time of Day"), outcome: "SkyStudio_Tab_Time" }),
+            // Hide orientation for now, I think it will get enough use to warrant putting in the first tab
+            // <Tab
+            //   key="orientation"
+            //   icon={"img/icons/worldAxis.svg"}
+            //   label={Format.stringLiteral("Sky Orientation")}
+            //   outcome="SkyStudio_Tab_Orientation"
+            // />,
+            preact.h(Tab, { key: "suncolor", icon: "img/icons/sun.svg", label: Format.stringLiteral("Sun Color"), outcome: "SkyStudio_Tab_Sun_Color" }),
+            preact.h(Tab, { key: "mooncolor", icon: "img/icons/moon.svg", label: Format.stringLiteral("Moon Color"), outcome: "SkyStudio_Tab_Moon_Color" }),
+            preact.h(Tab, { key: "other", icon: "img/icons/dataList.svg", label: Format.stringLiteral("Miscellaneous"), outcome: "SkyStudio_Tab_Other" }),
         ];
         const tabViews = [
             // TAB 0: Time of day + day/night transition
-            preact.h(ScrollPane, { key: "time", rootClassName: "skystudio_scrollPane", contentClassName: "skystudio_scrollPaneContent" },
+            preact.h("div", { key: "time", className: "skystudio_scrollPane" },
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Global Lighting Control") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Use vanilla lighting"), toggled: useVanillaLighting, onToggle: this.onToggleValueChanged("bUseVanillaLighting"), inputName: InputName.Select, disabled: false })),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Time of Day"), toggled: sunTimeOverrideOn, onToggle: (value) => {
+                            this.onToggleValueChanged("bUserOverrideSunTimeOfDay")(value);
+                            this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")(value);
+                        }, inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Time of Day"), min: -90, max: 270, step: 0.01, value: nUserSunTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserSunTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !sunTimeOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Time of Day"), min: -90, max: 270, step: 0.01, value: nUserMoonTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !moonTimeOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Time of day") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override time of day"), toggled: sunTimeOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunTimeOfDay"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Time of day"), min: -90, max: 270, step: 0.01, value: nUserSunTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserSunTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !sunTimeOverrideOn, focusable: true })),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Sun & Moon Orientation"), toggled: sunOrientationOverrideOn, onToggle: (value) => {
+                            this.onToggleValueChanged("bUserOverrideSunOrientation")(value);
+                            this.onToggleValueChanged("bUserOverrideMoonOrientation")(value);
+                        }, inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Azimuth"), min: 0, max: 360, step: 1, value: nUserSunAzimuth, onChange: (newValue) => this.onNumericalValueChanged("nUserSunAzimuth", newValue), editable: true, disabled: !customLightingEnabled || !sunOrientationOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Latitude Offset"), min: -90, max: 90, step: 1, value: nUserSunLatitudeOffset, onChange: (newValue) => this.onNumericalValueChanged("nUserSunLatitudeOffset", newValue), editable: true, disabled: !customLightingEnabled || !sunOrientationOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Azimuth"), min: 0, max: 360, step: 1, value: nUserMoonAzimuth, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonAzimuth", newValue), editable: true, disabled: !customLightingEnabled || !moonOrientationOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Latitude Offset"), min: -90, max: 90, step: 1, value: nUserMoonLatitudeOffset, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonLatitudeOffset", newValue), editable: true, disabled: !customLightingEnabled || !moonOrientationOverrideOn, focusable: true }))),
+            // <div key="orientation" className="skystudio_scrollPane">
+            //    This section moved to Time of Day for now
+            // </div>,
+            // TAB 2: Sun color + intensity
+            preact.h("div", { key: "suncolor", className: "skystudio_scrollPane" },
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Day / night transition") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override day / night transition"), toggled: dayNightOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideDayNightTransition"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Day / night fade"), min: 37, max: 100, step: 0.01, value: nUserDayNightTransition, onChange: (newValue) => this.onNumericalValueChanged("nUserDayNightTransition", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun fade"), min: 0, max: 1, step: 0.01, value: nUserSunFade, onChange: (newValue) => this.onNumericalValueChanged("nUserSunFade", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon fade"), min: 0, max: 1, step: 0.01, value: nUserMoonFade, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonFade", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true }))),
-            // TAB 1: Sun & Moon orientation
-            preact.h(ScrollPane, { key: "orientation", rootClassName: "skystudio_scrollPane", contentClassName: "skystudio_scrollPaneContent" },
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Sun Color & Intensity"), toggled: sunColorOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunColorAndIntensity"), inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(ColorPickerRow, { label: Format.stringLiteral("Sun Color"), r: nUserSunColorR, g: nUserSunColorG, b: nUserSunColorB, disabled: !customLightingEnabled || !sunColorOverrideOn }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Color R"), min: 0, max: 1, step: 0.01, value: nUserSunColorR, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorR", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Color G"), min: 0, max: 1, step: 0.01, value: nUserSunColorG, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorG", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Color B"), min: 0, max: 1, step: 0.01, value: nUserSunColorB, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorB", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Intensity"), min: 0, max: 255, step: 1, value: nUserSunIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSunIntensity", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }))),
+            // TAB 3: Moon color + intensity
+            preact.h("div", { key: "mooncolor", className: "skystudio_scrollPane" },
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Sun orientation") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override sun orientation"), toggled: sunOrientationOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunOrientation"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun azimuth"), min: 0, max: 360, step: 1, value: nUserSunAzimuth, onChange: (newValue) => this.onNumericalValueChanged("nUserSunAzimuth", newValue), editable: true, disabled: !customLightingEnabled || !sunOrientationOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun latitude offset"), min: -90, max: 90, step: 1, value: nUserSunLatitudeOffset, onChange: (newValue) => this.onNumericalValueChanged("nUserSunLatitudeOffset", newValue), editable: true, disabled: !customLightingEnabled || !sunOrientationOverrideOn, focusable: true })),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Moon Color & Intensity"), toggled: moonColorOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonColorAndIntensity"), inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(ColorPickerRow, { label: Format.stringLiteral("Moon Color"), r: nUserMoonColorR, g: nUserMoonColorG, b: nUserMoonColorB, disabled: !customLightingEnabled || !moonColorOverrideOn }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Color R"), min: 0, max: 1, step: 0.01, value: nUserMoonColorR, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorR", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Color G"), min: 0, max: 1, step: 0.01, value: nUserMoonColorG, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorG", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Color B"), min: 0, max: 1, step: 0.01, value: nUserMoonColorB, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorB", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Intensity"), min: 0, max: 5, step: 0.05, value: nUserMoonIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonIntensity", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }))),
+            // TAB 4: Miscellaneous -- Hide the less user-friendly features here
+            preact.h("div", { key: "other", className: "skystudio_scrollPane" },
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Moon orientation & time") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override moon orientation"), toggled: moonOrientationOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonOrientation"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override moon time of day"), toggled: moonTimeOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonTimeOfDay"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon azimuth"), min: 0, max: 360, step: 1, value: nUserMoonAzimuth, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonAzimuth", newValue), editable: true, disabled: !customLightingEnabled || !moonOrientationOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon latitude offset"), min: -90, max: 90, step: 1, value: nUserMoonLatitudeOffset, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonLatitudeOffset", newValue), editable: true, disabled: !customLightingEnabled || !moonOrientationOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon time of day"), min: -90, max: 270, step: 0.01, value: nUserMoonTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !moonTimeOverrideOn, focusable: true }))),
-            // TAB 2: Sun & Moon color + intensity
-            preact.h(ScrollPane, { key: "color", rootClassName: "skystudio_scrollPane", contentClassName: "skystudio_scrollPaneContent" },
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Override Day / Night Transition"), toggled: dayNightOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideDayNightTransition"), inputName: InputName.Select, disabled: !customLightingEnabled }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("RenderParameters Fade"), min: 37, max: 100, step: 0.01, value: nUserDayNightTransition, onChange: (newValue) => this.onNumericalValueChanged("nUserDayNightTransition", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Light Fade"), min: 0, max: 1, step: 0.01, value: nUserSunFade, onChange: (newValue) => this.onNumericalValueChanged("nUserSunFade", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Moon Light Fade"), min: 0, max: 1, step: 0.01, value: nUserMoonFade, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonFade", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Sun color & intensity") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override sun color & intensity"), toggled: sunColorOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunColorAndIntensity"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(ColorPickerRow, { label: Format.stringLiteral("Sun color"), r: nUserSunColorR, g: nUserSunColorG, b: nUserSunColorB, disabled: !customLightingEnabled || !sunColorOverrideOn }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun color R"), min: 0, max: 1, step: 0.01, value: nUserSunColorR, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorR", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun color G"), min: 0, max: 1, step: 0.01, value: nUserSunColorG, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorG", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun color B"), min: 0, max: 1, step: 0.01, value: nUserSunColorB, onChange: (newValue) => this.onNumericalValueChanged("nUserSunColorB", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun intensity"), min: 0, max: 255, step: 1, value: nUserSunIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSunIntensity", newValue), editable: true, disabled: !customLightingEnabled || !sunColorOverrideOn, focusable: true })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(PanelHeader, { text: Format.stringLiteral("Moon color & intensity") }),
-                    preact.h(ToggleRow, { label: Format.stringLiteral("Override moon color & intensity"), toggled: moonColorOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonColorAndIntensity"), inputName: InputName.Select, disabled: !customLightingEnabled }),
-                    preact.h(ColorPickerRow, { label: Format.stringLiteral("Moon color"), r: nUserMoonColorR, g: nUserMoonColorG, b: nUserMoonColorB, disabled: !customLightingEnabled || !moonColorOverrideOn }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon color R"), min: 0, max: 1, step: 0.01, value: nUserMoonColorR, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorR", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon color G"), min: 0, max: 1, step: 0.01, value: nUserMoonColorG, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorG", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon color B"), min: 0, max: 1, step: 0.01, value: nUserMoonColorB, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonColorB", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Moon intensity"), min: 0, max: 5, step: 0.05, value: nUserMoonIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonIntensity", newValue), editable: true, disabled: !customLightingEnabled || !moonColorOverrideOn, focusable: true }))),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Use Vanilla Lighting (Disables all mod features)"), toggled: useVanillaLighting, onToggle: this.onToggleValueChanged("bUseVanillaLighting"), inputName: InputName.Select, disabled: false }))),
         ];
         return (preact.h("div", { className: "skystudio_root" },
             DEBUG_MODE && (preact.h(Panel, { rootClassName: classNames("skystudio_focus_debug"), title: Format.stringLiteral("Current Focus") }, this.state.focusDebugKey)),
             preact.h("div", { className: "skystudio_toggle_menu" },
-                preact.h(SkyStudioButton, { src: "img/icons/tod.svg", tooltip: Format.stringLiteral("Sky Studio"), focused: false, toggleable: true, toggled: !!this.state.controlsVisible, onSelect: this.handleToggleControls })),
+                preact.h(SkyStudioButton, { src: "img/icons/tod.svg", 
+                    // tooltip is kinda janky position-wise so not having one for now
+                    focused: false, toggleable: true, toggled: !!this.state.controlsVisible, onSelect: this.handleToggleControls })),
             preact.h("div", { className: "skystudio_controls_panel_wrapper" },
-                preact.h(Panel, { rootClassName: classNames("skystudio_controls_panel", !this.state.controlsVisible && "hidden"), title: Format.stringLiteral("Sky Studio"), onClose: this.handleToggleControls, tabs: tabs, visibleTabIndex: visibleTabIndex, onTabChange: this.changeVisibleTab, handleInput: this.handlePanelInput }, tabViews))));
+                preact.h(Panel, { rootClassName: classNames("skystudio_controls_panel", !this.state.controlsVisible && "hidden"), icon: "img/icons/tod.svg", title: Format.stringLiteral("Sky Studio"), onClose: this.handleToggleControls, tabs: tabs, visibleTabIndex: visibleTabIndex, onTabChange: this.changeVisibleTab, handleInput: this.handlePanelInput }, tabViews))));
     }
 }
 export const SkyStudioUI = Focusable.decorateEx(_SkyStudioUI, {

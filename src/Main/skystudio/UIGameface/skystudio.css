@@ -45,7 +45,7 @@
 .skystudio_controls_panel_wrapper {
   position: absolute;
   bottom: 8rem;
-  right: 2rem;
+  right: 4rem;
   pointer-events: auto;
   transform: scale(0.7) translateX(30%) translateY(30%);
 }
@@ -66,10 +66,14 @@
   margin: 0.25rem auto;
 }
 
-/* ScrollPane sizing so content doesn't overflow vertically */
+ /* This is called scrollPane but it doesn't actoll scroll right now */
+ /* Was originally using the vanilla ScrollPane component but its kinda ugly */
+ /* Maybe we can just split the tabs more so everything always fits on the screen, hopefully */
 .skystudio_scrollPane {
   flex: 1 1 auto;
-  height: 45vh;
+  min-height: 25rem;
+  max-height: 80vh;
+  /* Width should be fixed or else we get a huge layout shift hiccup when changing tabs which causes the game to stutter */
   width: 40rem;
 }
 

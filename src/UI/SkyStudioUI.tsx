@@ -88,7 +88,7 @@ const ColorPickerRow: preact.FunctionComponent<ColorPickerRowProps> = ({
 
   const swatchStyle: preact.JSX.CSSProperties = {
     width: "100%",
-    height: "32px",
+    height: "4rem",
     borderRadius: "2px",
     border: "1px solid rgba(255,255,255,0.25)",
     backgroundColor: `rgb(${r255}, ${g255}, ${b255})`,
@@ -274,53 +274,54 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const tabs = [
       <Tab
         key="time"
-        label={Format.stringLiteral("Time / Transition")}
+        icon={"img/icons/clock.svg"}
+        label={Format.stringLiteral("Time of Day")}
         outcome="SkyStudio_Tab_Time"
       />,
+      // Hide orientation for now, I think it will get enough use to warrant putting in the first tab
+      // <Tab
+      //   key="orientation"
+      //   icon={"img/icons/worldAxis.svg"}
+      //   label={Format.stringLiteral("Sky Orientation")}
+      //   outcome="SkyStudio_Tab_Orientation"
+      // />,
       <Tab
-        key="orientation"
-        label={Format.stringLiteral("Orientation")}
-        outcome="SkyStudio_Tab_Orientation"
+        key="suncolor"
+        icon={"img/icons/sun.svg"}
+        label={Format.stringLiteral("Sun Color")}
+        outcome="SkyStudio_Tab_Sun_Color"
       />,
       <Tab
-        key="color"
-        label={Format.stringLiteral("Color & Intensity")}
-        outcome="SkyStudio_Tab_Color"
+        key="mooncolor"
+        icon={"img/icons/moon.svg"}
+        label={Format.stringLiteral("Moon Color")}
+        outcome="SkyStudio_Tab_Moon_Color"
+      />,
+      <Tab
+        key="other"
+        icon={"img/icons/dataList.svg"}
+        label={Format.stringLiteral("Miscellaneous")}
+        outcome="SkyStudio_Tab_Other"
       />,
     ];
 
     const tabViews = [
       // TAB 0: Time of day + day/night transition
-      <ScrollPane
-        key="time"
-        rootClassName="skystudio_scrollPane"
-        contentClassName="skystudio_scrollPaneContent"
-      >
-        {/* Global enable/disable */}
+      <div key="time" className="skystudio_scrollPane">
         <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Global Lighting Control")} />
           <ToggleRow
-            label={Format.stringLiteral("Use vanilla lighting")}
-            toggled={useVanillaLighting}
-            onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
-            inputName={InputName.Select}
-            disabled={false}
-          />
-        </PanelArea>
-
-        <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Time of day")} />
-
-          <ToggleRow
-            label={Format.stringLiteral("Override time of day")}
+            label={Format.stringLiteral("Override Time of Day")}
             toggled={sunTimeOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideSunTimeOfDay")}
+            onToggle={(value) => {
+              this.onToggleValueChanged("bUserOverrideSunTimeOfDay")(value);
+              this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")(value);
+            }}
             inputName={InputName.Select}
             disabled={!customLightingEnabled}
           />
 
           <SliderRow
-            label={Format.stringLiteral("Time of day")}
+            label={Format.stringLiteral("Time of Day")}
             min={-90}
             max={270}
             step={0.01}
@@ -335,87 +336,41 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !sunTimeOverrideOn}
             focusable={true}
           />
-        </PanelArea>
-
-        <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Day / night transition")} />
-
-          <ToggleRow
-            label={Format.stringLiteral("Override day / night transition")}
-            toggled={dayNightOverrideOn}
-            onToggle={this.onToggleValueChanged(
-              "bUserOverrideDayNightTransition"
-            )}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
 
           <SliderRow
-            label={Format.stringLiteral("Day / night fade")}
-            min={37}
-            max={100}
+            label={Format.stringLiteral("Moon Time of Day")}
+            min={-90}
+            max={270}
             step={0.01}
-            value={nUserDayNightTransition}
+            value={nUserMoonTimeOfDay}
             onChange={(newValue: number) =>
               this.onNumericalValueChanged(
-                "nUserDayNightTransition",
+                "nUserMoonTimeOfDay",
                 newValue as number
               )
             }
             editable={true}
-            disabled={!customLightingEnabled || !dayNightOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Sun fade")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserSunFade}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunFade", newValue as number)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !dayNightOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon fade")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserMoonFade}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserMoonFade", newValue as number)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            disabled={!customLightingEnabled || !moonTimeOverrideOn}
             focusable={true}
           />
         </PanelArea>
-      </ScrollPane>,
-
-      // TAB 1: Sun & Moon orientation
-      <ScrollPane
-        key="orientation"
-        rootClassName="skystudio_scrollPane"
-        contentClassName="skystudio_scrollPaneContent"
-      >
         <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Sun orientation")} />
-
+          {/* Mixed feelings on binding the sun and moon orientation toggles together */}
+          {/* but I can't imagine why you'd want to override one without the other */}
+          {/* since this basically controls the park's theoretical coordinates on the earth which affects both sun and moon position in the sky */}
           <ToggleRow
-            label={Format.stringLiteral("Override sun orientation")}
+            label={Format.stringLiteral("Override Sun & Moon Orientation")}
             toggled={sunOrientationOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideSunOrientation")}
+            onToggle={(value) => {
+              this.onToggleValueChanged("bUserOverrideSunOrientation")(value);
+              this.onToggleValueChanged("bUserOverrideMoonOrientation")(value);
+            }}
             inputName={InputName.Select}
             disabled={!customLightingEnabled}
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun azimuth")}
+            label={Format.stringLiteral("Sun Azimuth")}
             min={0}
             max={360}
             step={1}
@@ -432,7 +387,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun latitude offset")}
+            label={Format.stringLiteral("Sun Latitude Offset")}
             min={-90}
             max={90}
             step={1}
@@ -447,29 +402,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !sunOrientationOverrideOn}
             focusable={true}
           />
-        </PanelArea>
-
-        <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Moon orientation & time")} />
-
-          <ToggleRow
-            label={Format.stringLiteral("Override moon orientation")}
-            toggled={moonOrientationOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideMoonOrientation")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
-
-          <ToggleRow
-            label={Format.stringLiteral("Override moon time of day")}
-            toggled={moonTimeOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
 
           <SliderRow
-            label={Format.stringLiteral("Moon azimuth")}
+            label={Format.stringLiteral("Moon Azimuth")}
             min={0}
             max={360}
             step={1}
@@ -486,7 +421,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon latitude offset")}
+            label={Format.stringLiteral("Moon Latitude Offset")}
             min={-90}
             max={90}
             step={1}
@@ -501,37 +436,18 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !moonOrientationOverrideOn}
             focusable={true}
           />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon time of day")}
-            min={-90}
-            max={270}
-            step={0.01}
-            value={nUserMoonTimeOfDay}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserMoonTimeOfDay",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !moonTimeOverrideOn}
-            focusable={true}
-          />
         </PanelArea>
-      </ScrollPane>,
+      </div>,
 
-      // TAB 2: Sun & Moon color + intensity
-      <ScrollPane
-        key="color"
-        rootClassName="skystudio_scrollPane"
-        contentClassName="skystudio_scrollPaneContent"
-      >
+      // <div key="orientation" className="skystudio_scrollPane">
+      //    This section moved to Time of Day for now
+      // </div>,
+
+      // TAB 2: Sun color + intensity
+      <div key="suncolor" className="skystudio_scrollPane">
         <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Sun color & intensity")} />
-
           <ToggleRow
-            label={Format.stringLiteral("Override sun color & intensity")}
+            label={Format.stringLiteral("Override Sun Color & Intensity")}
             toggled={sunColorOverrideOn}
             onToggle={this.onToggleValueChanged(
               "bUserOverrideSunColorAndIntensity"
@@ -541,7 +457,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <ColorPickerRow
-            label={Format.stringLiteral("Sun color")}
+            label={Format.stringLiteral("Sun Color")}
             r={nUserSunColorR}
             g={nUserSunColorG}
             b={nUserSunColorB}
@@ -549,7 +465,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun color R")}
+            label={Format.stringLiteral("Sun Color R")}
             min={0}
             max={1}
             step={0.01}
@@ -563,7 +479,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun color G")}
+            label={Format.stringLiteral("Sun Color G")}
             min={0}
             max={1}
             step={0.01}
@@ -577,7 +493,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun color B")}
+            label={Format.stringLiteral("Sun Color B")}
             min={0}
             max={1}
             step={0.01}
@@ -591,7 +507,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Sun intensity")}
+            label={Format.stringLiteral("Sun Intensity")}
             min={0}
             max={255}
             step={1}
@@ -607,12 +523,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
         </PanelArea>
+      </div>,
 
+      // TAB 3: Moon color + intensity
+      <div key="mooncolor" className="skystudio_scrollPane">
         <PanelArea modifiers="skystudio_section">
-          <PanelHeader text={Format.stringLiteral("Moon color & intensity")} />
-
           <ToggleRow
-            label={Format.stringLiteral("Override moon color & intensity")}
+            label={Format.stringLiteral("Override Moon Color & Intensity")}
             toggled={moonColorOverrideOn}
             onToggle={this.onToggleValueChanged(
               "bUserOverrideMoonColorAndIntensity"
@@ -622,7 +539,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <ColorPickerRow
-            label={Format.stringLiteral("Moon color")}
+            label={Format.stringLiteral("Moon Color")}
             r={nUserMoonColorR}
             g={nUserMoonColorG}
             b={nUserMoonColorB}
@@ -630,7 +547,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon color R")}
+            label={Format.stringLiteral("Moon Color R")}
             min={0}
             max={1}
             step={0.01}
@@ -647,7 +564,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon color G")}
+            label={Format.stringLiteral("Moon Color G")}
             min={0}
             max={1}
             step={0.01}
@@ -664,7 +581,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon color B")}
+            label={Format.stringLiteral("Moon Color B")}
             min={0}
             max={1}
             step={0.01}
@@ -681,7 +598,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon intensity")}
+            label={Format.stringLiteral("Moon Intensity")}
             min={0}
             max={5}
             step={0.05}
@@ -697,7 +614,80 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
         </PanelArea>
-      </ScrollPane>,
+      </div>,
+
+      // TAB 4: Miscellaneous -- Hide the less user-friendly features here
+      <div key="other" className="skystudio_scrollPane">
+        <PanelArea modifiers="skystudio_section">
+          <ToggleRow
+            label={Format.stringLiteral("Override Day / Night Transition")}
+            toggled={dayNightOverrideOn}
+            onToggle={this.onToggleValueChanged(
+              "bUserOverrideDayNightTransition"
+            )}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("RenderParameters Fade")}
+            min={37}
+            max={100}
+            step={0.01}
+            value={nUserDayNightTransition}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserDayNightTransition",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun Light Fade")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserSunFade}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunFade", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon Light Fade")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserMoonFade}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserMoonFade", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        {/* Global enable/disable */}
+        <PanelArea modifiers="skystudio_section">
+          <ToggleRow
+            label={Format.stringLiteral(
+              "Use Vanilla Lighting (Disables all mod features)"
+            )}
+            toggled={useVanillaLighting}
+            onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
+            inputName={InputName.Select}
+            disabled={false}
+          />
+        </PanelArea>
+      </div>,
     ];
 
     return (
@@ -714,7 +704,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         <div className="skystudio_toggle_menu">
           <SkyStudioButton
             src="img/icons/tod.svg"
-            tooltip={Format.stringLiteral("Sky Studio")}
+            // tooltip is kinda janky position-wise so not having one for now
             focused={false}
             toggleable
             toggled={!!this.state.controlsVisible}
@@ -728,6 +718,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               "skystudio_controls_panel",
               !this.state.controlsVisible && "hidden"
             )}
+            icon={"img/icons/tod.svg"}
             title={Format.stringLiteral("Sky Studio")}
             onClose={this.handleToggleControls}
             tabs={tabs}
