@@ -40,7 +40,7 @@ SkyStudioUI.Hide = function(self)
 end
 
 -- Data store key names to map listeners for:
-
+--
 -- SkyStudioDataStore.bUseVanillaLighting,
 -- SkyStudioDataStore.nUserSunAzimuth,
 -- SkyStudioDataStore.nUserSunLatitudeOffset,
@@ -59,7 +59,15 @@ end
 -- SkyStudioDataStore.nUserMoonIntensity,
 -- SkyStudioDataStore.bUserMoonUseLinearColors,
 -- SkyStudioDataStore.nUserDayNightTransition,
--- SkyStudioDataStore.nUserSunFade
+-- SkyStudioDataStore.nUserSunFade,
+-- SkyStudioDataStore.nUserMoonFade,
+-- SkyStudioDataStore.bUserOverrideSunTimeOfDay,
+-- SkyStudioDataStore.bUserOverrideSunOrientation,
+-- SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
+-- SkyStudioDataStore.bUserOverrideMoonOrientation,
+-- SkyStudioDataStore.bUserOverrideMoonTimeOfDay,
+-- SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
+-- SkyStudioDataStore.bUserOverrideDayNightTransition
 
 SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting = function(self, _callback, _self)
   trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting")
@@ -161,3 +169,39 @@ SkyStudioUI.SkyStudioChangedValue_nUserMoonFade = function(self, _callback, _sel
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserMoonFade", 1, _callback, _self)
 end
 
+-- New override bindings
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunTimeOfDay = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunTimeOfDay")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunTimeOfDay", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunOrientation = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunOrientation")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunOrientation", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunColorAndIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunColorAndIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunColorAndIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonOrientation = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonOrientation")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonOrientation", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonTimeOfDay = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonTimeOfDay")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonTimeOfDay", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideDayNightTransition = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideDayNightTransition")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideDayNightTransition", 1, _callback, _self)
+end

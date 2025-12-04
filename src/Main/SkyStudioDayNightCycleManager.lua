@@ -441,7 +441,7 @@ end
 function Patched.UpdateLightingFromUserParams(self)
   -- Set custom lighting from user parameters
 
-  -- local parkTimeOfDay = self.ParkAPI:GetTimeOfDayLighting()
+  local parkTimeOfDay = self.ParkAPI:GetTimeOfDayLighting()
 
   -- Set time of day degrees
   local nSunTimeOfDayDegrees = SkyStudioDataStore.nUserSunTimeOfDay
@@ -452,11 +452,36 @@ function Patched.UpdateLightingFromUserParams(self)
   -- Only use this for the light's direction, not for the rest of the values
   local nRemappedTwilightSunDegrees = RemapTwilightAngle(nSunTimeOfDayDegrees)
 
-  local vSunDir         = CalculateUserSunDirection(
-                            DegreesToRadians(SkyStudioDataStore.nUserSunAzimuth),
-                            DegreesToRadians(SkyStudioDataStore.nUserSunLatitudeOffset),
-                            DegreesToRadians(nRemappedTwilightSunDegrees)
-                          )
+  local nSunTimeOfDayRadiansToUse = DegreesToRadians(nRemappedTwilightSunDegrees)
+  local nMoonTimeOfDayRadiansToUse = DegreesToRadians(nSunTimeOfDayDegrees) -- nMoonTimeOfDayDegrees
+
+  -- Sun orientation switching: override vs from park / vanilla
+  local vSunDir = nil
+  if SkyStudioDataStore.bUserOverrideSunOrientation then
+    -- User sun orientation
+    vSunDir = CalculateUserSunDirection(
+      DegreesToRadians(SkyStudioDataStore.nUserSunAzimuth),
+      DegreesToRadians(SkyStudioDataStore.nUserSunLatitudeOffset),
+      nSunTimeOfDayRadiansToUse
+    )
+  else 
+    -- Vanilla sun orientation
+    vSunDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nSunTimeOfDayRadiansToUse):Normalised()
+  end
+
+  local vMoonDir = nil
+  if SkyStudioDataStore.bUserOverrideMoonOrientation then
+    vMoonDir = CalculateUserSunDirection(
+      DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
+      DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
+      DegreesToRadians(nMoonTimeOfDayDegrees)
+    )
+  else
+    -- For now, copy the sun dir but just offset the time somewhat so that the moon moves throughout the night
+    -- But we should do the math to figure out the actual moon axis from the park and make it progress through the sky here eventually
+    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeOfDayRadiansToUse - (math.pi * 0.8)):Normalised()
+  end
+
   local vSunColor       = Vector3:new(
                             SkyStudioDataStore.nUserSunColorR,
                             SkyStudioDataStore.nUserSunColorG,
@@ -465,11 +490,6 @@ function Patched.UpdateLightingFromUserParams(self)
   local nSunIntensity   = SkyStudioDataStore.nUserSunIntensity
   local bSunIsLinear    = SkyStudioDataStore.bUserSunUseLinearColors
 
-  local vMoonDir        = CalculateUserSunDirection(
-                            DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
-                            DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
-                            DegreesToRadians(nMoonTimeOfDayDegrees)
-                          )
   local vMoonColor      = Vector3:new(
                             SkyStudioDataStore.nUserMoonColorR,
                             SkyStudioDataStore.nUserMoonColorG,

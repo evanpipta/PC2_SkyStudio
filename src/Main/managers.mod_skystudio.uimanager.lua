@@ -124,6 +124,43 @@ function SkyStudioUIManager:Init()
       trace("SkyStudioChangedValue_nUserMoonFade: " .. tostring(value))
       SkyStudioDataStore.nUserMoonFade = value
     end, self)
+
+    -- New override bindings
+
+    self.ui:SkyStudioChangedValue_bUserOverrideSunTimeOfDay(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideSunTimeOfDay: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideSunTimeOfDay = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideSunOrientation(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideSunOrientation: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideSunOrientation = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideSunColorAndIntensity(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideSunColorAndIntensity: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideSunColorAndIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideMoonOrientation(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideMoonOrientation: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideMoonOrientation = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideMoonTimeOfDay(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideMoonTimeOfDay: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideMoonTimeOfDay = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideMoonColorAndIntensity: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideMoonColorAndIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideDayNightTransition(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideDayNightTransition: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideDayNightTransition = value
+    end, self)
     
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
@@ -146,7 +183,14 @@ function SkyStudioUIManager:Init()
       bUserMoonUseLinearColors = SkyStudioDataStore.bUserMoonUseLinearColors,
       nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
       nUserSunFade = SkyStudioDataStore.nUserSunFade,
-      nUserMoonFade = SkyStudioDataStore.nUserMoonFade
+      nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
+      bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
+      bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
+      bUserOverrideSunColorAndIntensity = SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
+      bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
+      bUserOverrideMoonTimeOfDay = SkyStudioDataStore.bUserOverrideMoonTimeOfDay,
+      bUserOverrideMoonColorAndIntensity = SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
+      bUserOverrideDayNightTransition = SkyStudioDataStore.bUserOverrideDayNightTransition
     })
   end)
 end
