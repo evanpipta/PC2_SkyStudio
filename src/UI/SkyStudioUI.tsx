@@ -148,7 +148,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         <div className="skystudio_toggle_menu">
           <SkyStudioButton
             src="img/icons/tod.svg"
-            tooltip={Format.stringLiteral("Moon Studio")}
+            tooltip={Format.stringLiteral("Sky Studio")}
             focused={false}
             toggleable
             toggled={this.state.controlsVisible}
@@ -161,7 +161,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               "skystudio_controls_panel",
               !this.state.controlsVisible && "hidden"
             )}
-            title={Format.stringLiteral("Moon Studio")}
+            title={Format.stringLiteral("Sky Studio")}
             onClose={this.handleToggleControls}
             handleInput={this.handlePanelInput}
           >
