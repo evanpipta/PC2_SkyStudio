@@ -62,25 +62,23 @@
   display: none;
 }
 
-/* .skystudio_content > * {
-margin: 0.5rem auto;
-width: 100%;
-} */
-
-/* .skystudio_content.hide {
-display: none;
-} */
-
-/* new styling for our slider and label */
-/* .skystudio_label {
-color: white;
-font-size: 1rem;
-margin-bottom: 0.5rem;
+.skystudio_section {
+  margin: 0.25rem auto;
 }
 
-.skystudio_slider {
-appearance: auto;
-border: none;
-} */
+/* ScrollPane sizing so content doesn't overflow vertically */
+.skystudio_scrollPane {
+  flex: 1 1 auto;
+  height: 45vh;
+  width: 40rem;
+}
 
+/* Color row layout */
+.skystudio_colorRow_swatchWrapper {
+  width: 100%;
+}
+
+.skystudio_colorRow_swatch {
+  /* style is mostly applied inline, but you can bump contrast here if needed */
+}
 

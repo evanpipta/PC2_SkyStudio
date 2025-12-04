@@ -12,6 +12,8 @@ import { PanelArea, PanelHeader } from "/js/project/components/PanelShared.js";
 import { SliderRow } from "/js/project/components/SliderRow.js";
 import { ToggleRow } from "/js/project/components/ToggleRow.js";
 import { FocusableDataRow } from "/js/project/components/DataRow.js";
+import { ScrollPane } from "/js/common/components/ScrollPane.js";
+import { Tab } from "/js/common/components/Tab.js";
 
 import { SkyStudioButton } from "/SkyStudioButton.js";
 
@@ -21,7 +23,7 @@ loadCSS("project/Shared");
 loadCSS("project/components/Slider");
 
 type State = {
-  bUseVanillaLighting: number;
+  bUseVanillaLighting: boolean;
 
   nUserSunAzimuth: number;
   nUserSunLatitudeOffset: number;
@@ -30,7 +32,7 @@ type State = {
   nUserSunColorG: number;
   nUserSunColorB: number;
   nUserSunIntensity: number;
-  bUserSunUseLinearColors: number;
+  bUserSunUseLinearColors: number; // still numeric for now, not hooked to a ToggleRow
 
   nUserMoonAzimuth: number;
   nUserMoonLatitudeOffset: number;
@@ -39,30 +41,30 @@ type State = {
   nUserMoonColorG: number;
   nUserMoonColorB: number;
   nUserMoonIntensity: number;
-  bUserMoonUseLinearColors: number;
+  bUserMoonUseLinearColors: number; // same as above
 
   nUserDayNightTransition: number;
   nUserSunFade: number;
   nUserMoonFade: number;
 
-  // New override flags (numeric 0/1 so they can be driven by engine data)
-  bUserOverrideSunTimeOfDay: number;
-  bUserOverrideSunOrientation: number;
-  bUserOverrideSunColorAndIntensity: number;
-  bUserOverrideMoonOrientation: number;
-  bUserOverrideMoonTimeOfDay: number;
-  bUserOverrideMoonColorAndIntensity: number;
-  bUserOverrideDayNightTransition: number;
+  bUserOverrideSunTimeOfDay: boolean;
+  bUserOverrideSunOrientation: boolean;
+  bUserOverrideSunColorAndIntensity: boolean;
+  bUserOverrideMoonOrientation: boolean;
+  bUserOverrideMoonTimeOfDay: boolean;
+  bUserOverrideMoonColorAndIntensity: boolean;
+  bUserOverrideDayNightTransition: boolean;
 
   visible: boolean;
   controlsVisible?: boolean;
+
+  visibleTabIndex: number;
 
   focusDebugKey?: string;
 };
 
 let focusDebuginterval: number;
 
-// Simple presentational swatch row – color display only, actual editing via RGB sliders
 type ColorPickerRowProps = {
   label: string;
   r: number;
@@ -71,6 +73,7 @@ type ColorPickerRowProps = {
   disabled?: boolean;
 };
 
+// Full-width, 32px tall color swatch; editing is via RGB sliders below
 const ColorPickerRow: preact.FunctionComponent<ColorPickerRowProps> = ({
   label,
   r,
@@ -84,8 +87,8 @@ const ColorPickerRow: preact.FunctionComponent<ColorPickerRowProps> = ({
   const b255 = Math.round(clamp01(b) * 255);
 
   const swatchStyle: preact.JSX.CSSProperties = {
-    width: "32px",
-    height: "18px",
+    width: "100%",
+    height: "32px",
     borderRadius: "2px",
     border: "1px solid rgba(255,255,255,0.25)",
     backgroundColor: `rgb(${r255}, ${g255}, ${b255})`,
@@ -111,7 +114,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     visible: false,
     controlsVisible: false,
 
-    bUseVanillaLighting: 0,
+    bUseVanillaLighting: false,
 
     nUserSunAzimuth: 0,
     nUserSunLatitudeOffset: 0,
@@ -135,15 +138,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     nUserSunFade: 0,
     nUserMoonFade: 0,
 
-    bUserOverrideSunTimeOfDay: 0,
-    bUserOverrideSunOrientation: 0,
-    bUserOverrideSunColorAndIntensity: 0,
-    bUserOverrideMoonOrientation: 0,
-    bUserOverrideMoonTimeOfDay: 0,
-    bUserOverrideMoonColorAndIntensity: 0,
-    bUserOverrideDayNightTransition: 0,
+    bUserOverrideSunTimeOfDay: false,
+    bUserOverrideSunOrientation: false,
+    bUserOverrideSunColorAndIntensity: false,
+    bUserOverrideMoonOrientation: false,
+    bUserOverrideMoonTimeOfDay: false,
+    bUserOverrideMoonColorAndIntensity: false,
+    bUserOverrideDayNightTransition: false,
 
-    // focus debug
+    visibleTabIndex: 0,
+
     focusDebugKey: "",
   };
 
@@ -180,7 +184,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   onHide = () => this.setState({ visible: false });
 
   onNumericalValueChanged = (key: keyof State, newValue: number) => {
-    // All numeric values (sliders) go through here
     this.setState({ [key]: newValue } as unknown as State);
     Engine.sendEvent(`SkyStudioChangedValue_${key}`, newValue);
   };
@@ -188,10 +191,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   onToggleValueChanged =
     (key: keyof State) =>
     (toggled: boolean): void => {
-      // Store as numeric 0/1 for compatibility with engine-side data
-      const numericValue = toggled ? 1 : 0;
-      this.setState({ [key]: numericValue } as unknown as State);
-      Engine.sendEvent(`SkyStudioChangedValue_${key}`, numericValue);
+      // store booleans in state
+      this.setState({ [key]: toggled } as unknown as State);
+
+      // send booleans to the engine
+      Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
     };
 
   handleToggleControls = (value?: boolean) => {
@@ -201,7 +205,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     });
   };
 
-  // Prevent Escape from ping-ponging the panel when sliders/panel content have focus
+  changeVisibleTab = (visibleIndex: number) => {
+    this.setState({ visibleTabIndex: visibleIndex });
+  };
+
+  // Override input handling on the panel
+  // This prevents the escape key from getting stuck opening and closing the panel when the sliders / panel content are in focus
   handlePanelInput = (e) => {
     if (!e.button || !e.button.isPressed(true)) return false;
 
@@ -245,21 +254,451 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       bUserOverrideMoonTimeOfDay,
       bUserOverrideMoonColorAndIntensity,
       bUserOverrideDayNightTransition,
+
+      visibleTabIndex,
     } = this.state;
 
-    // Global enable/disable: when using vanilla lighting, all custom controls are disabled
-    const useVanillaLighting = !!bUseVanillaLighting;
+    const useVanillaLighting = bUseVanillaLighting;
     const customLightingEnabled = !useVanillaLighting;
 
-    const sunTimeOverrideOn = !!bUserOverrideSunTimeOfDay;
-    const sunOrientationOverrideOn = !!bUserOverrideSunOrientation;
-    const sunColorOverrideOn = !!bUserOverrideSunColorAndIntensity;
+    const sunTimeOverrideOn = bUserOverrideSunTimeOfDay;
+    const sunOrientationOverrideOn = bUserOverrideSunOrientation;
+    const sunColorOverrideOn = bUserOverrideSunColorAndIntensity;
 
-    const moonOrientationOverrideOn = !!bUserOverrideMoonOrientation;
-    const moonTimeOverrideOn = !!bUserOverrideMoonTimeOfDay;
-    const moonColorOverrideOn = !!bUserOverrideMoonColorAndIntensity;
+    const moonOrientationOverrideOn = bUserOverrideMoonOrientation;
+    const moonTimeOverrideOn = bUserOverrideMoonTimeOfDay;
+    const moonColorOverrideOn = bUserOverrideMoonColorAndIntensity;
 
-    const dayNightOverrideOn = !!bUserOverrideDayNightTransition;
+    const dayNightOverrideOn = bUserOverrideDayNightTransition;
+
+    const tabs = [
+      <Tab
+        key="time"
+        label={Format.stringLiteral("Time / Transition")}
+        outcome="SkyStudio_Tab_Time"
+      />,
+      <Tab
+        key="orientation"
+        label={Format.stringLiteral("Orientation")}
+        outcome="SkyStudio_Tab_Orientation"
+      />,
+      <Tab
+        key="color"
+        label={Format.stringLiteral("Color & Intensity")}
+        outcome="SkyStudio_Tab_Color"
+      />,
+    ];
+
+    const tabViews = [
+      // TAB 0: Time of day + day/night transition
+      <ScrollPane
+        key="time"
+        rootClassName="skystudio_scrollPane"
+        contentClassName="skystudio_scrollPaneContent"
+      >
+        {/* Global enable/disable */}
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Global Lighting Control")} />
+          <ToggleRow
+            label={Format.stringLiteral("Use vanilla lighting")}
+            toggled={useVanillaLighting}
+            onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
+            inputName={InputName.Select}
+            disabled={false}
+          />
+        </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Time of day")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override time of day")}
+            toggled={sunTimeOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideSunTimeOfDay")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Time of day")}
+            min={-90}
+            max={270}
+            step={0.01}
+            value={nUserSunTimeOfDay}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserSunTimeOfDay",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunTimeOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Day / night transition")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override day / night transition")}
+            toggled={dayNightOverrideOn}
+            onToggle={this.onToggleValueChanged(
+              "bUserOverrideDayNightTransition"
+            )}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Day / night fade")}
+            min={37}
+            max={100}
+            step={0.01}
+            value={nUserDayNightTransition}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserDayNightTransition",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun fade")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserSunFade}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunFade", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon fade")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserMoonFade}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserMoonFade", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+      </ScrollPane>,
+
+      // TAB 1: Sun & Moon orientation
+      <ScrollPane
+        key="orientation"
+        rootClassName="skystudio_scrollPane"
+        contentClassName="skystudio_scrollPaneContent"
+      >
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Sun orientation")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override sun orientation")}
+            toggled={sunOrientationOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideSunOrientation")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun azimuth")}
+            min={0}
+            max={360}
+            step={1}
+            value={nUserSunAzimuth}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserSunAzimuth",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunOrientationOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun latitude offset")}
+            min={-90}
+            max={90}
+            step={1}
+            value={nUserSunLatitudeOffset}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserSunLatitudeOffset",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunOrientationOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Moon orientation & time")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override moon orientation")}
+            toggled={moonOrientationOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideMoonOrientation")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override moon time of day")}
+            toggled={moonTimeOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideMoonTimeOfDay")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon azimuth")}
+            min={0}
+            max={360}
+            step={1}
+            value={nUserMoonAzimuth}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonAzimuth",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonOrientationOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon latitude offset")}
+            min={-90}
+            max={90}
+            step={1}
+            value={nUserMoonLatitudeOffset}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonLatitudeOffset",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonOrientationOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon time of day")}
+            min={-90}
+            max={270}
+            step={0.01}
+            value={nUserMoonTimeOfDay}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonTimeOfDay",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonTimeOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+      </ScrollPane>,
+
+      // TAB 2: Sun & Moon color + intensity
+      <ScrollPane
+        key="color"
+        rootClassName="skystudio_scrollPane"
+        contentClassName="skystudio_scrollPaneContent"
+      >
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Sun color & intensity")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override sun color & intensity")}
+            toggled={sunColorOverrideOn}
+            onToggle={this.onToggleValueChanged(
+              "bUserOverrideSunColorAndIntensity"
+            )}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <ColorPickerRow
+            label={Format.stringLiteral("Sun color")}
+            r={nUserSunColorR}
+            g={nUserSunColorG}
+            b={nUserSunColorB}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun color R")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserSunColorR}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunColorR", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun color G")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserSunColorG}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunColorG", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun color B")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserSunColorB}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunColorB", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun intensity")}
+            min={0}
+            max={255}
+            step={1}
+            value={nUserSunIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserSunIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <PanelHeader text={Format.stringLiteral("Moon color & intensity")} />
+
+          <ToggleRow
+            label={Format.stringLiteral("Override moon color & intensity")}
+            toggled={moonColorOverrideOn}
+            onToggle={this.onToggleValueChanged(
+              "bUserOverrideMoonColorAndIntensity"
+            )}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <ColorPickerRow
+            label={Format.stringLiteral("Moon color")}
+            r={nUserMoonColorR}
+            g={nUserMoonColorG}
+            b={nUserMoonColorB}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon color R")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserMoonColorR}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonColorR",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon color G")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserMoonColorG}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonColorG",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon color B")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserMoonColorB}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonColorB",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon intensity")}
+            min={0}
+            max={5}
+            step={0.05}
+            value={nUserMoonIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserMoonIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+      </ScrollPane>,
+    ];
 
     return (
       <div className="skystudio_root">
@@ -291,418 +730,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             )}
             title={Format.stringLiteral("Sky Studio")}
             onClose={this.handleToggleControls}
+            tabs={tabs}
+            visibleTabIndex={visibleTabIndex}
+            onTabChange={this.changeVisibleTab}
             handleInput={this.handlePanelInput}
           >
-            {/* GLOBAL ENABLE/DISABLE */}
-            <PanelArea modifiers="skystudio_section">
-              <PanelHeader
-                text={Format.stringLiteral("Global Lighting Control")}
-              />
-              <ToggleRow
-                label={Format.stringLiteral("Use vanilla lighting")}
-                toggled={useVanillaLighting}
-                onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
-                inputName={InputName.Select}
-                disabled={false}
-              />
-            </PanelArea>
-
-            {/* TIME OF DAY */}
-            <PanelArea modifiers="skystudio_section">
-              <PanelHeader text={Format.stringLiteral("Time of day")} />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override time of day")}
-                toggled={sunTimeOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideSunTimeOfDay"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Time of day")}
-                min={-90}
-                max={270}
-                step={0.01}
-                value={nUserSunTimeOfDay}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunTimeOfDay",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunTimeOverrideOn}
-                focusable={true}
-              />
-            </PanelArea>
-
-            {/* SUN */}
-            <PanelArea modifiers="skystudio_section">
-              <PanelHeader text={Format.stringLiteral("Sun")} />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override sun orientation")}
-                toggled={sunOrientationOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideSunOrientation"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override sun color & intensity")}
-                toggled={sunColorOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideSunColorAndIntensity"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun azimuth")}
-                min={0}
-                max={360}
-                step={1}
-                value={nUserSunAzimuth}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunAzimuth",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunOrientationOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun latitude offset")}
-                min={-90}
-                max={90}
-                step={1}
-                value={nUserSunLatitudeOffset}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunLatitudeOffset",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunOrientationOverrideOn}
-                focusable={true}
-              />
-
-              <ColorPickerRow
-                label={Format.stringLiteral("Sun color")}
-                r={nUserSunColorR}
-                g={nUserSunColorG}
-                b={nUserSunColorB}
-                disabled={!customLightingEnabled || !sunColorOverrideOn}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun color R")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserSunColorR}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunColorR",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun color G")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserSunColorG}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunColorG",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun color B")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserSunColorB}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunColorB",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun intensity")}
-                min={0}
-                max={255}
-                step={1}
-                value={nUserSunIntensity}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunIntensity",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !sunColorOverrideOn}
-                focusable={true}
-              />
-            </PanelArea>
-
-            {/* MOON */}
-            <PanelArea modifiers="skystudio_section">
-              <PanelHeader text={Format.stringLiteral("Moon")} />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override moon orientation")}
-                toggled={moonOrientationOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideMoonOrientation"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override moon time of day")}
-                toggled={moonTimeOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideMoonTimeOfDay"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override moon color & intensity")}
-                toggled={moonColorOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideMoonColorAndIntensity"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon azimuth")}
-                min={0}
-                max={360}
-                step={1}
-                value={nUserMoonAzimuth}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonAzimuth",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonOrientationOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon latitude offset")}
-                min={-90}
-                max={90}
-                step={1}
-                value={nUserMoonLatitudeOffset}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonLatitudeOffset",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonOrientationOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon time of day")}
-                min={-90}
-                max={270}
-                step={0.01}
-                value={nUserMoonTimeOfDay}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonTimeOfDay",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonTimeOverrideOn}
-                focusable={true}
-              />
-
-              <ColorPickerRow
-                label={Format.stringLiteral("Moon color")}
-                r={nUserMoonColorR}
-                g={nUserMoonColorG}
-                b={nUserMoonColorB}
-                disabled={!customLightingEnabled || !moonColorOverrideOn}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon color R")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserMoonColorR}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonColorR",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon color G")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserMoonColorG}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonColorG",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon color B")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserMoonColorB}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonColorB",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonColorOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon intensity")}
-                min={0}
-                max={5}
-                step={0.05}
-                value={nUserMoonIntensity}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonIntensity",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !moonColorOverrideOn}
-                focusable={true}
-              />
-            </PanelArea>
-
-            {/* DAY / NIGHT TRANSITION */}
-            <PanelArea modifiers="skystudio_section">
-              <PanelHeader
-                text={Format.stringLiteral("Day / night transition")}
-              />
-
-              <ToggleRow
-                label={Format.stringLiteral("Override day / night transition")}
-                toggled={dayNightOverrideOn}
-                onToggle={this.onToggleValueChanged(
-                  "bUserOverrideDayNightTransition"
-                )}
-                inputName={InputName.Select}
-                disabled={!customLightingEnabled}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Day / night fade")}
-                min={37}
-                max={100}
-                step={0.01}
-                value={nUserDayNightTransition}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserDayNightTransition",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !dayNightOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Sun fade")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserSunFade}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserSunFade",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !dayNightOverrideOn}
-                focusable={true}
-              />
-
-              <SliderRow
-                label={Format.stringLiteral("Moon fade")}
-                min={0}
-                max={1}
-                step={0.01}
-                value={nUserMoonFade}
-                onChange={(newValue: number) =>
-                  this.onNumericalValueChanged(
-                    "nUserMoonFade",
-                    newValue as number
-                  )
-                }
-                editable={true}
-                disabled={!customLightingEnabled || !dayNightOverrideOn}
-                focusable={true}
-              />
-            </PanelArea>
+            {tabViews}
           </Panel>
         </div>
       </div>
@@ -710,7 +743,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   }
 }
 
-// Root focusable: one “stack” containing button + panel + rows.
 export const SkyStudioUI = Focusable.decorateEx(_SkyStudioUI, {
   focusable: false,
 });
