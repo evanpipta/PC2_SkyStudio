@@ -269,6 +269,8 @@ function Patched.Init(self, useParkTimeOfDay, sunH, sunZ, moonH, moonZ, sTimeOfD
   local tWorldAPIs = api.world.GetWorldAPIs()
   self.ParkAPI = tWorldAPIs.park
 
+  -- trace('parkAPI' .. self.ParkAPI)
+
   -- Use baked defaults if nil
   self.nSunHorizonRotation = sunH or DEFAULT_SUN_HORIZON_ROT
   self.nSunZenithRotation  = sunZ or DEFAULT_SUN_ZENITH_ROT
@@ -440,7 +442,7 @@ end
 
 -- Set custom lighting from user parameters
 function Patched.UpdateLightingFromUserParams(self)
-  local nSunTimeOfDayDegrees = SkyStudioDataStore.nUserSunTimeOfDay
+  local nSunTimeOfDayDegrees = HoursToDegrees(SkyStudioDataStore.nUserSunTimeOfDay)
 
   if not SkyStudioDataStore.bUserOverrideSunTimeOfDay then
     nSunTimeOfDayDegrees = HoursToDegrees(self.ParkAPI:GetTimeOfDayLighting())

@@ -319,8 +319,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
           <SliderRow
             label={Format.stringLiteral("Time of Day")}
-            min={-90}
-            max={270}
+            min={0}
+            max={24}
             step={0.01}
             value={nUserSunTimeOfDay}
             onChange={(newValue: number) =>
@@ -636,7 +636,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
           <SliderRow
             label={Format.stringLiteral("RenderParameters Fade")}
-            min={37}
+            min={0}
             max={100}
             step={0.01}
             value={nUserDayNightTransition}

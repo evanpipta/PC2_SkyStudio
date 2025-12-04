@@ -45,7 +45,7 @@ SkyStudioDataStore.nUserSunLatitudeOffset = 0            -- Sun "tilt" in degree
 
 -- Sun time of day
 SkyStudioDataStore.bUserOverrideSunTimeOfDay = false     -- Override time of day, effectively the same as "fixed time of day" in vanilla
-SkyStudioDataStore.nUserSunTimeOfDay = 17                -- Time of day arc progress in degrees (not hours or minutes)
+SkyStudioDataStore.nUserSunTimeOfDay = 9                 -- Time of day in hours (24 hour clock)
 
 -- Sun color and intensity:
 SkyStudioDataStore.bUserOverrideSunColorAndIntensity = false
