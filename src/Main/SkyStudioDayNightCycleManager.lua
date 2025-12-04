@@ -453,12 +453,14 @@ function Patched.UpdateLightingFromUserParams(self)
     nMoonPhaseDegrees = SkyStudioDataStore.nUserMoonPhase
   end
 
-  -- TODO - Maybe add moon phasing over time ?
+  -- Moonrise/Moonset "time of day" in degrees
   -- 
-  -- A full 360 rotation of the moon relative to a fixed point on earth is about 50 minutes longer than the sun
-  -- Or about 1.035 * the sun's day length
+  -- A full 360 rotation of the moon around a viewer on earth is about 50 minutes longer than the sun
+  -- So the sun's day is about 0.966 as long as a moon "day" (24 / 24.833)
+  -- In reality, this is what causes the moon to phase
   -- 
-  -- For now we will just make the moon take longer to cross the sky with the phase constant (configurable)
+  -- We don't have dynamic moon phasing for now, so just make the moon day slightly longer than the sun's day and apply static phase
+  -- 
   local nMoonTimeOfDayDegrees = (nSunTimeOfDayDegrees * 0.966 + nMoonPhaseDegrees) % 360
 
   -- trace('UpdateLightingFromUserParams -- nSunTimeOfDayDegrees' .. tostring(nSunTimeOfDayDegrees) .. ' nMoonPhaseDegrees ' .. tostring(nMoonPhaseDegrees))
@@ -468,8 +470,9 @@ function Patched.UpdateLightingFromUserParams(self)
   -- Only use this for the light's direction, not for the rest of the values
   local nRemappedTwilightSunDegrees = RemapTwilightAngle(nSunTimeOfDayDegrees)
 
-  local nSunTimeOfDayRadiansToUse = DegreesToRadians(nRemappedTwilightSunDegrees)
-  local nMoonTimeRadiansToUse = DegreesToRadians(nMoonTimeOfDayDegrees) -- nMoonPhaseDegrees
+  -- Convert to radians for vector math
+  local nSunTimeOfDayRadians = DegreesToRadians(nRemappedTwilightSunDegrees)
+  local nMoonTimeOfDayRadians = DegreesToRadians(nMoonTimeOfDayDegrees)
 
   -- Sun orientation switching: override vs from park / vanilla
   local vSunDir = nil
@@ -478,11 +481,11 @@ function Patched.UpdateLightingFromUserParams(self)
     vSunDir = CalculateUserSunDirection(
       DegreesToRadians(SkyStudioDataStore.nUserSunAzimuth),
       DegreesToRadians(SkyStudioDataStore.nUserSunLatitudeOffset),
-      nSunTimeOfDayRadiansToUse
+      nSunTimeOfDayRadians
     ) 
   else 
     -- Vanilla sun orientation
-    vSunDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nSunTimeOfDayRadiansToUse):Normalised()
+    vSunDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nSunTimeOfDayRadians):Normalised()
   end
 
   local vMoonDir = nil
@@ -490,12 +493,12 @@ function Patched.UpdateLightingFromUserParams(self)
     vMoonDir = CalculateUserSunDirection(
       DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
       DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
-      nMoonTimeRadiansToUse
+      nMoonTimeOfDayRadians
     )
   else
-    -- Because we have moonrise and moonset, we can just copy the sun's rotational axis and phase the moon along it
-    -- In reality we might want some more offset here but this works for now
-    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeRadiansToUse):Normalised()
+    -- Because we have moonrise and moonset, we can just copy the sun's path and phase the moon along the same path
+    -- We might want to add a slight offset here eventually but this works for now
+    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeOfDayRadians):Normalised()
   end
 
   local vSunColor       = Vector3:new(
@@ -556,10 +559,10 @@ function Patched.UpdateLightingFromUserParams(self)
   if not SkyStudioDataStore.bUserOverrideMoonFade then
     moonFade = LerpDayNightFadeByAngle(
       0.5,
-      0,
-      0.5,
       1,
-      nSunTimeOfDayDegrees,
+      0.5,
+      0,
+      nMoonTimeOfDayDegrees,
       1,
       SkyStudioDataStore.nParkTodCycleMoonDawnFadeEnd,
       SkyStudioDataStore.nParkTodCycleMoonDuskFadeStart,
