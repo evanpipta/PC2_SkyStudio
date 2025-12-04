@@ -70,6 +70,8 @@ SkyStudioDataStore.nUserMoonColorG = 0.588       -- vanilla default: 0.588
 SkyStudioDataStore.nUserMoonColorB = 1           -- vanilla defualt: 1
 SkyStudioDataStore.nUserMoonIntensity = 0.65     -- vanilla default: 0.65
 
+SkyStudioDataStore.bUserOverrideSunFade = false
+SkyStudioDataStore.bUserOverrideMoonFade = false
 
 SkyStudioDataStore.bUserOverrideDayNightTransition = false
 

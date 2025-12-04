@@ -161,7 +161,17 @@ function SkyStudioUIManager:Init()
       trace("SkyStudioChangedValue_bUserOverrideDayNightTransition: " .. tostring(value))
       SkyStudioDataStore.bUserOverrideDayNightTransition = value
     end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideSunFade(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideSunFade: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideSunFade = value
+    end, self)
     
+    self.ui:SkyStudioChangedValue_bUserOverrideMoonFade(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideMoonFade: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideMoonFade = value
+    end, self)
+
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
       bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,

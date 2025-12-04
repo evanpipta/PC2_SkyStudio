@@ -459,7 +459,7 @@ function Patched.UpdateLightingFromUserParams(self)
   -- Or about 1.035 * the sun's day length
   -- 
   -- For now we will just make the moon take longer to cross the sky with the phase constant (configurable)
-  nMoonPhaseDegrees = (nSunTimeOfDayDegrees * 0.966 + nMoonPhaseDegrees) % 360
+  local nMoonTimeOfDayDegrees = (nSunTimeOfDayDegrees * 0.966 + nMoonPhaseDegrees) % 360
 
   -- trace('UpdateLightingFromUserParams -- nSunTimeOfDayDegrees' .. tostring(nSunTimeOfDayDegrees) .. ' nMoonPhaseDegrees ' .. tostring(nMoonPhaseDegrees))
 
@@ -469,7 +469,7 @@ function Patched.UpdateLightingFromUserParams(self)
   local nRemappedTwilightSunDegrees = RemapTwilightAngle(nSunTimeOfDayDegrees)
 
   local nSunTimeOfDayRadiansToUse = DegreesToRadians(nRemappedTwilightSunDegrees)
-  local nMoonPhaseRadiansToUse = DegreesToRadians(nMoonPhaseDegrees) -- nMoonPhaseDegrees
+  local nMoonTimeRadiansToUse = DegreesToRadians(nMoonTimeOfDayDegrees) -- nMoonPhaseDegrees
 
   -- Sun orientation switching: override vs from park / vanilla
   local vSunDir = nil
@@ -490,12 +490,12 @@ function Patched.UpdateLightingFromUserParams(self)
     vMoonDir = CalculateUserSunDirection(
       DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
       DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
-      nMoonPhaseRadiansToUse
+      nMoonTimeRadiansToUse
     )
   else
     -- Because we have moonrise and moonset, we can just copy the sun's rotational axis and phase the moon along it
     -- In reality we might want some more offset here but this works for now
-    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonPhaseRadiansToUse):Normalised()
+    vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeRadiansToUse):Normalised()
   end
 
   local vSunColor       = Vector3:new(
@@ -536,7 +536,9 @@ function Patched.UpdateLightingFromUserParams(self)
     )
 
     renderParameterFade = RemapDayNightFadeValue(lerpedDayNightTransition / 100.0)
+  end
 
+  if not SkyStudioDataStore.bUserOverrideSunFade then
     sunFade = LerpDayNightFadeByAngle(
       0.5,
       1,
@@ -549,7 +551,9 @@ function Patched.UpdateLightingFromUserParams(self)
       SkyStudioDataStore.nParkTodCycleSunDuskFadeEnd,
       SkyStudioDataStore.nParkTodCycleSunDawnFadeStart
     )
+  end
     
+  if not SkyStudioDataStore.bUserOverrideMoonFade then
     moonFade = LerpDayNightFadeByAngle(
       0.5,
       0,
@@ -570,8 +574,7 @@ function Patched.UpdateLightingFromUserParams(self)
   -- This is now done by the sun's angle in degrees to improve flexibility of other parameters
   local nPrimaryLightSwitchDawnDegrees = -0.5
   local nPrimaryLightSwitchDuskdegrees = 180.5
-
-  local bIsDaytime = nSunTimeOfDayDegrees > nPrimaryLightSwitchDawnDegrees and nSunTimeOfDayDegrees < nPrimaryLightSwitchDuskdegrees
+  local bIsDaytime = nSunTimeOfDayDegrees % 360 < nPrimaryLightSwitchDuskdegrees or nSunTimeOfDayDegrees % 360 > 360 + nPrimaryLightSwitchDawnDegrees
 
   -- Swap primary lightsource based on the sun angle
   if bIsDaytime and not self.primaryLightIsSun then

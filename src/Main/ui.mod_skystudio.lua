@@ -205,3 +205,14 @@ SkyStudioUI.SkyStudioChangedValue_bUserOverrideDayNightTransition = function(sel
   trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideDayNightTransition")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideDayNightTransition", 1, _callback, _self)
 end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunFade = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunFade")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunFade", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonFade = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonFade")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonFade", 1, _callback, _self)
+end
+
