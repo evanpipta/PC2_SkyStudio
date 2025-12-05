@@ -501,21 +501,39 @@ function Patched.UpdateLightingFromUserParams(self)
     vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeOfDayRadians):Normalised()
   end
 
+  -- Sun color and intensity
   local vSunColor       = Vector3:new(
                             SkyStudioDataStore.nUserSunColorR,
                             SkyStudioDataStore.nUserSunColorG,
                             SkyStudioDataStore.nUserSunColorB
                         )
   local nSunIntensity   = SkyStudioDataStore.nUserSunIntensity
-  local bSunIsLinear    = SkyStudioDataStore.bUserSunUseLinearColors
+  local bSunIsLinear    = USE_LINEAR_COLOURS
+  if not SkyStudioDataStore.bUserOverrideSunColorAndIntensity then
+    vSunColor = Vector3:new(
+      SkyStudioDataStore.nParkTodCycleSunColorR,
+      SkyStudioDataStore.nParkTodCycleSunColorG,
+      SkyStudioDataStore.nParkTodCycleSunColorB
+    )
+    nSunIntensity = SkyStudioDataStore.nParkTodCycleSunIntensity
+  end
 
+  -- Moon color and intensity
   local vMoonColor      = Vector3:new(
                             SkyStudioDataStore.nUserMoonColorR,
                             SkyStudioDataStore.nUserMoonColorG,
                             SkyStudioDataStore.nUserMoonColorB
                         )
   local nMoonIntensity  = SkyStudioDataStore.nUserMoonIntensity
-  local bMoonIsLinear   = SkyStudioDataStore.bUserMoonUseLinearColors
+  local bMoonIsLinear   = USE_LINEAR_COLOURS
+  if not SkyStudioDataStore.bUserOverrideMoonColorAndIntensity then
+    vMoonColor = Vector3:new(
+      SkyStudioDataStore.nParkTodCycleMoonColorR,
+      SkyStudioDataStore.nParkTodCycleMoonColorG,
+      SkyStudioDataStore.nParkTodCycleMoonColorB
+    )
+    nMoonIntensity = SkyStudioDataStore.nParkTodCycleMoonIntensity
+  end
 
   -- Render Parameter day/night transition
   -- Divide by 100 here to make the UI slider more granular
