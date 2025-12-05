@@ -7,11 +7,13 @@ SkyStudioDataStore.nParkTodCycleMoonColorR = 0.50                 -- vanilla def
 SkyStudioDataStore.nParkTodCycleMoonColorG = 0.69                 -- vanilla default: 0.588
 SkyStudioDataStore.nParkTodCycleMoonColorB = 1                     -- vanilla default: 1
 SkyStudioDataStore.nParkTodCycleMoonIntensity = 0.65               -- vanilla default: 0.65
+SkyStudioDataStore.nParkTodCycleMoonGroundMultiplier = 1
 
 SkyStudioDataStore.nParkTodCycleSunColorR = 1                      -- vanilla default: 1
 SkyStudioDataStore.nParkTodCycleSunColorG = 1                      -- vanilla default: 1
 SkyStudioDataStore.nParkTodCycleSunColorB = 1                      -- vanilla default: 1
 SkyStudioDataStore.nParkTodCycleSunIntensity = 128                 -- vanilla default: 128
+SkyStudioDataStore.nParkTodCycleSunGroundMultiplier = 2            -- vanilla default: 1
 
 SkyStudioDataStore.nParkTodCycleDayNightTransitionMidnight = 40   -- midnight value
 SkyStudioDataStore.nParkTodCycleDayNightTransitionDawn = 45       -- dawn value
@@ -56,6 +58,7 @@ SkyStudioDataStore.nUserSunColorR = 1                    -- vanilla defualt: 1
 SkyStudioDataStore.nUserSunColorG = 1                    -- vanilla defualt: 1
 SkyStudioDataStore.nUserSunColorB = 1                    -- vanilla defualt: 1
 SkyStudioDataStore.nUserSunIntensity = 128               -- vanilla default: 128
+SkyStudioDataStore.nUserSunGroundMultiplier = 1
 
 -- Moon orientation in the sky:
 SkyStudioDataStore.bUserOverrideMoonOrientation = false
@@ -72,6 +75,7 @@ SkyStudioDataStore.nUserMoonColorR = 0.341       -- vanilla default: 0.341
 SkyStudioDataStore.nUserMoonColorG = 0.588       -- vanilla default: 0.588
 SkyStudioDataStore.nUserMoonColorB = 1           -- vanilla defualt: 1
 SkyStudioDataStore.nUserMoonIntensity = 0.65     -- vanilla default: 0.65
+SkyStudioDataStore.nUserMoonGroundMultiplier = 2 -- vanilla default: 1
 
 SkyStudioDataStore.bUserOverrideSunFade = false
 SkyStudioDataStore.bUserOverrideMoonFade = false

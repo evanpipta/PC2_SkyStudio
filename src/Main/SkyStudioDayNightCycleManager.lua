@@ -490,13 +490,14 @@ function Patched.UpdateLightingFromUserParams(self)
   local vMoonDir = nil
   if SkyStudioDataStore.bUserOverrideMoonOrientation then
     vMoonDir = CalculateUserSunDirection(
-      DegreesToRadians(SkyStudioDataStore.nUserMoonAzimuth),
+    -- lock moon azimuth to sun azimuth and treat user setting as an offset, it's less frustrating this way
+      DegreesToRadians((SkyStudioDataStore.nUserSunAzimuth + SkyStudioDataStore.nUserMoonAzimuth) % 360),
       DegreesToRadians(SkyStudioDataStore.nUserMoonLatitudeOffset),
       nMoonTimeOfDayRadians
     )
   else
     -- Because we have moonrise and moonset, we can just copy the sun's path and phase the moon along the same path
-    -- We might want to add a slight offset here eventually but this works for now
+    -- Todo: apply a slight offset so they're not perfectly aligned
     vMoonDir = self.vSunDirAtNoon:RotatedAround(self.vSunRotationAxis, nMoonTimeOfDayRadians):Normalised()
   end
 
@@ -516,18 +517,11 @@ function Patched.UpdateLightingFromUserParams(self)
   local nMoonIntensity  = SkyStudioDataStore.nUserMoonIntensity
   local bMoonIsLinear   = SkyStudioDataStore.bUserMoonUseLinearColors
 
-  -- Transition light intensity between sun and moon - you can use this to make the sun less powerful at dusk
-  -- This only affects the brightness of the light cast on the ground and game world objects, it does not affect the sky
-  -- The sky brightness is only affected by light intensity
-  local sunFade               = SkyStudioDataStore.nUserSunFade
-  local moonFade              = SkyStudioDataStore.nUserMoonFade
-
-  -- Static user override of day/night transition
+  -- Render Parameter day/night transition
   -- Divide by 100 here to make the UI slider more granular
   local renderParameterFade   = RemapDayNightFadeValue(SkyStudioDataStore.nUserDayNightTransition / 100.0)
 
   if not SkyStudioDataStore.bUserOverrideDayNightTransition then
-    -- Lerp based on time of day
     local lerpedDayNightTransition = LerpDayNightFadeByAngle(
       SkyStudioDataStore.nParkTodCycleDayNightTransitionDawn,
       SkyStudioDataStore.nParkTodCycleDayNightTransitionNoon,
@@ -543,6 +537,13 @@ function Patched.UpdateLightingFromUserParams(self)
 
     renderParameterFade = RemapDayNightFadeValue(lerpedDayNightTransition / 100.0)
   end
+
+  self.tCommonParameterSetter:ApplyDayNightParameters(1 - renderParameterFade)
+
+  -- Set sun and moon light fade values
+  -- Fades sun and moon intensity in and out at dawn/dusk
+  local sunFade               = SkyStudioDataStore.nUserSunFade
+  local moonFade              = SkyStudioDataStore.nUserMoonFade
 
   if not SkyStudioDataStore.bUserOverrideSunFade then
     sunFade = LerpDayNightFadeByAngle(
@@ -573,13 +574,23 @@ function Patched.UpdateLightingFromUserParams(self)
       SkyStudioDataStore.nParkTodCycleMoonDawnFadeStart
     )
   end
-
-  -- Todo: try adding a skylight in here! To make the ground brighter at dusk and dawn
-
-  self.tCommonParameterSetter:ApplyDayNightParameters(1 - renderParameterFade)
+  
+  -- We can apply a ground multiplier here because these fade values only affect light cast on the ground
+  -- The sky is always lit using the base sun/moon intensity
+  if SkyStudioDataStore.bUserOverrideSunColorAndIntensity then
+    sunFade = sunFade * SkyStudioDataStore.nUserSunGroundMultiplier
+  else
+    sunFade = sunFade * SkyStudioDataStore.nParkTodCycleSunGroundMultiplier
+  end
+  if SkyStudioDataStore.bUserOverrideMoonColorAndIntensity then
+    moonFade = moonFade * SkyStudioDataStore.nUserMoonGroundMultiplier
+  else
+    moonFade = moonFade * SkyStudioDataStore.nParkTodCycleMoonGroundMultiplier
+  end
   
   -- Cutoff times in time of day cycle where shadow casting and main GI light switches between sun and moon
   -- This is now done by the sun's angle in degrees to improve flexibility of other parameters
+  -- This could be put into the config but it's probably not necessary or useful
   local nPrimaryLightSwitchDawnDegrees = -0.5
   local nPrimaryLightSwitchDuskdegrees = 180.5
   local bIsDaytime = nSunTimeOfDayDegrees % 360 < nPrimaryLightSwitchDuskdegrees or nSunTimeOfDayDegrees % 360 > 360 + nPrimaryLightSwitchDawnDegrees

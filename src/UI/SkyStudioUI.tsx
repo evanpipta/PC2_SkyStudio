@@ -32,6 +32,7 @@ type State = {
   nUserSunColorG: number;
   nUserSunColorB: number;
   nUserSunIntensity: number;
+  nUserSunGroundMultiplier: number;
   bUserSunUseLinearColors: number; // still numeric for now, not hooked to a ToggleRow
 
   nUserMoonAzimuth: number;
@@ -41,6 +42,7 @@ type State = {
   nUserMoonColorG: number;
   nUserMoonColorB: number;
   nUserMoonIntensity: number;
+  nUserMoonGroundMultiplier: number;
   bUserMoonUseLinearColors: number; // same as above
 
   nUserDayNightTransition: number;
@@ -127,6 +129,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     nUserSunColorG: 0,
     nUserSunColorB: 0,
     nUserSunIntensity: 0,
+    nUserSunGroundMultiplier: 0,
     bUserSunUseLinearColors: 0,
 
     nUserMoonAzimuth: 0,
@@ -136,6 +139,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     nUserMoonColorG: 0,
     nUserMoonColorB: 0,
     nUserMoonIntensity: 0,
+    nUserMoonGroundMultiplier: 0,
     bUserMoonUseLinearColors: 0,
 
     nUserDayNightTransition: 0,
@@ -242,6 +246,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserSunColorG,
       nUserSunColorB,
       nUserSunIntensity,
+      nUserSunGroundMultiplier,
 
       nUserMoonAzimuth,
       nUserMoonLatitudeOffset,
@@ -250,6 +255,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserMoonColorG,
       nUserMoonColorB,
       nUserMoonIntensity,
+      nUserMoonGroundMultiplier,
 
       nUserDayNightTransition,
       nUserSunFade,
@@ -424,9 +430,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("Moon Azimuth")}
-            min={0}
-            max={360}
+            label={Format.stringLiteral("Moon Azimuth Offset")}
+            min={-30}
+            max={30}
             step={1}
             value={nUserMoonAzimuth}
             onChange={(newValue: number) =>
@@ -537,6 +543,20 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                 "nUserSunIntensity",
                 newValue as number
               )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun Ground Multiplier")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserSunGroundMultiplier}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunGroundMultiplier", newValue as number)
             }
             editable={true}
             disabled={!customLightingEnabled || !sunColorOverrideOn}
@@ -658,7 +678,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !moonColorOverrideOn}
             focusable={true}
           />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon Ground Multiplier")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserMoonGroundMultiplier}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserMoonGroundMultiplier", newValue as number)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            focusable={true}
+          />
         </PanelArea>
+
         <PanelArea>
           <ToggleRow
             label={Format.stringLiteral("Override Day/Night Transition")}

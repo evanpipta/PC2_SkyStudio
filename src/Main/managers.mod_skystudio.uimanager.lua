@@ -65,6 +65,11 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.nUserSunIntensity = value
     end, self)
 
+    self.ui:SkyStudioChangedValue_nUserSunGroundMultiplier(function(_, value)
+      trace("SkyStudioChangedValue_nUserSunGroundMultiplier: " .. tostring(value))
+      SkyStudioDataStore.nUserSunGroundMultiplier = value
+    end, self)
+
     self.ui:SkyStudioChangedValue_bUserSunUseLinearColors(function(_, value)
       trace("SkyStudioChangedValue_bUserSunUseLinearColors: " .. tostring(value))
       SkyStudioDataStore.bUserSunUseLinearColors = value
@@ -103,6 +108,11 @@ function SkyStudioUIManager:Init()
     self.ui:SkyStudioChangedValue_nUserMoonIntensity(function(_, value)
       trace("SkyStudioChangedValue_nUserMoonIntensity: " .. tostring(value))
       SkyStudioDataStore.nUserMoonIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserMoonGroundMultiplier(function(_, value)
+      trace("SkyStudioChangedValue_nUserMoonGroundMultiplier: " .. tostring(value))
+      SkyStudioDataStore.nUserMoonGroundMultiplier = value
     end, self)
 
     self.ui:SkyStudioChangedValue_bUserMoonUseLinearColors(function(_, value)

@@ -216,3 +216,13 @@ SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonFade = function(self, _callba
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonFade", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudioChangedValue_nUserSunGroundMultiplier = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserSunGroundMultiplier")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSunGroundMultiplier", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserMoonGroundMultiplier = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserMoonGroundMultiplier")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserMoonGroundMultiplier", 1, _callback, _self)
+end
+
