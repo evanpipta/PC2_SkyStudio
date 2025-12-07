@@ -5,8 +5,14 @@ import * as Input from "/js/common/core/Input.js";
 import * as Localisation from "/js/common/core/Localisation.js";
 import * as Player from "/js/common/core/Player.js";
 import * as System from "/js/common/core/System.js";
+import * as FontConfig from "/js/config/FontConfig.js";
+import * as AccentColorUtil from "/js/project/utils/AccentColorUtil.js";
+import * as UIScaleUtil from "/js/project/utils/UIScaleUtil.js";
 import { loadDebugDefaultTools } from "/js/common/debug/DebugToolImports.js";
 import { SkyStudioUI } from "/SkyStudioUI.js";
+FontConfig;
+AccentColorUtil;
+UIScaleUtil;
 Engine.initialiseSystems([
     {
         system: Engine.Systems.System,

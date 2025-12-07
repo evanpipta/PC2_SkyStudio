@@ -9,10 +9,9 @@
 
 .skystudio_toggle_menu {
   position: absolute;
-  bottom: 3rem;
+  bottom: 4.5rem;
   right: 2rem;
   pointer-events: auto;
-  /* transform: scale(0.7); */
 }
 
 .skystudio_toggle_menu .ManagementMenuButton_root {
@@ -44,10 +43,9 @@
 
 .skystudio_controls_panel_wrapper {
   position: absolute;
-  bottom: 8rem;
-  right: 4rem;
+  bottom: 9rem;
+  right: 2rem;
   pointer-events: auto;
-  transform: scale(0.7) translateX(30%) translateY(30%);
 }
 
 .skystudio_focus_debug {
