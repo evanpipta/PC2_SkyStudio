@@ -84,3 +84,12 @@
   /* style is mostly applied inline, but you can bump contrast here if needed */
 }
 
+.skystudio_reset_buttons {
+  display: flex;
+  flex-direction: row;
+}
+
+.skystudio_reset_buttons > * {
+  margin-left: 0.5rem;
+}
+

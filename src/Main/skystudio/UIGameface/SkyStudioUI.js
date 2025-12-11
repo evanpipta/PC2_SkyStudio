@@ -16,6 +16,39 @@ import { SkyStudioButton } from "/SkyStudioButton.js";
 const DEBUG_MODE = false;
 loadCSS("project/Shared");
 loadCSS("project/components/Slider");
+const baseConfig = {
+    bUseVanillaLighting: false,
+    nUserSunAzimuth: 0,
+    nUserSunLatitudeOffset: 0,
+    nUserSunTimeOfDay: 0,
+    nUserSunColorR: 0,
+    nUserSunColorG: 0,
+    nUserSunColorB: 0,
+    nUserSunIntensity: 0,
+    nUserSunGroundMultiplier: 0,
+    bUserSunUseLinearColors: 0,
+    nUserMoonAzimuth: 0,
+    nUserMoonLatitudeOffset: 0,
+    nUserMoonPhase: 0,
+    nUserMoonColorR: 0,
+    nUserMoonColorG: 0,
+    nUserMoonColorB: 0,
+    nUserMoonIntensity: 0,
+    nUserMoonGroundMultiplier: 0,
+    bUserMoonUseLinearColors: 0,
+    nUserDayNightTransition: 0,
+    nUserSunFade: 0,
+    nUserMoonFade: 0,
+    bUserOverrideSunTimeOfDay: false,
+    bUserOverrideSunOrientation: false,
+    bUserOverrideSunColorAndIntensity: false,
+    bUserOverrideMoonOrientation: false,
+    bUserOverrideMoonPhase: false,
+    bUserOverrideMoonColorAndIntensity: false,
+    bUserOverrideSunFade: false,
+    bUserOverrideMoonFade: false,
+    bUserOverrideDayNightTransition: false,
+};
 let focusDebuginterval;
 // Full-width, 32px tall color swatch; editing is via RGB sliders below
 const ColorPickerRow = ({ label, r, g, b, disabled, }) => {
@@ -42,39 +75,20 @@ class _SkyStudioUI extends preact.Component {
         this.state = {
             visible: false,
             controlsVisible: false,
-            bUseVanillaLighting: false,
-            nUserSunAzimuth: 0,
-            nUserSunLatitudeOffset: 0,
-            nUserSunTimeOfDay: 0,
-            nUserSunColorR: 0,
-            nUserSunColorG: 0,
-            nUserSunColorB: 0,
-            nUserSunIntensity: 0,
-            nUserSunGroundMultiplier: 0,
-            bUserSunUseLinearColors: 0,
-            nUserMoonAzimuth: 0,
-            nUserMoonLatitudeOffset: 0,
-            nUserMoonPhase: 0,
-            nUserMoonColorR: 0,
-            nUserMoonColorG: 0,
-            nUserMoonColorB: 0,
-            nUserMoonIntensity: 0,
-            nUserMoonGroundMultiplier: 0,
-            bUserMoonUseLinearColors: 0,
-            nUserDayNightTransition: 0,
-            nUserSunFade: 0,
-            nUserMoonFade: 0,
-            bUserOverrideSunTimeOfDay: false,
-            bUserOverrideSunOrientation: false,
-            bUserOverrideSunColorAndIntensity: false,
-            bUserOverrideMoonOrientation: false,
-            bUserOverrideMoonPhase: false,
-            bUserOverrideMoonColorAndIntensity: false,
-            bUserOverrideSunFade: false,
-            bUserOverrideMoonFade: false,
-            bUserOverrideDayNightTransition: false,
             visibleTabIndex: 0,
             focusDebugKey: "",
+            // Everything in config are values that can be passed back to the lua manager
+            config: {
+                ...baseConfig
+            },
+            // This will be populated from the engine, but won't change when the user makes changes
+            // Used for "reset" buttons
+            defaultConfig: {
+                ...baseConfig
+            },
+            confirmResetSun: false,
+            confirmResetMoon: false,
+            confirmResetAll: false,
         };
         this.updateFocusDebug = () => {
             this.setState({
@@ -87,18 +101,27 @@ class _SkyStudioUI extends preact.Component {
                 ...this.state,
                 visible: true,
                 controlsVisible: false,
-                ...data,
+                config: {
+                    ...data
+                },
+                defaultConfig: {
+                    ...data
+                }
             });
         };
         this.onHide = () => this.setState({ visible: false });
         this.onNumericalValueChanged = (key, newValue) => {
-            this.setState({ [key]: newValue });
+            this.setState({ config: {
+                    ...this.state.config,
+                    [key]: newValue
+                } });
             Engine.sendEvent(`SkyStudioChangedValue_${key}`, newValue);
         };
         this.onToggleValueChanged = (key) => (toggled) => {
-            // store booleans in state
-            this.setState({ [key]: toggled });
-            // send booleans to the engine
+            this.setState({ config: {
+                    ...this.state.config,
+                    [key]: toggled
+                } });
             Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
         };
         this.handleToggleControls = (value) => {
@@ -121,6 +144,88 @@ class _SkyStudioUI extends preact.Component {
             }
             return false;
         };
+        // Begin / cancel confirmation flows
+        this.beginResetSun = () => {
+            this.setState({ confirmResetSun: true });
+        };
+        this.cancelResetSun = () => {
+            this.setState({ confirmResetSun: false });
+        };
+        this.beginResetMoon = () => {
+            this.setState({ confirmResetMoon: true });
+        };
+        this.cancelResetMoon = () => {
+            this.setState({ confirmResetMoon: false });
+        };
+        this.beginResetAll = () => {
+            this.setState({ confirmResetAll: true });
+        };
+        this.cancelResetAll = () => {
+            this.setState({ confirmResetAll: false });
+        };
+        // Core reset logic helpers
+        this.resetSunToDefault = () => {
+            const defaultConfig = this.state.defaultConfig;
+            // All sun-related values in the "Sun Color" tab, including its fade override
+            const sunKeys = [
+                "bUserOverrideSunColorAndIntensity",
+                "nUserSunColorR",
+                "nUserSunColorG",
+                "nUserSunColorB",
+                "nUserSunIntensity",
+                "nUserSunGroundMultiplier",
+                "bUserOverrideSunFade",
+                "nUserSunFade",
+            ];
+            const newConfig = { ...this.state.config };
+            sunKeys.forEach((key) => {
+                // @ts-ignore
+                newConfig[key] = defaultConfig[key];
+                Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
+            });
+            this.setState({
+                config: newConfig,
+                confirmResetSun: false,
+            });
+        };
+        this.resetMoonToDefault = () => {
+            const defaultConfig = this.state.defaultConfig;
+            // All moon-related values in the "Moon Color" tab, including its fade override
+            const moonKeys = [
+                "bUserOverrideMoonColorAndIntensity",
+                "nUserMoonColorR",
+                "nUserMoonColorG",
+                "nUserMoonColorB",
+                "nUserMoonIntensity",
+                "nUserMoonGroundMultiplier",
+                "bUserOverrideMoonFade",
+                "nUserMoonFade",
+            ];
+            const newConfig = { ...this.state.config };
+            moonKeys.forEach((key) => {
+                // @ts-ignore
+                newConfig[key] = defaultConfig[key];
+                Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
+            });
+            this.setState({
+                config: newConfig,
+                confirmResetMoon: false,
+            });
+        };
+        this.resetAllToDefault = () => {
+            const defaultConfig = this.state.defaultConfig;
+            const newConfig = { ...defaultConfig };
+            // Send an engine event for every config key
+            Object.keys(defaultConfig).forEach((key) => {
+                Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
+            });
+            this.setState({
+                config: newConfig,
+                confirmResetSun: false,
+                confirmResetMoon: false,
+                confirmResetAll: false,
+            });
+        };
     }
     componentWillMount() {
         Engine.addListener("Show", this.onShow);
@@ -133,7 +238,8 @@ class _SkyStudioUI extends preact.Component {
         clearInterval(focusDebuginterval);
     }
     render() {
-        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, visibleTabIndex, } = this.state;
+        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, } = this.state.config;
+        const visibleTabIndex = this.state.visibleTabIndex;
         const useVanillaLighting = bUseVanillaLighting;
         const customLightingEnabled = !useVanillaLighting;
         const sunTimeOverrideOn = bUserOverrideSunTimeOfDay;
@@ -147,13 +253,6 @@ class _SkyStudioUI extends preact.Component {
         const moonFadeOverrideOn = bUserOverrideMoonFade;
         const tabs = [
             preact.h(Tab, { key: "time", icon: "img/icons/clock.svg", label: Format.stringLiteral("Time of Day"), outcome: "SkyStudio_Tab_Time" }),
-            // Hide orientation for now, I think it will get enough use to warrant putting in the first tab
-            // <Tab
-            //   key="orientation"
-            //   icon={"img/icons/worldAxis.svg"}
-            //   label={Format.stringLiteral("Sky Orientation")}
-            //   outcome="SkyStudio_Tab_Orientation"
-            // />,
             preact.h(Tab, { key: "suncolor", icon: "img/icons/sun.svg", label: Format.stringLiteral("Sun Color"), outcome: "SkyStudio_Tab_Sun_Color" }),
             preact.h(Tab, { key: "mooncolor", icon: "img/icons/moon.svg", label: Format.stringLiteral("Moon Color"), outcome: "SkyStudio_Tab_Moon_Color" }),
             preact.h(Tab, { key: "other", icon: "img/icons/dataList.svg", label: Format.stringLiteral("Miscellaneous"), outcome: "SkyStudio_Tab_Other" }),
