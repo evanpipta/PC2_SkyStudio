@@ -182,6 +182,22 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.bUserOverrideMoonFade = value
     end, self)
 
+    self.ui:SkyStudio_ResetSun(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetSun()")
+      SkyStudioDataStore:ResetSunToDefaults()
+    end, self)
+
+    self.ui:SkyStudio_ResetMoon(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetMoon()")
+      SkyStudioDataStore:ResetMoonToDefaults()
+    end, self)
+
+    self.ui:SkyStudio_ResetAll(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetAll()")
+      SkyStudioDataStore:ResetAllToDefaults()
+    end, self)
+
+
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
       bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,

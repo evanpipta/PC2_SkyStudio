@@ -673,6 +673,7 @@ function SkyStudioDayNightCycleManager:Init()
   local config = loadConfig()
   for k, v in pairs(config) do
     SkyStudioDataStore[k] = v
+    SkyStudioDataStore.defaultValues[k] = v
   end
 end
 

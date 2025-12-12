@@ -84,12 +84,17 @@
   /* style is mostly applied inline, but you can bump contrast here if needed */
 }
 
-.skystudio_reset_buttons {
+.skystudio_reset_confirm_buttons {
   display: flex;
   flex-direction: row;
+  justify-content: flex-end;
+  width: 30rem;
 }
 
-.skystudio_reset_buttons > * {
-  margin-left: 0.5rem;
+.skystudio_reset_confirm_button {
+  display: block;
+  height: 2rem;
+  margin-left: 1rem;
 }
+
 

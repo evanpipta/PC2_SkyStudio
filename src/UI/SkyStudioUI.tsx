@@ -15,14 +15,15 @@ import { FocusableDataRow } from "/js/project/components/DataRow.js";
 import { ScrollPane } from "/js/common/components/ScrollPane.js";
 import { Tab } from "/js/common/components/Tab.js";
 
-import { Button } from '/js/project/components/Button.js';
+import { Button } from "/js/project/components/Button.js";
 
 import { SkyStudioButton } from "/SkyStudioButton.js";
 
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 loadCSS("project/Shared");
-loadCSS("project/components/Slider");
+// loadCSS("project/components/Slider");
+// loadCSS('project/components/Button');
 
 // Values to pass back to lua
 type Config = {
@@ -63,11 +64,10 @@ type Config = {
   bUserOverrideMoonFade: boolean;
 
   bUserOverrideDayNightTransition: boolean;
-}
+};
 
 type State = {
-
-  config: Config,
+  config: Config;
   defaultConfig: Config | {};
 
   visible: boolean;
@@ -121,7 +121,7 @@ const baseConfig = {
   bUserOverrideMoonFade: false,
 
   bUserOverrideDayNightTransition: false,
-}
+};
 
 let focusDebuginterval: number;
 
@@ -178,15 +178,15 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     // Everything in config are values that can be passed back to the lua manager
     config: {
-      ...baseConfig
+      ...baseConfig,
     },
 
     // This will be populated from the engine, but won't change when the user makes changes
     // Used for "reset" buttons
     defaultConfig: {
-      ...baseConfig
+      ...baseConfig,
     },
-    
+
     confirmResetSun: false,
     confirmResetMoon: false,
     confirmResetAll: false,
@@ -219,31 +219,35 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       visible: true,
       controlsVisible: false,
       config: {
-        ...data
+        ...data,
       },
       defaultConfig: {
-        ...data
-      }
+        ...data,
+      },
     });
   };
 
   onHide = () => this.setState({ visible: false });
 
   onNumericalValueChanged = (key: keyof Config, newValue: number) => {
-    this.setState({ config: {
-      ...this.state.config,
-      [key]: newValue 
-    }});
+    this.setState({
+      config: {
+        ...this.state.config,
+        [key]: newValue,
+      },
+    });
     Engine.sendEvent(`SkyStudioChangedValue_${key}`, newValue);
   };
 
   onToggleValueChanged =
     (key: keyof Config) =>
     (toggled: boolean): void => {
-      this.setState({ config: {
-        ...this.state.config,
-        [key]: toggled 
-      }});
+      this.setState({
+        config: {
+          ...this.state.config,
+          [key]: toggled,
+        },
+      });
       Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
     };
 
@@ -299,71 +303,91 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
   // Core reset logic helpers
   private resetSunToDefault = () => {
-    const defaultConfig = this.state.defaultConfig as Config;
+    const defaultConfig = this.state.defaultConfig;
 
     // All sun-related values in the "Sun Color" tab, including its fade override
-    const sunKeys: (keyof Config)[] = [
-      "bUserOverrideSunColorAndIntensity",
+    const sunKeys = [
       "nUserSunColorR",
       "nUserSunColorG",
       "nUserSunColorB",
       "nUserSunIntensity",
       "nUserSunGroundMultiplier",
-      "bUserOverrideSunFade",
       "nUserSunFade",
     ];
 
-    const newConfig: Config = { ...this.state.config };
+    const newConfig = { ...this.state.config };
 
     sunKeys.forEach((key) => {
-      // @ts-ignore
       newConfig[key] = defaultConfig[key];
-      Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
     });
 
     this.setState({
       config: newConfig,
       confirmResetSun: false,
     });
+
+    Engine.sendEvent('SkyStudio_ResetSun')
   };
 
   private resetMoonToDefault = () => {
-    const defaultConfig = this.state.defaultConfig as Config;
+    const defaultConfig = this.state.defaultConfig;
 
     // All moon-related values in the "Moon Color" tab, including its fade override
-    const moonKeys: (keyof Config)[] = [
-      "bUserOverrideMoonColorAndIntensity",
+    const moonKeys = [
       "nUserMoonColorR",
       "nUserMoonColorG",
       "nUserMoonColorB",
       "nUserMoonIntensity",
       "nUserMoonGroundMultiplier",
-      "bUserOverrideMoonFade",
       "nUserMoonFade",
     ];
 
     const newConfig: Config = { ...this.state.config };
 
     moonKeys.forEach((key) => {
-      // @ts-ignore
       newConfig[key] = defaultConfig[key];
-      Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
     });
 
     this.setState({
       config: newConfig,
       confirmResetMoon: false,
     });
+
+    Engine.sendEvent('SkyStudio_ResetMoon')
   };
 
   private resetAllToDefault = () => {
-    const defaultConfig = this.state.defaultConfig as Config;
+    const keysToReset = [
+      "nUserSunAzimuth",
+      "nUserSunLatitudeOffset",
+      "nUserSunTimeOfDay",
+      "nUserSunColorR",
+      "nUserSunColorG",
+      "nUserSunColorB",
+      "nUserSunIntensity",
+      "nUserSunGroundMultiplier",
 
-    const newConfig: Config = { ...defaultConfig };
+      "nUserMoonAzimuth",
+      "nUserMoonLatitudeOffset",
+      "nUserMoonPhase",
+      "nUserMoonColorR",
+      "nUserMoonColorG",
+      "nUserMoonColorB",
+      "nUserMoonIntensity",
+      "nUserMoonGroundMultiplier",
+
+      "nUserDayNightTransition",
+      "nUserSunFade",
+      "nUserMoonFade",
+    ];
+
+    const defaultConfig = this.state.defaultConfig;
+
+    const newConfig = { ...this.state.config };
 
     // Send an engine event for every config key
-    (Object.keys(defaultConfig) as (keyof Config)[]).forEach((key) => {
-      Engine.sendEvent(`SkyStudioChangedValue_${key}`, defaultConfig[key]);
+    keysToReset.forEach((key) => {
+      newConfig[key] = defaultConfig[key];
     });
 
     this.setState({
@@ -372,8 +396,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       confirmResetMoon: false,
       confirmResetAll: false,
     });
-  };
 
+    Engine.sendEvent('SkyStudio_ResetAll')
+  };
 
   render() {
     const {
@@ -414,7 +439,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       bUserOverrideDayNightTransition,
     } = this.state.config;
 
-    const visibleTabIndex = this.state.visibleTabIndex
+    const visibleTabIndex = this.state.visibleTabIndex;
 
     const useVanillaLighting = bUseVanillaLighting;
     const customLightingEnabled = !useVanillaLighting;
@@ -503,10 +528,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             step={0.01}
             value={nUserMoonPhase}
             onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserMoonPhase",
-                newValue as number
-              )
+              this.onNumericalValueChanged("nUserMoonPhase", newValue as number)
             }
             editable={true}
             disabled={!customLightingEnabled || !moonPhaseOverrideOn}
@@ -701,9 +723,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <ToggleRow
             label={Format.stringLiteral("Override Day/Night Transition")}
             toggled={sunFadeOverrideOn}
-            onToggle={this.onToggleValueChanged(
-              "bUserOverrideSunFade"
-            )}
+            onToggle={this.onToggleValueChanged("bUserOverrideSunFade")}
             inputName={InputName.Select}
             disabled={!customLightingEnabled}
           />
@@ -819,7 +839,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             step={0.01}
             value={nUserMoonGroundMultiplier}
             onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserMoonGroundMultiplier", newValue)
+              this.onNumericalValueChanged(
+                "nUserMoonGroundMultiplier",
+                newValue
+              )
             }
             editable={true}
             disabled={!customLightingEnabled || !moonColorOverrideOn}
@@ -831,9 +854,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <ToggleRow
             label={Format.stringLiteral("Override Day/Night Transition")}
             toggled={moonFadeOverrideOn}
-            onToggle={this.onToggleValueChanged(
-              "bUserOverrideMoonFade"
-            )}
+            onToggle={this.onToggleValueChanged("bUserOverrideMoonFade")}
             inputName={InputName.Select}
             disabled={!customLightingEnabled}
           />
@@ -899,61 +920,80 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         </PanelArea>
 
         {/* Reset buttons, currently broken */}
-        {/* <PanelArea modifiers="skystudio_section">
-          <FocusableDataRow label={Format.stringLiteral('Reset Sun Color/Intensity')}>
-            {this.state.confirmResetSun ? <>
-              <Button
-                label={Format.stringLiteral('Confirm')}
-                onSelect={this.resetSunToDefault}
-              />
-              <Button
-                label={Format.stringLiteral('Cancel')}
-                onSelect={this.cancelResetSun}
-              />
-            </> :
-              <Button
-                label={Format.stringLiteral('Reset Sun')}
-                onSelect={this.beginResetSun}
-              />
-            }
+        <PanelArea modifiers="skystudio_section">
+          <FocusableDataRow
+            label={Format.stringLiteral("Reset Sun Color/Intensity")}
+          >
+              {this.state.confirmResetSun ? (
+                <>
+                  <Button
+                    label={Format.stringLiteral("Confirm")}
+                    onSelect={this.resetSunToDefault}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                  <Button
+                    label={Format.stringLiteral("Cancel")}
+                    onSelect={this.cancelResetSun}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                </>
+              ) : (
+                <Button
+                  label={Format.stringLiteral("Reset Sun")}
+                  onSelect={this.beginResetSun}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              )}
           </FocusableDataRow>
 
-          <FocusableDataRow label={Format.stringLiteral('Reset Moon Color/Intensity')}>
-            {this.state.confirmResetMoon ? <>
-              <Button
-                label={Format.stringLiteral('Confirm')}
-                onSelect={this.resetMoonToDefault}
-              />
-              <Button
-                label={Format.stringLiteral('Cancel')}
-                onSelect={this.cancelResetMoon}
-              />
-            </> :
-              <Button
-                label={Format.stringLiteral('Reset Moon')}
-                onSelect={this.beginResetMoon}
-              />
-            }
+          <FocusableDataRow
+            label={Format.stringLiteral("Reset Moon Color/Intensity")}
+          >
+              {this.state.confirmResetMoon ? (
+                <>
+                  <Button
+                    label={Format.stringLiteral("Confirm")}
+                    onSelect={this.resetMoonToDefault}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                  <Button
+                    label={Format.stringLiteral("Cancel")}
+                    onSelect={this.cancelResetMoon}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                </>
+              ) : (
+                <Button
+                  label={Format.stringLiteral("Reset Moon")}
+                  onSelect={this.beginResetMoon}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              )}
           </FocusableDataRow>
 
-          <FocusableDataRow label={Format.stringLiteral('Reset All Settings')}>
-            {this.state.confirmResetAll ? <>
-              <Button
-                label={Format.stringLiteral('Confirm')}
-                onSelect={this.resetAllToDefault}
-              />
-              <Button
-                label={Format.stringLiteral('Cancel')}
-                onSelect={this.cancelResetAll}
-              />
-            </> :
-              <Button
-                label={Format.stringLiteral('Reset All')}
-                onSelect={this.beginResetAll}
-              />
-            }
+          <FocusableDataRow label={Format.stringLiteral("Reset All Settings")}>
+              {this.state.confirmResetAll ? (
+                <>
+                  <Button
+                    label={Format.stringLiteral("Confirm")}
+                    onSelect={this.resetAllToDefault}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                  <Button
+                    label={Format.stringLiteral("Cancel")}
+                    onSelect={this.cancelResetAll}
+                    rootClassName={"skystudio_reset_confirm_button"}
+                  />
+                </>
+              ) : (
+                <Button
+                  label={Format.stringLiteral("Reset All")}
+                  onSelect={this.beginResetAll}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              )}
           </FocusableDataRow>
-        </PanelArea> */}
+        </PanelArea>
       </div>,
     ];
 
@@ -964,7 +1004,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             rootClassName={classNames("skystudio_focus_debug")}
             title={Format.stringLiteral("Current Focus")}
           >
-            {this.state.focusDebugKey}
+            <div style={{ maxWidth: '500px' }}>
+            {JSON.stringify(this.state.defaultConfig)}
+            </div>
           </Panel>
         )}
 

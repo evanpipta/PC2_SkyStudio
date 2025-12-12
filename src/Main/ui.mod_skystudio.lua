@@ -226,3 +226,18 @@ SkyStudioUI.SkyStudioChangedValue_nUserMoonGroundMultiplier = function(self, _ca
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserMoonGroundMultiplier", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudio_ResetSun = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudio_ResetSun")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetSun", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_ResetMoon = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudio_ResetMoon")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetMoon", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_ResetAll = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudio_ResetAll")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetAll", 1, _callback, _self)
+end
+
