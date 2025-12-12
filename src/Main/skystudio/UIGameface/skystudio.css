@@ -73,6 +73,7 @@
   max-height: 80vh;
   /* Width should be fixed or else we get a huge layout shift hiccup when changing tabs which causes the game to stutter */
   width: 40rem;
+  position: relative;
 }
 
 /* Color row layout */
@@ -84,11 +85,34 @@
   /* style is mostly applied inline, but you can bump contrast here if needed */
 }
 
+.skystudio_confirm_modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 2rem;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.skystudio_confirm_blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .skystudio_reset_confirm_buttons {
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
-  width: 30rem;
+  justify-content: center;
+  padding: 1rem;
 }
 
 .skystudio_reset_confirm_button {
@@ -97,4 +121,11 @@
   margin-left: 1rem;
 }
 
+.skystudio_reset_header {
+  font-size: 1em;
+  font-weight: bold;
+}
 
+.skystudio_blur {
+  filter: blur(4px);
+}

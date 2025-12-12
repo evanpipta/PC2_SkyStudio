@@ -14,7 +14,7 @@ import { FocusableDataRow } from "/js/project/components/DataRow.js";
 import { Tab } from "/js/common/components/Tab.js";
 import { Button } from "/js/project/components/Button.js";
 import { SkyStudioButton } from "/SkyStudioButton.js";
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 loadCSS("project/Shared");
 const baseConfig = {
     bUseVanillaLighting: false,
@@ -187,7 +187,7 @@ class _SkyStudioUI extends preact.Component {
                 config: newConfig,
                 confirmResetSun: false,
             });
-            Engine.sendEvent('SkyStudio_ResetSun');
+            Engine.sendEvent("SkyStudio_ResetSun");
         };
         this.resetMoonToDefault = () => {
             const defaultConfig = this.state.defaultConfig;
@@ -208,7 +208,7 @@ class _SkyStudioUI extends preact.Component {
                 config: newConfig,
                 confirmResetMoon: false,
             });
-            Engine.sendEvent('SkyStudio_ResetMoon');
+            Engine.sendEvent("SkyStudio_ResetMoon");
         };
         this.resetAllToDefault = () => {
             const keysToReset = [
@@ -244,7 +244,7 @@ class _SkyStudioUI extends preact.Component {
                 confirmResetMoon: false,
                 confirmResetAll: false,
             });
-            Engine.sendEvent('SkyStudio_ResetAll');
+            Engine.sendEvent("SkyStudio_ResetAll");
         };
     }
     componentWillMount() {
@@ -271,6 +271,7 @@ class _SkyStudioUI extends preact.Component {
         const dayNightOverrideOn = bUserOverrideDayNightTransition;
         const sunFadeOverrideOn = bUserOverrideSunFade;
         const moonFadeOverrideOn = bUserOverrideMoonFade;
+        const showResetConfirmation = this.state.confirmResetAll || this.state.confirmResetMoon || this.state.confirmResetSun;
         const tabs = [
             preact.h(Tab, { key: "time", icon: "img/icons/clock.svg", label: Format.stringLiteral("Time of Day"), outcome: "SkyStudio_Tab_Time" }),
             preact.h(Tab, { key: "suncolor", icon: "img/icons/sun.svg", label: Format.stringLiteral("Sun Color"), outcome: "SkyStudio_Tab_Sun_Color" }),
@@ -325,25 +326,35 @@ class _SkyStudioUI extends preact.Component {
                     preact.h(SliderRow, { label: Format.stringLiteral("Moon Day/Night Fade"), min: 0, max: 1, step: 0.01, value: nUserMoonFade, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonFade", newValue), editable: true, disabled: !customLightingEnabled || !moonFadeOverrideOn, focusable: true }))),
             // TAB 4: Miscellaneous -- Hide the less user-friendly features here
             preact.h("div", { key: "other", className: "skystudio_scrollPane" },
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                showResetConfirmation && (preact.h("div", { className: "skystudio_confirm_modal" }, this.state.confirmResetAll ? (preact.h("div", null,
+                    preact.h("div", { className: "skystudio_reset_header" }, "Reset All Settings to Default?"),
+                    preact.h("div", { className: "skystudio_reset_confirm_buttons" },
+                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetAllToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
+                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetAll, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" })))) : this.state.confirmResetMoon ? (preact.h("div", null,
+                    preact.h("div", { className: "skystudio_reset_header" }, "Reset Moon Color & Intensity to Default?"),
+                    preact.h("div", { className: "skystudio_reset_confirm_buttons" },
+                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetMoonToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
+                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetMoon, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" })))) : (preact.h("div", null,
+                    preact.h("div", { className: "skystudio_reset_header" }, "Reset Sun Color & Intensity to Default?"),
+                    preact.h("div", { className: "skystudio_reset_confirm_buttons" },
+                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetSunToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
+                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetSun, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" })))))),
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", showResetConfirmation && "skystudio_blur") },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override RenderParameters Transition"), toggled: dayNightOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideDayNightTransition"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("RenderParameters Day/Night Fade"), min: 0, max: 100, step: 0.01, value: nUserDayNightTransition, onChange: (newValue) => this.onNumericalValueChanged("nUserDayNightTransition", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", showResetConfirmation && "skystudio_blur") },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Use Vanilla Lighting (Disables all mod features)"), toggled: useVanillaLighting, onToggle: this.onToggleValueChanged("bUseVanillaLighting"), inputName: InputName.Select, disabled: false })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
-                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Sun Color/Intensity") }, this.state.confirmResetSun ? (preact.h(preact.Fragment, null,
-                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetSunToDefault, rootClassName: "skystudio_reset_confirm_button" }),
-                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetSun, rootClassName: "skystudio_reset_confirm_button" }))) : (preact.h(Button, { label: Format.stringLiteral("Reset Sun"), onSelect: this.beginResetSun, rootClassName: "skystudio_reset_confirm_button" }))),
-                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Moon Color/Intensity") }, this.state.confirmResetMoon ? (preact.h(preact.Fragment, null,
-                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetMoonToDefault, rootClassName: "skystudio_reset_confirm_button" }),
-                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetMoon, rootClassName: "skystudio_reset_confirm_button" }))) : (preact.h(Button, { label: Format.stringLiteral("Reset Moon"), onSelect: this.beginResetMoon, rootClassName: "skystudio_reset_confirm_button" }))),
-                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset All Settings") }, this.state.confirmResetAll ? (preact.h(preact.Fragment, null,
-                        preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetAllToDefault, rootClassName: "skystudio_reset_confirm_button" }),
-                        preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetAll, rootClassName: "skystudio_reset_confirm_button" }))) : (preact.h(Button, { label: Format.stringLiteral("Reset All"), onSelect: this.beginResetAll, rootClassName: "skystudio_reset_confirm_button" }))))),
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", showResetConfirmation && "skystudio_blur") },
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Sun Color/Intensity") },
+                        preact.h(Button, { label: Format.stringLiteral("Reset Sun"), onSelect: this.beginResetSun, rootClassName: "skystudio_reset_confirm_button" })),
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Moon Color/Intensity") },
+                        preact.h(Button, { label: Format.stringLiteral("Reset Moon"), onSelect: this.beginResetMoon, rootClassName: "skystudio_reset_confirm_button" })),
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset All Settings") },
+                        preact.h(Button, { label: Format.stringLiteral("Reset All"), onSelect: this.beginResetAll, rootClassName: "skystudio_reset_confirm_button" })))),
         ];
         return (preact.h("div", { className: "skystudio_root" },
             DEBUG_MODE && (preact.h(Panel, { rootClassName: classNames("skystudio_focus_debug"), title: Format.stringLiteral("Current Focus") },
-                preact.h("div", { style: { maxWidth: '500px' } }, JSON.stringify(this.state.defaultConfig)))),
+                preact.h("div", { style: { maxWidth: "500px" } }, JSON.stringify(this.state.defaultConfig)))),
             preact.h("div", { className: "skystudio_toggle_menu" },
                 preact.h(SkyStudioButton, { src: "img/icons/tod.svg", 
                     // tooltip is kinda janky position-wise so not having one for now
