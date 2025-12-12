@@ -255,11 +255,19 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     this.setState({
       controlsVisible:
         value !== undefined ? value : !this.state.controlsVisible,
+      confirmResetAll: false,
+      confirmResetMoon: false,
+      confirmResetSun: false,
     });
   };
 
   changeVisibleTab = (visibleIndex: number) => {
-    this.setState({ visibleTabIndex: visibleIndex });
+    this.setState({
+      visibleTabIndex: visibleIndex,
+      confirmResetAll: false,
+      confirmResetMoon: false,
+      confirmResetSun: false,
+    });
   };
 
   // Override input handling on the panel
@@ -457,7 +465,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const sunFadeOverrideOn = bUserOverrideSunFade;
     const moonFadeOverrideOn = bUserOverrideMoonFade;
 
-    const showResetConfirmation = this.state.confirmResetAll || this.state.confirmResetMoon || this.state.confirmResetSun;
+    const showResetConfirmation =
+      this.state.confirmResetAll ||
+      this.state.confirmResetMoon ||
+      this.state.confirmResetSun;
 
     const tabs = [
       <Tab
@@ -628,7 +639,36 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
       // TAB 2: Sun color + intensity
       <div key="suncolor" className="skystudio_scrollPane">
-        <PanelArea modifiers="skystudio_section">
+        {this.state.confirmResetSun && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset Sun Color/Intensity/Fade to Default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetSunToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetSun}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetSun && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override Sun Color & Intensity")}
             toggled={sunColorOverrideOn}
@@ -721,7 +761,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea>
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetSun && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override Day/Night Transition")}
             toggled={sunFadeOverrideOn}
@@ -743,11 +788,59 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
         </PanelArea>
+
+        {/* Reset button */}
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetSun && "skystudio_blur"
+          )}
+        >
+          <FocusableDataRow
+            label={Format.stringLiteral("Reset Sun Color/Intensity/Fade")}
+          >
+            <Button
+              icon={"img/icons/restart.svg"}
+              label={Format.stringLiteral("Reset Sun")}
+              onSelect={this.beginResetSun}
+              rootClassName={"skystudio_reset_confirm_button"}
+            />
+          </FocusableDataRow>
+        </PanelArea>
       </div>,
 
       // TAB 3: Moon color + intensity
       <div key="mooncolor" className="skystudio_scrollPane">
-        <PanelArea modifiers="skystudio_section">
+        {this.state.confirmResetMoon && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset Moon Color/Intensity/Fade to Default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetMoonToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetMoon}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetMoon && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override Moon Color & Intensity")}
             toggled={moonColorOverrideOn}
@@ -852,7 +945,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea>
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetMoon && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override Day/Night Transition")}
             toggled={moonFadeOverrideOn}
@@ -875,71 +973,59 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
         </PanelArea>
+
+        {/* Reset button */}
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetMoon && "skystudio_blur"
+          )}
+        >
+          <FocusableDataRow
+            label={Format.stringLiteral("Reset Moon Color/Intensity/Fade")}
+          >
+            <Button
+              icon={"img/icons/restart.svg"}
+              label={Format.stringLiteral("Reset Moon")}
+              onSelect={this.beginResetMoon}
+              rootClassName={"skystudio_reset_confirm_button"}
+            />
+          </FocusableDataRow>
+        </PanelArea>
       </div>,
 
       // TAB 4: Miscellaneous -- Hide the less user-friendly features here
       <div key="other" className="skystudio_scrollPane">
-        {showResetConfirmation && (
+        {this.state.confirmResetAll && (
           <div className={"skystudio_confirm_modal"}>
-            {this.state.confirmResetAll ? (
-              <div>
-                <div className={"skystudio_reset_header"}>Reset All Settings to Default?</div>
-                <div className={"skystudio_reset_confirm_buttons"}>
-                  <Button
-                    label={Format.stringLiteral("Confirm")}
-                    onSelect={this.resetAllToDefault}
-                    modifiers={"positive"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                  <Button
-                    label={Format.stringLiteral("Cancel")}
-                    onSelect={this.cancelResetAll}
-                    modifiers={"negative"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                </div>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset All Slider Values to Default?
               </div>
-            ) : this.state.confirmResetMoon ? (
-              <div>
-                <div className={"skystudio_reset_header"}>Reset Moon Color & Intensity to Default?</div>
-                <div className={"skystudio_reset_confirm_buttons"}>
-                  <Button
-                    label={Format.stringLiteral("Confirm")}
-                    onSelect={this.resetMoonToDefault}
-                    modifiers={"positive"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                  <Button
-                    label={Format.stringLiteral("Cancel")}
-                    onSelect={this.cancelResetMoon}
-                    modifiers={"negative"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetAllToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetAll}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
               </div>
-            ) : (
-              <div>
-                <div className={"skystudio_reset_header"}>Reset Sun Color & Intensity to Default?</div>
-                <div className={"skystudio_reset_confirm_buttons"}>
-                  <Button
-                    label={Format.stringLiteral("Confirm")}
-                    onSelect={this.resetSunToDefault}
-                    modifiers={"positive"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                  <Button
-                    label={Format.stringLiteral("Cancel")}
-                    onSelect={this.cancelResetSun}
-                    modifiers={"negative"}
-                    rootClassName={"skystudio_reset_confirm_button"}
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
-        
-        <PanelArea modifiers={classNames("skystudio_section", showResetConfirmation && "skystudio_blur")}>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAll && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override RenderParameters Transition")}
             toggled={dayNightOverrideOn}
@@ -969,7 +1055,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         </PanelArea>
 
         {/* Global enable/disable */}
-        <PanelArea modifiers={classNames("skystudio_section", showResetConfirmation && "skystudio_blur")}>
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAll && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral(
               "Use Vanilla Lighting (Disables all mod features)"
@@ -981,12 +1072,17 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        {/* Reset buttons, currently broken */}
-        <PanelArea modifiers={classNames("skystudio_section", showResetConfirmation && "skystudio_blur")}>
-          <FocusableDataRow
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAll && "skystudio_blur"
+          )}
+        >
+          {/* <FocusableDataRow
             label={Format.stringLiteral("Reset Sun Color/Intensity")}
           >
             <Button
+              icon={"img/icons/restart.svg"}
               label={Format.stringLiteral("Reset Sun Color")}
               onSelect={this.beginResetSun}
               rootClassName={"skystudio_reset_confirm_button"}
@@ -997,14 +1093,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             label={Format.stringLiteral("Reset Moon Color/Intensity")}
           >
             <Button
+              icon={"img/icons/restart.svg"}
               label={Format.stringLiteral("Reset Moon Color")}
               onSelect={this.beginResetMoon}
               rootClassName={"skystudio_reset_confirm_button"}
             />
-          </FocusableDataRow>
+          </FocusableDataRow> */}
 
-          <FocusableDataRow label={Format.stringLiteral("Reset All Settings")}>
+          <FocusableDataRow label={Format.stringLiteral("Reset All Slider Values")}>
             <Button
+              icon={"img/icons/restart.svg"}
               label={Format.stringLiteral("Reset All")}
               onSelect={this.beginResetAll}
               rootClassName={"skystudio_reset_confirm_button"}
