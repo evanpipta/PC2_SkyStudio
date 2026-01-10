@@ -254,21 +254,15 @@ local Patched = {}
 --  Init
 ----------------------------------------------------------------------
 function Patched.Init(self, useParkTimeOfDay, sunH, sunZ, moonH, moonZ, sTimeOfDay, env)
-  trace("DayNightCycle: Init" .. 'useParkTimeOfDay=' .. tostring(useParkTimeOfDay) ..
+  trace("DayNightCycle: Init " .. 'useParkTimeOfDay=' .. tostring(useParkTimeOfDay) ..
     ', sunH=' .. tostring(sunH) ..
     ', sunZ=' .. tostring(sunZ) ..
     ', moonH=' .. tostring(moonH) ..
     ', moonZ=' .. tostring(moonZ) ..
     ', sTimeOfDay=' .. tostring(sTimeOfDay))
 
-  -- User controlled parameters - to be hooked up to UI later
-
-  -- End user controlled parameters
-
   local tWorldAPIs = api.world.GetWorldAPIs()
   self.ParkAPI = tWorldAPIs.park
-
-  -- trace('parkAPI' .. self.ParkAPI)
 
   -- Use baked defaults if nil
   self.nSunHorizonRotation = sunH or DEFAULT_SUN_HORIZON_ROT

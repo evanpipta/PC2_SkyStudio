@@ -85,6 +85,34 @@ SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
 
+SkyStudioDataStore.tUserRenderParameters = {
+  Atmospherics = {
+    Fog = {
+      Density = 1
+    },
+    Haze = {
+      Density = 1
+    },
+    Lights = {
+      Sun  = {
+        Disk = {
+          Size = 0.5,
+          Intensity = 10
+        }
+      },
+      Moon = {
+        Disk = {
+          Size = 0.5,
+          Intensity = 15,
+        }
+      },
+    },
+    Stars = {
+      Strength = 1
+    }
+  }
+}
+
 SkyStudioDataStore.defaultValues = {
   bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,
   nParkTodCycleMoonColorR = SkyStudioDataStore.nParkTodCycleMoonColorR,
@@ -144,6 +172,7 @@ SkyStudioDataStore.defaultValues = {
   nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
   nUserSunFade = SkyStudioDataStore.nUserSunFade,
   nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
+  tUserRenderParameters = {}
 }
 
 function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()

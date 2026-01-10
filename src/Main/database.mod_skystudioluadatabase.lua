@@ -5,12 +5,14 @@ local require = global.require
 local pairs = global.pairs
 
 local DayNightCycleManager = require('SkyStudioDayNightCycleManager')
+local RenderParametersComponentManager = require('SkyStudioRenderParametersComponentManager')
 
 local Mod_SkyStudioLuaDatabase = {}
 
 function Mod_SkyStudioLuaDatabase.AddContentToCall(_tContentToCall)
     table.insert(_tContentToCall, require("Database.Mod_SkyStudioLuaDatabase"))
     table.insert(_tContentToCall, DayNightCycleManager)
+    table.insert(_tContentToCall, RenderParametersComponentManager)
 end
 
 function Mod_SkyStudioLuaDatabase.Init()
