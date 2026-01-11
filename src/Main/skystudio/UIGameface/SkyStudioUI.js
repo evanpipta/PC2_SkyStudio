@@ -110,6 +110,7 @@ class _SkyStudioUI extends preact.Component {
             confirmResetSun: false,
             confirmResetMoon: false,
             confirmResetAll: false,
+            confirmResetAtmosphere: false,
         };
         this.updateFocusDebug = () => {
             this.setState({
@@ -196,10 +197,16 @@ class _SkyStudioUI extends preact.Component {
         this.cancelResetAll = () => {
             this.setState({ confirmResetAll: false });
         };
+        this.beginResetAtmosphere = () => {
+            this.setState({ confirmResetAtmosphere: true });
+        };
+        this.cancelResetAtmosphere = () => {
+            this.setState({ confirmResetAtmosphere: false });
+        };
         // Core reset logic helpers
         this.resetSunToDefault = () => {
             const defaultConfig = this.state.defaultConfig;
-            // All sun-related values in the "Sun Color" tab, including its fade override
+            // All sun-related values in the "Sun Color" tab, including fade and disk settings
             const sunKeys = [
                 "nUserSunColorR",
                 "nUserSunColorG",
@@ -207,6 +214,8 @@ class _SkyStudioUI extends preact.Component {
                 "nUserSunIntensity",
                 "nUserSunGroundMultiplier",
                 "nUserSunFade",
+                "nUserSunDiskSize",
+                "nUserSunDiskIntensity",
             ];
             const newConfig = { ...this.state.config };
             sunKeys.forEach((key) => {
@@ -220,7 +229,7 @@ class _SkyStudioUI extends preact.Component {
         };
         this.resetMoonToDefault = () => {
             const defaultConfig = this.state.defaultConfig;
-            // All moon-related values in the "Moon Color" tab, including its fade override
+            // All moon-related values in the "Moon Color" tab, including fade and disk settings
             const moonKeys = [
                 "nUserMoonColorR",
                 "nUserMoonColorG",
@@ -228,6 +237,8 @@ class _SkyStudioUI extends preact.Component {
                 "nUserMoonIntensity",
                 "nUserMoonGroundMultiplier",
                 "nUserMoonFade",
+                "nUserMoonDiskSize",
+                "nUserMoonDiskIntensity",
             ];
             const newConfig = { ...this.state.config };
             moonKeys.forEach((key) => {
@@ -238,6 +249,33 @@ class _SkyStudioUI extends preact.Component {
                 confirmResetMoon: false,
             });
             Engine.sendEvent("SkyStudio_ResetMoon");
+        };
+        this.resetAtmosphereToDefault = () => {
+            const defaultConfig = this.state.defaultConfig;
+            // All atmosphere-related values
+            const atmosphereKeys = [
+                "nUserFogDensity",
+                "nUserFogScaleHeight",
+                "nUserHazeDensity",
+                "nUserHazeScaleHeight",
+                "nUserSkyDensity",
+                "nUserSunScatterIntensity",
+                "nUserMoonScatterIntensity",
+                "nUserIrradianceScatterIntensity",
+                "nUserSkyLightIntensity",
+                "nUserSkyScatterIntensity",
+                "nUserVolumetricScatterWeight",
+                "nUserVolumetricDistanceStart",
+            ];
+            const newConfig = { ...this.state.config };
+            atmosphereKeys.forEach((key) => {
+                newConfig[key] = defaultConfig[key];
+            });
+            this.setState({
+                config: newConfig,
+                confirmResetAtmosphere: false,
+            });
+            Engine.sendEvent("SkyStudio_ResetAtmosphere");
         };
         this.resetAllToDefault = () => {
             const keysToReset = [
@@ -352,7 +390,7 @@ class _SkyStudioUI extends preact.Component {
                 preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetSun && "skystudio_blur") },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Sun Disk"), toggled: sunDiskOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunDisk"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Sun Disk Size"), min: 0, max: 10, step: 0.01, value: nUserSunDiskSize, onChange: (newValue) => this.onNumericalValueChanged("nUserSunDiskSize", newValue), editable: true, disabled: !customLightingEnabled || !sunDiskOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Disk Intensity"), min: 0, max: 10, step: 0.01, value: nUserSunDiskIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSunDiskIntensity", newValue), editable: true, disabled: !customLightingEnabled || !sunDiskOverrideOn, focusable: true })),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Sun Disk Intensity"), min: 0, max: 20, step: 0.01, value: nUserSunDiskIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSunDiskIntensity", newValue), editable: true, disabled: !customLightingEnabled || !sunDiskOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetSun && "skystudio_blur") },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Day/Night Transition"), toggled: sunFadeOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunFade"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Sun Day/Night Fade"), min: 0, max: 1, step: 0.01, value: nUserSunFade, onChange: (newValue) => this.onNumericalValueChanged("nUserSunFade", newValue), editable: true, disabled: !customLightingEnabled || !sunFadeOverrideOn, focusable: true })),
@@ -386,21 +424,30 @@ class _SkyStudioUI extends preact.Component {
                     preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Moon Color/Intensity/Fade") },
                         preact.h(Button, { icon: "img/icons/restart.svg", label: Format.stringLiteral("Reset Moon"), onSelect: this.beginResetMoon, rootClassName: "skystudio_reset_confirm_button" })))),
             preact.h("div", { key: "atmosphere", className: "skystudio_scrollPane" },
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                this.state.confirmResetAtmosphere && (preact.h("div", { className: "skystudio_confirm_modal" },
+                    preact.h("div", null,
+                        preact.h("div", { className: "skystudio_reset_header" }, "Reset Atmosphere Settings to Default?"),
+                        preact.h("div", { className: "skystudio_reset_confirm_buttons" },
+                            preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetAtmosphereToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
+                            preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetAtmosphere, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Atmosphere"), toggled: atmosphereOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideAtmosphere"), inputName: InputName.Select, disabled: !customLightingEnabled })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
                     preact.h(SliderRow, { label: Format.stringLiteral("Atmosphere Density"), min: 0, max: 10, step: 0.01, value: nUserSkyDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSkyDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Fog Density"), min: 0, max: 200, step: 0.01, value: nUserFogDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserFogDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Haze Density"), min: 0, max: 100, step: 0.1, value: nUserHazeDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserHazeDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Fog/Haze Start Distance"), min: 0, max: 500, step: 1, value: nUserVolumetricDistanceStart, onChange: (newValue) => this.onNumericalValueChanged("nUserVolumetricDistanceStart", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("fog/Haze Scatter Weight"), min: 0, max: 1, step: 0.01, value: nUserVolumetricScatterWeight, onChange: (newValue) => this.onNumericalValueChanged("nUserVolumetricScatterWeight", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
                     preact.h(SliderRow, { label: Format.stringLiteral("Sun Scatter Intensity"), min: 0.01, max: 10, step: 0.01, value: nUserSunScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSunScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Moon Scatter Intensity"), min: 0.01, max: 3, step: 0.01, value: nUserMoonScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Ambient Scatter Intensity"), min: 0, max: 1, step: 0.01, value: nUserIrradianceScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserIrradianceScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true })),
-                preact.h(PanelArea, { modifiers: "skystudio_section" },
+                    preact.h(SliderRow, { label: Format.stringLiteral("Ambient Scatter Intensity"), min: 0, max: 2, step: 0.01, value: nUserIrradianceScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserIrradianceScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true })),
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
                     preact.h(SliderRow, { label: Format.stringLiteral("Clouds Light Intensity"), min: 0, max: 5, step: 0.01, value: nUserSkyLightIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSkyLightIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
-                    preact.h(SliderRow, { label: Format.stringLiteral("Clouds Scatter Intensity"), min: 0, max: 5, step: 0.01, value: nUserSkyScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSkyScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }))),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Clouds Scatter Intensity"), min: 0, max: 5, step: 0.01, value: nUserSkyScatterIntensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSkyScatterIntensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true })),
+                preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Atmosphere Settings") },
+                        preact.h(Button, { icon: "img/icons/restart.svg", label: Format.stringLiteral("Reset Atmosphere"), onSelect: this.beginResetAtmosphere, rootClassName: "skystudio_reset_confirm_button" })))),
             // TAB 4: Miscellaneous -- Hide the less user-friendly features here
             preact.h("div", { key: "other", className: "skystudio_scrollPane" },
                 this.state.confirmResetAll && (preact.h("div", { className: "skystudio_confirm_modal" },

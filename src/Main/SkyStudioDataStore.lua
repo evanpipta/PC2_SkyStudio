@@ -1,5 +1,17 @@
 local SkyStudioDataStore = {}
 
+-- Deep copy helper function for tables
+local function deepCopy(original)
+  if type(original) ~= "table" then
+    return original
+  end
+  local copy = {}
+  for key, value in pairs(original) do
+    copy[key] = deepCopy(value)
+  end
+  return copy
+end
+
 SkyStudioDataStore.bUseVanillaLighting = false
 
 SkyStudioDataStore.nParkTodCycleMoonColorR = 0.50                 -- vanilla default: 0.341
@@ -115,7 +127,7 @@ SkyStudioDataStore.tUserRenderParameters = {
       }
     },
     Fog = {
-      Density = 0.1,
+      Density = 0.5,
       Altitude = 0,
       ScaleHeight = 500.0 
     },
@@ -141,11 +153,11 @@ SkyStudioDataStore.tUserRenderParameters = {
     --   CoverageMax = 1.0,
     -- },
     Lights = {
-      IrradianceScatterIntensity = 2.0,
+      IrradianceScatterIntensity = 1.0,
       Sun  = {
         Disk = {
           Size = 1.5,
-          Intensity = 10
+          Intensity = 1
         },
         Scatter = {
           Intensity = 2.2
@@ -157,7 +169,7 @@ SkyStudioDataStore.tUserRenderParameters = {
           Intensity = 17.5,
         },
         Scatter = {
-          Intensity = 0.1
+          Intensity = 1
         }
       },
       Sky = {
@@ -264,7 +276,8 @@ SkyStudioDataStore.defaultValues = {
   nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
   nUserSunFade = SkyStudioDataStore.nUserSunFade,
   nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
-  tUserRenderParameters = SkyStudioDataStore.tUserRenderParameters,
+  -- Deep copy to preserve original defaults when user modifies values
+  tUserRenderParameters = deepCopy(SkyStudioDataStore.tUserRenderParameters),
 }
 
 function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()
@@ -328,7 +341,7 @@ function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()
   SkyStudioDataStore.defaultValues.nUserMoonFade = SkyStudioDataStore.nUserMoonFade
 end
 
--- Reset all user values from the sun color tab
+-- Reset all user values from the sun color tab (including disk settings)
 function SkyStudioDataStore:ResetSunToDefaults()
   SkyStudioDataStore.nUserSunColorR = SkyStudioDataStore.defaultValues.nUserSunColorR
   SkyStudioDataStore.nUserSunColorG = SkyStudioDataStore.defaultValues.nUserSunColorG
@@ -336,9 +349,12 @@ function SkyStudioDataStore:ResetSunToDefaults()
   SkyStudioDataStore.nUserSunIntensity = SkyStudioDataStore.defaultValues.nUserSunIntensity
   SkyStudioDataStore.nUserSunGroundMultiplier = SkyStudioDataStore.defaultValues.nUserSunGroundMultiplier
   SkyStudioDataStore.nUserSunFade = SkyStudioDataStore.defaultValues.nUserSunFade
+  -- Sun disk settings
+  SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size
+  SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity
 end
 
--- Reset all user values from the moon color tab
+-- Reset all user values from the moon color tab (including disk settings)
 function SkyStudioDataStore:ResetMoonToDefaults()
   SkyStudioDataStore.nUserMoonColorR = SkyStudioDataStore.defaultValues.nUserMoonColorR
   SkyStudioDataStore.nUserMoonColorG = SkyStudioDataStore.defaultValues.nUserMoonColorG
@@ -346,6 +362,41 @@ function SkyStudioDataStore:ResetMoonToDefaults()
   SkyStudioDataStore.nUserMoonIntensity = SkyStudioDataStore.defaultValues.nUserMoonIntensity
   SkyStudioDataStore.nUserMoonGroundMultiplier = SkyStudioDataStore.defaultValues.nUserMoonGroundMultiplier
   SkyStudioDataStore.nUserMoonFade = SkyStudioDataStore.defaultValues.nUserMoonFade
+  -- Moon disk settings
+  SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size
+  SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity
+end
+
+-- Reset all atmosphere render parameter values
+function SkyStudioDataStore:ResetAtmosphereToDefaults()
+  local defaults = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics
+  local current = SkyStudioDataStore.tUserRenderParameters.Atmospherics
+  
+  -- Fog
+  current.Fog.Density = defaults.Fog.Density
+  current.Fog.Altitude = defaults.Fog.Altitude
+  current.Fog.ScaleHeight = defaults.Fog.ScaleHeight
+  
+  -- Haze
+  current.Haze.Density = defaults.Haze.Density
+  current.Haze.Altitude = defaults.Haze.Altitude
+  current.Haze.ScaleHeight = defaults.Haze.ScaleHeight
+  
+  -- Sky
+  current.Sky.Density = defaults.Sky.Density
+  current.Sky.Altitude = defaults.Sky.Altitude
+  current.Sky.ScaleHeight = defaults.Sky.ScaleHeight
+  
+  -- Volumetric
+  current.Volumetric.Scatter.Weight = defaults.Volumetric.Scatter.Weight
+  current.Volumetric.Distance.Start = defaults.Volumetric.Distance.Start
+  
+  -- Lights (scatter intensities)
+  current.Lights.IrradianceScatterIntensity = defaults.Lights.IrradianceScatterIntensity
+  current.Lights.Sun.Scatter.Intensity = defaults.Lights.Sun.Scatter.Intensity
+  current.Lights.Moon.Scatter.Intensity = defaults.Lights.Moon.Scatter.Intensity
+  current.Lights.Sky.Intensity = defaults.Lights.Sky.Intensity
+  current.Lights.Sky.Scatter.Intensity = defaults.Lights.Sky.Scatter.Intensity
 end
 
 -- Reset all user settings

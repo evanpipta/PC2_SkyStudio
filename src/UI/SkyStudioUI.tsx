@@ -106,6 +106,7 @@ type State = {
   confirmResetSun?: boolean;
   confirmResetMoon?: boolean;
   confirmResetAll?: boolean;
+  confirmResetAtmosphere?: boolean;
 };
 
 const baseConfig = {
@@ -239,6 +240,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetSun: false,
     confirmResetMoon: false,
     confirmResetAll: false,
+    confirmResetAtmosphere: false,
   };
 
   componentWillMount() {
@@ -358,11 +360,19 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     this.setState({ confirmResetAll: false });
   };
 
+  beginResetAtmosphere = () => {
+    this.setState({ confirmResetAtmosphere: true });
+  };
+
+  cancelResetAtmosphere = () => {
+    this.setState({ confirmResetAtmosphere: false });
+  };
+
   // Core reset logic helpers
   private resetSunToDefault = () => {
     const defaultConfig = this.state.defaultConfig;
 
-    // All sun-related values in the "Sun Color" tab, including its fade override
+    // All sun-related values in the "Sun Color" tab, including fade and disk settings
     const sunKeys = [
       "nUserSunColorR",
       "nUserSunColorG",
@@ -370,6 +380,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserSunIntensity",
       "nUserSunGroundMultiplier",
       "nUserSunFade",
+      "nUserSunDiskSize",
+      "nUserSunDiskIntensity",
     ];
 
     const newConfig = { ...this.state.config };
@@ -389,7 +401,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   private resetMoonToDefault = () => {
     const defaultConfig = this.state.defaultConfig;
 
-    // All moon-related values in the "Moon Color" tab, including its fade override
+    // All moon-related values in the "Moon Color" tab, including fade and disk settings
     const moonKeys = [
       "nUserMoonColorR",
       "nUserMoonColorG",
@@ -397,6 +409,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserMoonIntensity",
       "nUserMoonGroundMultiplier",
       "nUserMoonFade",
+      "nUserMoonDiskSize",
+      "nUserMoonDiskIntensity",
     ];
 
     const newConfig: Config = { ...this.state.config };
@@ -411,6 +425,39 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     });
 
     Engine.sendEvent("SkyStudio_ResetMoon");
+  };
+
+  private resetAtmosphereToDefault = () => {
+    const defaultConfig = this.state.defaultConfig;
+
+    // All atmosphere-related values
+    const atmosphereKeys = [
+      "nUserFogDensity",
+      "nUserFogScaleHeight",
+      "nUserHazeDensity",
+      "nUserHazeScaleHeight",
+      "nUserSkyDensity",
+      "nUserSunScatterIntensity",
+      "nUserMoonScatterIntensity",
+      "nUserIrradianceScatterIntensity",
+      "nUserSkyLightIntensity",
+      "nUserSkyScatterIntensity",
+      "nUserVolumetricScatterWeight",
+      "nUserVolumetricDistanceStart",
+    ];
+
+    const newConfig: Config = { ...this.state.config };
+
+    atmosphereKeys.forEach((key) => {
+      newConfig[key] = defaultConfig[key];
+    });
+
+    this.setState({
+      config: newConfig,
+      confirmResetAtmosphere: false,
+    });
+
+    Engine.sendEvent("SkyStudio_ResetAtmosphere");
   };
 
   private resetAllToDefault = () => {
@@ -1163,7 +1210,36 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       </div>,
 
       <div key="atmosphere" className="skystudio_scrollPane">
-        <PanelArea modifiers="skystudio_section">
+        {this.state.confirmResetAtmosphere && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset Atmosphere Settings to Default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetAtmosphereToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetAtmosphere}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAtmosphere && "skystudio_blur"
+          )}
+        >
           <ToggleRow
             label={Format.stringLiteral("Override Atmosphere")}
             toggled={atmosphereOverrideOn}
@@ -1173,7 +1249,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea modifiers="skystudio_section">
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAtmosphere && "skystudio_blur"
+          )}
+        >
          <SliderRow
             label={Format.stringLiteral("Atmosphere Density")}
             min={0}
@@ -1245,7 +1326,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea modifiers="skystudio_section">
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAtmosphere && "skystudio_blur"
+          )}
+        >
           <SliderRow
             label={Format.stringLiteral("Sun Scatter Intensity")}
             min={0.01}
@@ -1289,7 +1375,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea modifiers="skystudio_section">
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAtmosphere && "skystudio_blur"
+          )}
+        >
           <SliderRow
             label={Format.stringLiteral("Clouds Light Intensity")}
             min={0}
@@ -1319,9 +1410,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        {/* <PanelArea modifiers="skystudio_section">
-
-        </PanelArea> */}
+        {/* Reset button */}
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAtmosphere && "skystudio_blur"
+          )}
+        >
+          <FocusableDataRow label={Format.stringLiteral("Reset Atmosphere Settings")}>
+            <Button
+              icon={"img/icons/restart.svg"}
+              label={Format.stringLiteral("Reset Atmosphere")}
+              onSelect={this.beginResetAtmosphere}
+              rootClassName={"skystudio_reset_confirm_button"}
+            />
+          </FocusableDataRow>
+        </PanelArea>
       </div>,
 
       // TAB 4: Miscellaneous -- Hide the less user-friendly features here

@@ -296,6 +296,11 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore:ResetAllToDefaults()
     end, self)
 
+    self.ui:SkyStudio_ResetAtmosphere(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetAtmosphere()")
+      SkyStudioDataStore:ResetAtmosphereToDefaults()
+    end, self)
+
 
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({

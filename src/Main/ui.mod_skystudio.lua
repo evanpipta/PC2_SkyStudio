@@ -344,3 +344,7 @@ SkyStudioUI.SkyStudio_ResetAll = function(self, _callback, _self)
   return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetAll", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudio_ResetAtmosphere = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudio_ResetAtmosphere")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetAtmosphere", 1, _callback, _self)
+end
