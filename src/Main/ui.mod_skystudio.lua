@@ -233,6 +233,16 @@ SkyStudioUI.SkyStudioChangedValue_bUserOverrideAtmosphere = function(self, _call
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideAtmosphere", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunDisk = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunDisk")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunDisk", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonDisk = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideMoonDisk")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideMoonDisk", 1, _callback, _self)
+end
+
 SkyStudioUI.SkyStudioChangedValue_nUserFogDensity = function(self, _callback, _self)
   trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserFogDensity")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserFogDensity", 1, _callback, _self)
@@ -285,6 +295,38 @@ end
 SkyStudioUI.SkyStudioChangedValue_nUserMoonScatterIntensity = function(self, _callback, _self)
   trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserMoonScatterIntensity")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserMoonScatterIntensity", 1, _callback, _self)
+end
+
+-- Additional atmosphere bindings
+
+SkyStudioUI.SkyStudioChangedValue_nUserIrradianceScatterIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserIrradianceScatterIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserIrradianceScatterIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserSkyLightIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserSkyLightIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSkyLightIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserSkyScatterIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserSkyScatterIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSkyScatterIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserSkyDensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserSkyDensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSkyDensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserVolumetricScatterWeight = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserVolumetricScatterWeight")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserVolumetricScatterWeight", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserVolumetricDistanceStart = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserVolumetricDistanceStart")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserVolumetricDistanceStart", 1, _callback, _self)
 end
 
 SkyStudioUI.SkyStudio_ResetSun = function(self, _callback, _self)

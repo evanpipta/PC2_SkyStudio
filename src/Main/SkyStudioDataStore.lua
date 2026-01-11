@@ -82,6 +82,8 @@ SkyStudioDataStore.bUserOverrideMoonFade = false
 SkyStudioDataStore.bUserOverrideDayNightTransition = false
 
 SkyStudioDataStore.bUserOverrideAtmosphere = false
+SkyStudioDataStore.bUserOverrideSunDisk = false
+SkyStudioDataStore.bUserOverrideMoonDisk = false
 
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
@@ -109,11 +111,11 @@ SkyStudioDataStore.tUserRenderParameters = {
         Weight = 0.4
       },
       Distance = {
-        Start = 50.0
+        Start = 0
       }
     },
     Fog = {
-      Density = 1,
+      Density = 0.1,
       Altitude = 0,
       ScaleHeight = 500.0 
     },
@@ -125,7 +127,7 @@ SkyStudioDataStore.tUserRenderParameters = {
     },
     Sky = {
       -- Albedo = 
-      Density = 1.0,
+      Density = 1,
       Altitude = 0,
       ScaleHeight = 7994.0
     },
@@ -143,15 +145,15 @@ SkyStudioDataStore.tUserRenderParameters = {
       Sun  = {
         Disk = {
           Size = 1.5,
-          Intensity = 1.35
+          Intensity = 10
         },
         Scatter = {
-          Intensity = 3.0
+          Intensity = 2.2
         }
       },
       Moon = {
         Disk = {
-          Size = 1.5,
+          Size = 3,
           Intensity = 17.5,
         },
         Scatter = {
@@ -165,10 +167,10 @@ SkyStudioDataStore.tUserRenderParameters = {
         }
       }
     },
-    Stars = {
-      Strength = 1,
-      Enabled = true,
-    },
+    -- Stars = {
+    --   Strength = 1,
+    --   Enabled = true,
+    -- },
     RadiativeTransfer = {
       Curve = {
         Power = 1.0
@@ -262,7 +264,7 @@ SkyStudioDataStore.defaultValues = {
   nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
   nUserSunFade = SkyStudioDataStore.nUserSunFade,
   nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
-  tUserRenderParameters = {}
+  tUserRenderParameters = SkyStudioDataStore.tUserRenderParameters,
 }
 
 function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()
@@ -353,6 +355,93 @@ function SkyStudioDataStore:ResetAllToDefaults()
       SkyStudioDataStore[key] = value
     end
   end
+end
+
+-- Build a render parameters table containing only values for enabled overrides
+-- This is called by the RenderParametersComponentManager before CreateParameterFromTable
+function SkyStudioDataStore:GetActiveRenderParameters()
+  local tActive = {}
+
+  -- Atmosphere overrides (Fog, Haze, Sky, Volumetric, Lights)
+  if SkyStudioDataStore.bUserOverrideAtmosphere then
+    tActive.Atmospherics = tActive.Atmospherics or {}
+    
+    -- Fog
+    tActive.Atmospherics.Fog = {
+      Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
+      Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Altitude,
+      ScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight
+    }
+    
+    -- Haze
+    tActive.Atmospherics.Haze = {
+      Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
+      Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Altitude,
+      ScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight
+    }
+    
+    -- Sky
+    tActive.Atmospherics.Sky = {
+      Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.Density,
+      Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.Altitude,
+      ScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.ScaleHeight
+    }
+    
+    -- Volumetric
+    tActive.Atmospherics.Volumetric = {
+      Scatter = {
+        Weight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Scatter.Weight
+      },
+      Distance = {
+        Start = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Distance.Start
+      }
+    }
+    
+    -- Lights (scatter intensities and irradiance)
+    tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
+    tActive.Atmospherics.Lights.IrradianceScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.IrradianceScatterIntensity
+    
+    tActive.Atmospherics.Lights.Sun = tActive.Atmospherics.Lights.Sun or {}
+    tActive.Atmospherics.Lights.Sun.Scatter = {
+      Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Scatter.Intensity
+    }
+    
+    tActive.Atmospherics.Lights.Moon = tActive.Atmospherics.Lights.Moon or {}
+    tActive.Atmospherics.Lights.Moon.Scatter = {
+      Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Scatter.Intensity
+    }
+    
+    tActive.Atmospherics.Lights.Sky = {
+      Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sky.Intensity,
+      Scatter = {
+        Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sky.Scatter.Intensity
+      }
+    }
+  end
+
+  -- Sun Disk overrides
+  if SkyStudioDataStore.bUserOverrideSunDisk then
+    tActive.Atmospherics = tActive.Atmospherics or {}
+    tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
+    tActive.Atmospherics.Lights.Sun = tActive.Atmospherics.Lights.Sun or {}
+    tActive.Atmospherics.Lights.Sun.Disk = {
+      Size = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size,
+      Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity
+    }
+  end
+
+  -- Moon Disk overrides
+  if SkyStudioDataStore.bUserOverrideMoonDisk then
+    tActive.Atmospherics = tActive.Atmospherics or {}
+    tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
+    tActive.Atmospherics.Lights.Moon = tActive.Atmospherics.Lights.Moon or {}
+    tActive.Atmospherics.Lights.Moon.Disk = {
+      Size = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size,
+      Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity
+    }
+  end
+
+  return tActive
 end
 
 return SkyStudioDataStore

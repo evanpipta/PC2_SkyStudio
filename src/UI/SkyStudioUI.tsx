@@ -67,6 +67,8 @@ type Config = {
 
   // Render parameter stuff:
   bUserOverrideAtmosphere: boolean;
+  bUserOverrideSunDisk: boolean;
+  bUserOverrideMoonDisk: boolean;
   nUserFogDensity: number;
   nUserFogScaleHeight: number;
   nUserHazeDensity: number;
@@ -79,6 +81,14 @@ type Config = {
   nUserMoonDiskSize: number;
   nUserMoonDiskIntensity: number;
   nUserMoonScatterIntensity: number;
+
+  // Additional atmosphere controls
+  nUserIrradianceScatterIntensity: number;
+  nUserSkyLightIntensity: number;
+  nUserSkyScatterIntensity: number;
+  nUserSkyDensity: number;
+  nUserVolumetricScatterWeight: number;
+  nUserVolumetricDistanceStart: number;
 };
 
 type State = {
@@ -138,6 +148,8 @@ const baseConfig = {
   bUserOverrideDayNightTransition: false,
 
   bUserOverrideAtmosphere: false,
+  bUserOverrideSunDisk: false,
+  bUserOverrideMoonDisk: false,
   nUserFogDensity: 1,
   nUserFogScaleHeight: 500,
   nUserHazeDensity: 1,
@@ -150,6 +162,14 @@ const baseConfig = {
   nUserMoonDiskSize: 1.5,
   nUserMoonDiskIntensity: 17.5,
   nUserMoonScatterIntensity: 0.1,
+
+  // Additional atmosphere controls
+  nUserIrradianceScatterIntensity: 2.0,
+  nUserSkyLightIntensity: 1.0,
+  nUserSkyScatterIntensity: 1.0,
+  nUserSkyDensity: 1.0,
+  nUserVolumetricScatterWeight: 0.4,
+  nUserVolumetricDistanceStart: 50.0,
 };
 
 let focusDebuginterval: number;
@@ -476,6 +496,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       bUserOverrideDayNightTransition,
 
       bUserOverrideAtmosphere,
+      bUserOverrideSunDisk,
+      bUserOverrideMoonDisk,
       nUserFogDensity,
       nUserFogScaleHeight,
       nUserHazeDensity,
@@ -487,6 +509,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserMoonDiskSize,
       nUserMoonDiskIntensity,
       nUserMoonScatterIntensity,
+
+      nUserIrradianceScatterIntensity,
+      nUserSkyLightIntensity,
+      nUserSkyScatterIntensity,
+      nUserSkyDensity,
+      nUserVolumetricScatterWeight,
+      nUserVolumetricDistanceStart,
     } = this.state.config;
 
     const visibleTabIndex = this.state.visibleTabIndex;
@@ -507,6 +536,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const sunFadeOverrideOn = bUserOverrideSunFade;
     const moonFadeOverrideOn = bUserOverrideMoonFade;
     const atmosphereOverrideOn = bUserOverrideAtmosphere;
+    const sunDiskOverrideOn = bUserOverrideSunDisk;
+    const moonDiskOverrideOn = bUserOverrideMoonDisk;
 
     const showResetConfirmation =
       this.state.confirmResetAll ||
@@ -809,6 +840,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetSun && "skystudio_blur"
+          )}
+        >
+          <ToggleRow
+            label={Format.stringLiteral("Override Sun Disk")}
+            toggled={sunDiskOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideSunDisk")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
           <SliderRow
             label={Format.stringLiteral("Sun Disk Size")}
             min={0}
@@ -819,35 +866,21 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               this.onNumericalValueChanged("nUserSunDiskSize", newValue)
             }
             editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            disabled={!customLightingEnabled || !sunDiskOverrideOn}
             focusable={true}
           />
 
           <SliderRow
             label={Format.stringLiteral("Sun Disk Intensity")}
             min={0}
-            max={10}
+            max={20}
             step={0.01}
             value={nUserSunDiskIntensity}
             onChange={(newValue: number) =>
               this.onNumericalValueChanged("nUserSunDiskIntensity", newValue)
             }
             editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Sun Scatter Intensity")}
-            min={0}
-            max={10}
-            step={0.01}
-            value={nUserSunScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
+            disabled={!customLightingEnabled || !sunDiskOverrideOn}
             focusable={true}
           />
         </PanelArea>
@@ -1035,6 +1068,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetMoon && "skystudio_blur"
+          )}
+        >
+          <ToggleRow
+            label={Format.stringLiteral("Override Moon Disk")}
+            toggled={moonDiskOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideMoonDisk")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
           <SliderRow
             label={Format.stringLiteral("Moon Disk Size")}
             min={0}
@@ -1045,7 +1094,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               this.onNumericalValueChanged("nUserMoonDiskSize", newValue)
             }
             editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            disabled={!customLightingEnabled || !moonDiskOverrideOn}
             focusable={true}
           />
 
@@ -1059,21 +1108,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               this.onNumericalValueChanged("nUserMoonDiskIntensity", newValue)
             }
             editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon Scatter Intensity")}
-            min={0}
-            max={5}
-            step={0.01}
-            value={nUserMoonScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserMoonScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
+            disabled={!customLightingEnabled || !moonDiskOverrideOn}
             focusable={true}
           />
         </PanelArea>
@@ -1139,10 +1174,24 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         </PanelArea>
 
         <PanelArea modifiers="skystudio_section">
+         <SliderRow
+            label={Format.stringLiteral("Atmosphere Density")}
+            min={0}
+            max={10}
+            step={0.01}
+            value={nUserSkyDensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSkyDensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+          
           <SliderRow
             label={Format.stringLiteral("Fog Density")}
             min={0}
-            max={100}
+            max={200}
             step={0.01}
             value={nUserFogDensity}
             onChange={(newValue: number) =>
@@ -1153,22 +1202,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
-          {/* <SliderRow
-            label={Format.stringLiteral("Fog Scale Height")}
-            min={0}
-            max={2000}
-            step={1}
-            value={nUserFogScaleHeight}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserFogScaleHeight", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          /> */}
-        </PanelArea>
-
-        <PanelArea modifiers="skystudio_section">
           <SliderRow
             label={Format.stringLiteral("Haze Density")}
             min={0}
@@ -1183,20 +1216,112 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
-          {/* <SliderRow
-            label={Format.stringLiteral("Haze Scale Height")}
+          <SliderRow
+            label={Format.stringLiteral("Fog/Haze Start Distance")}
             min={0}
-            max={5000}
+            max={500}
             step={1}
-            value={nUserHazeScaleHeight}
+            value={nUserVolumetricDistanceStart}
             onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserHazeScaleHeight", newValue)
+              this.onNumericalValueChanged("nUserVolumetricDistanceStart", newValue)
             }
             editable={true}
             disabled={!customLightingEnabled || !atmosphereOverrideOn}
             focusable={true}
-          /> */}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("fog/Haze Scatter Weight")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserVolumetricScatterWeight}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserVolumetricScatterWeight", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
         </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <SliderRow
+            label={Format.stringLiteral("Sun Scatter Intensity")}
+            min={0.01}
+            max={10}
+            step={0.01}
+            value={nUserSunScatterIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSunScatterIntensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Moon Scatter Intensity")}
+            min={0.01}
+            max={3}
+            step={0.01}
+            value={nUserMoonScatterIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserMoonScatterIntensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Ambient Scatter Intensity")}
+            min={0}
+            max={2}
+            step={0.01}
+            value={nUserIrradianceScatterIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserIrradianceScatterIntensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        <PanelArea modifiers="skystudio_section">
+          <SliderRow
+            label={Format.stringLiteral("Clouds Light Intensity")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserSkyLightIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSkyLightIntensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Clouds Scatter Intensity")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserSkyScatterIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged("nUserSkyScatterIntensity", newValue)
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        {/* <PanelArea modifiers="skystudio_section">
+
+        </PanelArea> */}
       </div>,
 
       // TAB 4: Miscellaneous -- Hide the less user-friendly features here

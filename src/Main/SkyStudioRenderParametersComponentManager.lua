@@ -75,7 +75,9 @@ function Patched.Advance(self, _nDeltaTime)
       --   }
       -- }
 
-      local tUserParameters = self.RenderParametersAPI:CreateParameterFromTable("SkyStudioUserParameters", SkyStudioDataStore.tUserRenderParameters)
+      -- Get only the active render parameters based on enabled overrides
+      local tActiveRenderParameters = SkyStudioDataStore:GetActiveRenderParameters()
+      local tUserParameters = self.RenderParametersAPI:CreateParameterFromTable("SkyStudioUserParameters", tActiveRenderParameters)
       if tUserParameters ~= nil then
         self.RenderParametersAPI:ApplyParametersTo(tUserParameters, self.tGlobalParameters)
       end
