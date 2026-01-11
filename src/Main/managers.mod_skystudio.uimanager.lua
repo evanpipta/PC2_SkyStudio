@@ -182,6 +182,64 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.bUserOverrideMoonFade = value
     end, self)
 
+    -- Atmosphere override bindings
+    self.ui:SkyStudioChangedValue_bUserOverrideAtmosphere(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideAtmosphere: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideAtmosphere = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserFogDensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserFogDensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserFogScaleHeight(function(_, value)
+      trace("SkyStudioChangedValue_nUserFogScaleHeight: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserHazeDensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserHazeDensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserHazeScaleHeight(function(_, value)
+      trace("SkyStudioChangedValue_nUserHazeScaleHeight: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight = value
+    end, self)
+
+    -- Sun disk and scatter bindings
+    self.ui:SkyStudioChangedValue_nUserSunDiskSize(function(_, value)
+      trace("SkyStudioChangedValue_nUserSunDiskSize: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserSunDiskIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserSunDiskIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserSunScatterIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserSunScatterIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Scatter.Intensity = value
+    end, self)
+
+    -- Moon disk and scatter bindings
+    self.ui:SkyStudioChangedValue_nUserMoonDiskSize(function(_, value)
+      trace("SkyStudioChangedValue_nUserMoonDiskSize: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserMoonDiskIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserMoonDiskIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserMoonScatterIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserMoonScatterIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Scatter.Intensity = value
+    end, self)
+
     self.ui:SkyStudio_ResetSun(function()
       trace("SkyStudioUIManager:SkyStudio_ResetSun()")
       SkyStudioDataStore:ResetSunToDefaults()
@@ -226,7 +284,20 @@ function SkyStudioUIManager:Init()
       bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
       bUserOverrideMoonPhase = SkyStudioDataStore.bUserOverrideMoonPhase,
       bUserOverrideMoonColorAndIntensity = SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
-      bUserOverrideDayNightTransition = SkyStudioDataStore.bUserOverrideDayNightTransition
+      bUserOverrideDayNightTransition = SkyStudioDataStore.bUserOverrideDayNightTransition,
+      -- Atmosphere parameters
+      bUserOverrideAtmosphere = SkyStudioDataStore.bUserOverrideAtmosphere,
+      nUserFogDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
+      nUserFogScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight,
+      nUserHazeDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
+      nUserHazeScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight,
+      -- Sun/Moon disk and scatter parameters
+      nUserSunDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size,
+      nUserSunDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity,
+      nUserSunScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Scatter.Intensity,
+      nUserMoonDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size,
+      nUserMoonDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity,
+      nUserMoonScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Scatter.Intensity
     })
   end)
 end

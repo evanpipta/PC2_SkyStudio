@@ -81,34 +81,124 @@ SkyStudioDataStore.bUserOverrideMoonFade = false
 
 SkyStudioDataStore.bUserOverrideDayNightTransition = false
 
+SkyStudioDataStore.bUserOverrideAtmosphere = false
+
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
+ 
+-- Override switches for:
+
+-- Volumetric/Fog/Haze/Sky (atmosphere)
+-- Clouds
+-- Lights (sun/moon, maybe these are always enabled? Or connected to override sun and moon color)
+-- Stars
+-- Probe + RadiativeTransfer
+-- Shadows
+-- View-GlobalIllumination
+-- View-Luminance
+-- (Other view stuff separate)
 
 SkyStudioDataStore.tUserRenderParameters = {
+  -- DayNight = {
+  --   DayFactor = 1.0
+  -- },
   Atmospherics = {
+    Volumetric = {
+      Scatter = {
+        Weight = 0.4
+      },
+      Distance = {
+        Start = 50.0
+      }
+    },
     Fog = {
-      Density = 1
+      Density = 1,
+      Altitude = 0,
+      ScaleHeight = 500.0 
     },
     Haze = {
-      Density = 1
+      -- Albedo =
+      Density = 1,
+      Altitude = 0,
+      ScaleHeight = 1200.0
     },
+    Sky = {
+      -- Albedo = 
+      Density = 1.0,
+      Altitude = 0,
+      ScaleHeight = 7994.0
+    },
+    -- Clouds = {
+    --   Density = 150,
+    --   Scale = 1.24,
+    --   Speed = 70.0,
+    --   AltitudeMin = 1500,
+    --   AltitudeMax = 2700,
+    --   CoverageMin = 0.73,
+    --   CoverageMax = 1.0,
+    -- },
     Lights = {
+      IrradianceScatterIntensity = 2.0,
       Sun  = {
         Disk = {
-          Size = 0.5,
-          Intensity = 10
+          Size = 1.5,
+          Intensity = 1.35
+        },
+        Scatter = {
+          Intensity = 3.0
         }
       },
       Moon = {
         Disk = {
-          Size = 0.5,
-          Intensity = 15,
+          Size = 1.5,
+          Intensity = 17.5,
+        },
+        Scatter = {
+          Intensity = 0.1
         }
       },
+      Sky = {
+        Intensity = 1.0,
+        Scatter = {
+          Intensity = 1.0
+        }
+      }
     },
     Stars = {
-      Strength = 1
+      Strength = 1,
+      Enabled = true,
+    },
+    RadiativeTransfer = {
+      Curve = {
+        Power = 1.0
+      }
+    },
+    Probe = {
+      RadianceScale = 1.0,
+      RadianceSaturation = 1.0,
+      RadianceOcclusionFactor = 0
+    }
+  },
+  Shadows = {
+    Collect = {
+      FilterSoftness = 2.5
+    }
+  },
+  View = {
+    GlobalIllumination = {
+      AmbientOcclusionWeight = 0.0,
+      BounceBoost = 0.39,
+      EmissiveIntensity = 1.0,
+      MultiBounceIntensity = 1.0,
+      SkyIntensity = 1.0,
+      SunIntensity = 1.0,
+    },
+    LookAdjust = {
+      Luminance = {
+        AdaptionTime = 1.35,
+        AdaptionDarknessScale = 0.9
+      }
     }
   }
 }
