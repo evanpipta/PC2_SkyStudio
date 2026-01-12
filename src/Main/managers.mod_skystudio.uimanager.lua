@@ -14,6 +14,14 @@ local trace = require("SkyStudioTrace")
 
 local SkyStudioDataStore = require("SkyStudioDataStore")
 
+-- Helper function to convert RGB floats (0-1) to integer color (0xRRGGBB)
+local function rgbFloatsToInt(r, g, b)
+  local ri = math.floor(r * 255 + 0.5)
+  local gi = math.floor(g * 255 + 0.5)
+  local bi = math.floor(b * 255 + 0.5)
+  return ri * 65536 + gi * 256 + bi
+end
+
 ---@class SkyStudioUIManager
 local SkyStudioUIManager = module(..., Mutators.Manager())
 
@@ -281,6 +289,17 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Distance.Start = value
     end, self)
 
+    -- Fog and Haze color bindings (receive r, g, b as floats 0-1)
+    self.ui:SkyStudioChangedValue_nUserFogColor(function(_, r, g, b)
+      trace("SkyStudioChangedValue_nUserFogColor: " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Albedo.value = {r, g, b}
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserHazeColor(function(_, r, g, b)
+      trace("SkyStudioChangedValue_nUserHazeColor: " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value = {r, g, b}
+    end, self)
+
     self.ui:SkyStudio_ResetSun(function()
       trace("SkyStudioUIManager:SkyStudio_ResetSun()")
       SkyStudioDataStore:ResetSunToDefaults()
@@ -352,7 +371,18 @@ function SkyStudioUIManager:Init()
       nUserSkyScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sky.Scatter.Intensity,
       nUserSkyDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.Density,
       nUserVolumetricScatterWeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Scatter.Weight,
-      nUserVolumetricDistanceStart = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Distance.Start
+      nUserVolumetricDistanceStart = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.Distance.Start,
+      -- Fog and Haze colors (as integer for color picker)
+      nUserFogColor = rgbFloatsToInt(
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Albedo.value[1],
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Albedo.value[2],
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Albedo.value[3]
+      ),
+      nUserHazeColor = rgbFloatsToInt(
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[1],
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[2],
+        SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[3]
+      )
     })
   end)
 end

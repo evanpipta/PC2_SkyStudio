@@ -16,6 +16,7 @@ import { ScrollPane } from "/js/common/components/ScrollPane.js";
 import { Tab } from "/js/common/components/Tab.js";
 
 import { Button } from "/js/project/components/Button.js";
+import { ColorPickerSwatch } from "/js/project/components/colorPicker/ColorPickerSwatch.js";
 
 import { SkyStudioButton } from "/SkyStudioButton.js";
 
@@ -89,6 +90,10 @@ type Config = {
   nUserSkyDensity: number;
   nUserVolumetricScatterWeight: number;
   nUserVolumetricDistanceStart: number;
+
+  // Fog and Haze colors (as 0xRRGGBB integers for the color picker)
+  nUserFogColor: number;
+  nUserHazeColor: number;
 };
 
 type State = {
@@ -171,6 +176,10 @@ const baseConfig = {
   nUserSkyDensity: 1.0,
   nUserVolumetricScatterWeight: 0.4,
   nUserVolumetricDistanceStart: 50.0,
+
+  // Fog and Haze colors (as 0xRRGGBB integers)
+  nUserFogColor: 0x5D7E9A, // Default fog color
+  nUserHazeColor: 0x7DD1F9, // Default haze color
 };
 
 let focusDebuginterval: number;
@@ -301,6 +310,21 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       });
       Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
     };
+
+  // Color picker handler - converts integer color (0xRRGGBB) to RGB floats [0-1]
+  onColorValueChanged = (key: keyof Config) => (colorInt: number) => {
+    this.setState({
+      config: {
+        ...this.state.config,
+        [key]: colorInt,
+      },
+    });
+    // Convert integer color to RGB floats (0-1 range)
+    const r = ((colorInt >> 16) & 0xff) / 255;
+    const g = ((colorInt >> 8) & 0xff) / 255;
+    const b = (colorInt & 0xff) / 255;
+    Engine.sendEvent(`SkyStudioChangedValue_${key}`, r, g, b);
+  };
 
   handleToggleControls = (value?: boolean) => {
     this.setState({
@@ -563,6 +587,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserSkyDensity,
       nUserVolumetricScatterWeight,
       nUserVolumetricDistanceStart,
+
+      nUserFogColor,
+      nUserHazeColor,
     } = this.state.config;
 
     const visibleTabIndex = this.state.visibleTabIndex;
@@ -1283,6 +1310,17 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
 
+          <FocusableDataRow
+            label={Format.stringLiteral("Fog Color")}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+          >
+            <ColorPickerSwatch
+              defaultColor={nUserFogColor}
+              onCommit={this.onColorValueChanged("nUserFogColor")}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            />
+          </FocusableDataRow>
+
           <SliderRow
             label={Format.stringLiteral("Haze Density")}
             min={0}
@@ -1296,6 +1334,17 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !atmosphereOverrideOn}
             focusable={true}
           />
+
+          <FocusableDataRow
+            label={Format.stringLiteral("Haze Color")}
+            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+          >
+            <ColorPickerSwatch
+              defaultColor={nUserHazeColor}
+              onCommit={this.onColorValueChanged("nUserHazeColor")}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            />
+          </FocusableDataRow>
 
           <SliderRow
             label={Format.stringLiteral("Fog/Haze Start Distance")}

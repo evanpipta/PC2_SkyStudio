@@ -329,6 +329,17 @@ SkyStudioUI.SkyStudioChangedValue_nUserVolumetricDistanceStart = function(self, 
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserVolumetricDistanceStart", 1, _callback, _self)
 end
 
+-- Fog and Haze color bindings (receives 3 args: r, g, b as floats 0-1)
+SkyStudioUI.SkyStudioChangedValue_nUserFogColor = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserFogColor")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserFogColor", 3, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserHazeColor = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserHazeColor")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHazeColor", 3, _callback, _self)
+end
+
 SkyStudioUI.SkyStudio_ResetSun = function(self, _callback, _self)
   trace("Adding Listener SkyStudioUI.SkyStudio_ResetSun")
   return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetSun", 1, _callback, _self)

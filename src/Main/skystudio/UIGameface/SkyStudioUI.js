@@ -13,6 +13,7 @@ import { ToggleRow } from "/js/project/components/ToggleRow.js";
 import { FocusableDataRow } from "/js/project/components/DataRow.js";
 import { Tab } from "/js/common/components/Tab.js";
 import { Button } from "/js/project/components/Button.js";
+import { ColorPickerSwatch } from "/js/project/components/colorPicker/ColorPickerSwatch.js";
 import { SkyStudioButton } from "/SkyStudioButton.js";
 const DEBUG_MODE = false;
 loadCSS("project/Shared");
@@ -69,6 +70,9 @@ const baseConfig = {
     nUserSkyDensity: 1.0,
     nUserVolumetricScatterWeight: 0.4,
     nUserVolumetricDistanceStart: 50.0,
+    // Fog and Haze colors (as 0xRRGGBB integers)
+    nUserFogColor: 0x5D7E9A, // Default fog color
+    nUserHazeColor: 0x7DD1F9, // Default haze color
 };
 let focusDebuginterval;
 // Full-width, 32px tall color swatch; editing is via RGB sliders below
@@ -149,6 +153,20 @@ class _SkyStudioUI extends preact.Component {
                 },
             });
             Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
+        };
+        // Color picker handler - converts integer color (0xRRGGBB) to RGB floats [0-1]
+        this.onColorValueChanged = (key) => (colorInt) => {
+            this.setState({
+                config: {
+                    ...this.state.config,
+                    [key]: colorInt,
+                },
+            });
+            // Convert integer color to RGB floats (0-1 range)
+            const r = ((colorInt >> 16) & 0xff) / 255;
+            const g = ((colorInt >> 8) & 0xff) / 255;
+            const b = (colorInt & 0xff) / 255;
+            Engine.sendEvent(`SkyStudioChangedValue_${key}`, r, g, b);
         };
         this.handleToggleControls = (value) => {
             this.setState({
@@ -325,7 +343,7 @@ class _SkyStudioUI extends preact.Component {
         clearInterval(focusDebuginterval);
     }
     render() {
-        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, bUserOverrideAtmosphere, bUserOverrideSunDisk, bUserOverrideMoonDisk, nUserFogDensity, nUserFogScaleHeight, nUserHazeDensity, nUserHazeScaleHeight, nUserSunDiskSize, nUserSunDiskIntensity, nUserSunScatterIntensity, nUserMoonDiskSize, nUserMoonDiskIntensity, nUserMoonScatterIntensity, nUserIrradianceScatterIntensity, nUserSkyLightIntensity, nUserSkyScatterIntensity, nUserSkyDensity, nUserVolumetricScatterWeight, nUserVolumetricDistanceStart, } = this.state.config;
+        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, bUserOverrideAtmosphere, bUserOverrideSunDisk, bUserOverrideMoonDisk, nUserFogDensity, nUserFogScaleHeight, nUserHazeDensity, nUserHazeScaleHeight, nUserSunDiskSize, nUserSunDiskIntensity, nUserSunScatterIntensity, nUserMoonDiskSize, nUserMoonDiskIntensity, nUserMoonScatterIntensity, nUserIrradianceScatterIntensity, nUserSkyLightIntensity, nUserSkyScatterIntensity, nUserSkyDensity, nUserVolumetricScatterWeight, nUserVolumetricDistanceStart, nUserFogColor, nUserHazeColor, } = this.state.config;
         const visibleTabIndex = this.state.visibleTabIndex;
         const useVanillaLighting = bUseVanillaLighting;
         const customLightingEnabled = !useVanillaLighting;
@@ -435,7 +453,11 @@ class _SkyStudioUI extends preact.Component {
                 preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },
                     preact.h(SliderRow, { label: Format.stringLiteral("Atmosphere Density"), min: 0, max: 10, step: 0.01, value: nUserSkyDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserSkyDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Fog Density"), min: 0, max: 200, step: 0.01, value: nUserFogDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserFogDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Fog Color"), disabled: !customLightingEnabled || !atmosphereOverrideOn },
+                        preact.h(ColorPickerSwatch, { defaultColor: nUserFogColor, onCommit: this.onColorValueChanged("nUserFogColor"), disabled: !customLightingEnabled || !atmosphereOverrideOn })),
                     preact.h(SliderRow, { label: Format.stringLiteral("Haze Density"), min: 0, max: 100, step: 0.1, value: nUserHazeDensity, onChange: (newValue) => this.onNumericalValueChanged("nUserHazeDensity", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
+                    preact.h(FocusableDataRow, { label: Format.stringLiteral("Haze Color"), disabled: !customLightingEnabled || !atmosphereOverrideOn },
+                        preact.h(ColorPickerSwatch, { defaultColor: nUserHazeColor, onCommit: this.onColorValueChanged("nUserHazeColor"), disabled: !customLightingEnabled || !atmosphereOverrideOn })),
                     preact.h(SliderRow, { label: Format.stringLiteral("Fog/Haze Start Distance"), min: 0, max: 500, step: 1, value: nUserVolumetricDistanceStart, onChange: (newValue) => this.onNumericalValueChanged("nUserVolumetricDistanceStart", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Fog/Haze Scatter Weight"), min: 0, max: 1, step: 0.01, value: nUserVolumetricScatterWeight, onChange: (newValue) => this.onNumericalValueChanged("nUserVolumetricScatterWeight", newValue), editable: true, disabled: !customLightingEnabled || !atmosphereOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAtmosphere && "skystudio_blur") },

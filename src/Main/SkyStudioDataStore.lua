@@ -386,11 +386,21 @@ function SkyStudioDataStore:ResetAtmosphereToDefaults()
   current.Fog.Density = defaults.Fog.Density
   current.Fog.Altitude = defaults.Fog.Altitude
   current.Fog.ScaleHeight = defaults.Fog.ScaleHeight
+  current.Fog.Albedo.value = {
+    defaults.Fog.Albedo.value[1],
+    defaults.Fog.Albedo.value[2],
+    defaults.Fog.Albedo.value[3]
+  }
   
   -- Haze
   current.Haze.Density = defaults.Haze.Density
   current.Haze.Altitude = defaults.Haze.Altitude
   current.Haze.ScaleHeight = defaults.Haze.ScaleHeight
+  current.Haze.Albedo.value = {
+    defaults.Haze.Albedo.value[1],
+    defaults.Haze.Albedo.value[2],
+    defaults.Haze.Albedo.value[3]
+  }
   
   -- Sky
   current.Sky.Density = defaults.Sky.Density
@@ -431,7 +441,7 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     tActive.Atmospherics.Fog = {
       Albedo = {
         type = "colour",
-        value = {1,0,0}
+        value = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Albedo.value
       },
       Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
       Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Altitude,
@@ -442,7 +452,7 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     tActive.Atmospherics.Haze = {
       Albedo = {
         type = "colour",
-        value = {1,0,0}
+        value = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value
       },
       Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
       Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Altitude,
