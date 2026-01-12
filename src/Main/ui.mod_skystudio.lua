@@ -340,6 +340,75 @@ SkyStudioUI.SkyStudioChangedValue_nUserHazeColor = function(self, _callback, _se
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHazeColor", 3, _callback, _self)
 end
 
+-- Sun and Moon color bindings (receives 3 args: r, g, b as floats 0-1)
+SkyStudioUI.SkyStudioChangedValue_nUserSunColor = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserSunColor")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSunColor", 3, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserMoonColor = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserMoonColor")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserMoonColor", 3, _callback, _self)
+end
+
+-- Rendering tab: GI and HDR toggles
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideGI = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideGI")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideGI", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideHDR = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideHDR")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideHDR", 1, _callback, _self)
+end
+
+-- Rendering tab: GI parameters
+SkyStudioUI.SkyStudioChangedValue_nUserGISkyIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGISkyIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGISkyIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserGISunIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGISunIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGISunIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserGIBounceBoost = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGIBounceBoost")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGIBounceBoost", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserGIMultiBounceIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGIMultiBounceIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGIMultiBounceIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserGIEmissiveIntensity = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGIEmissiveIntensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGIEmissiveIntensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserGIAmbientOcclusionWeight = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserGIAmbientOcclusionWeight")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGIAmbientOcclusionWeight", 1, _callback, _self)
+end
+
+-- Rendering tab: HDR parameters
+SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionTime = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionTime")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHDRAdaptionTime", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionDarknessScale = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionDarknessScale")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHDRAdaptionDarknessScale", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_ResetRendering = function(self, _callback, _self)
+  trace("Adding Listener SkyStudioUI.SkyStudio_ResetRendering")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetRendering", 1, _callback, _self)
+end
+
 SkyStudioUI.SkyStudio_ResetSun = function(self, _callback, _self)
   trace("Adding Listener SkyStudioUI.SkyStudio_ResetSun")
   return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetSun", 1, _callback, _self)

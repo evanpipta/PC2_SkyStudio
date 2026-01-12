@@ -68,6 +68,14 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.nUserSunColorB = value
     end, self)
 
+    -- Combined sun color handler (receives r, g, b as floats 0-1)
+    self.ui:SkyStudioChangedValue_nUserSunColor(function(_, r, g, b)
+      trace("SkyStudioChangedValue_nUserSunColor: " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+      SkyStudioDataStore.nUserSunColorR = r
+      SkyStudioDataStore.nUserSunColorG = g
+      SkyStudioDataStore.nUserSunColorB = b
+    end, self)
+
     self.ui:SkyStudioChangedValue_nUserSunIntensity(function(_, value)
       trace("SkyStudioChangedValue_nUserSunIntensity: " .. tostring(value))
       SkyStudioDataStore.nUserSunIntensity = value
@@ -111,6 +119,14 @@ function SkyStudioUIManager:Init()
     self.ui:SkyStudioChangedValue_nUserMoonColorB(function(_, value)
       trace("SkyStudioChangedValue_nUserMoonColorB: " .. tostring(value))
       SkyStudioDataStore.nUserMoonColorB = value
+    end, self)
+
+    -- Combined moon color handler (receives r, g, b as floats 0-1)
+    self.ui:SkyStudioChangedValue_nUserMoonColor(function(_, r, g, b)
+      trace("SkyStudioChangedValue_nUserMoonColor: " .. tostring(r) .. ", " .. tostring(g) .. ", " .. tostring(b))
+      SkyStudioDataStore.nUserMoonColorR = r
+      SkyStudioDataStore.nUserMoonColorG = g
+      SkyStudioDataStore.nUserMoonColorB = b
     end, self)
 
     self.ui:SkyStudioChangedValue_nUserMoonIntensity(function(_, value)
@@ -300,6 +316,64 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value = {r, g, b}
     end, self)
 
+    -- Rendering tab: GI and HDR toggles
+    self.ui:SkyStudioChangedValue_bUserOverrideGI(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideGI: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideGI = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserOverrideHDR(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideHDR: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideHDR = value
+    end, self)
+
+    -- Rendering tab: GI parameters
+    self.ui:SkyStudioChangedValue_nUserGISkyIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserGISkyIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SkyIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserGISunIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserGISunIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SunIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserGIBounceBoost(function(_, value)
+      trace("SkyStudioChangedValue_nUserGIBounceBoost: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.BounceBoost = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserGIMultiBounceIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserGIMultiBounceIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.MultiBounceIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserGIEmissiveIntensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserGIEmissiveIntensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.EmissiveIntensity = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserGIAmbientOcclusionWeight(function(_, value)
+      trace("SkyStudioChangedValue_nUserGIAmbientOcclusionWeight: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight = value
+    end, self)
+
+    -- Rendering tab: HDR parameters
+    self.ui:SkyStudioChangedValue_nUserHDRAdaptionTime(function(_, value)
+      trace("SkyStudioChangedValue_nUserHDRAdaptionTime: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserHDRAdaptionDarknessScale(function(_, value)
+      trace("SkyStudioChangedValue_nUserHDRAdaptionDarknessScale: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale = value
+    end, self)
+
+    self.ui:SkyStudio_ResetRendering(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetRendering()")
+      SkyStudioDataStore:ResetRenderingToDefaults()
+    end, self)
+
     self.ui:SkyStudio_ResetSun(function()
       trace("SkyStudioUIManager:SkyStudio_ResetSun()")
       SkyStudioDataStore:ResetSunToDefaults()
@@ -330,6 +404,11 @@ function SkyStudioUIManager:Init()
       nUserSunColorR = SkyStudioDataStore.nUserSunColorR,
       nUserSunColorG = SkyStudioDataStore.nUserSunColorG,
       nUserSunColorB = SkyStudioDataStore.nUserSunColorB,
+      nUserSunColor = rgbFloatsToInt(
+        SkyStudioDataStore.nUserSunColorR,
+        SkyStudioDataStore.nUserSunColorG,
+        SkyStudioDataStore.nUserSunColorB
+      ),
       nUserSunIntensity = SkyStudioDataStore.nUserSunIntensity,
       bUserSunUseLinearColors = SkyStudioDataStore.bUserSunUseLinearColors,
       nUserMoonAzimuth = SkyStudioDataStore.nUserMoonAzimuth,
@@ -338,6 +417,11 @@ function SkyStudioUIManager:Init()
       nUserMoonColorR = SkyStudioDataStore.nUserMoonColorR,
       nUserMoonColorG = SkyStudioDataStore.nUserMoonColorG,
       nUserMoonColorB = SkyStudioDataStore.nUserMoonColorB,
+      nUserMoonColor = rgbFloatsToInt(
+        SkyStudioDataStore.nUserMoonColorR,
+        SkyStudioDataStore.nUserMoonColorG,
+        SkyStudioDataStore.nUserMoonColorB
+      ),
       nUserMoonIntensity = SkyStudioDataStore.nUserMoonIntensity,
       bUserMoonUseLinearColors = SkyStudioDataStore.bUserMoonUseLinearColors,
       nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
@@ -382,7 +466,20 @@ function SkyStudioUIManager:Init()
         SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[1],
         SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[2],
         SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Albedo.value[3]
-      )
+      ),
+      -- Rendering tab: toggles
+      bUserOverrideGI = SkyStudioDataStore.bUserOverrideGI,
+      bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
+      -- Rendering tab: GI parameters
+      nUserGISkyIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SkyIntensity,
+      nUserGISunIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SunIntensity,
+      nUserGIBounceBoost = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.BounceBoost,
+      nUserGIMultiBounceIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.MultiBounceIntensity,
+      nUserGIEmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.EmissiveIntensity,
+      nUserGIAmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight,
+      -- Rendering tab: HDR parameters
+      nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
+      nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale
     })
   end)
 end

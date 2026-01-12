@@ -97,6 +97,10 @@ SkyStudioDataStore.bUserOverrideAtmosphere = false
 SkyStudioDataStore.bUserOverrideSunDisk = false
 SkyStudioDataStore.bUserOverrideMoonDisk = false
 
+-- Rendering tab overrides
+SkyStudioDataStore.bUserOverrideGI = false
+SkyStudioDataStore.bUserOverrideHDR = false
+
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
@@ -120,7 +124,7 @@ SkyStudioDataStore.tUserRenderParameters = {
   Atmospherics = {
     Volumetric = {
       Scatter = {
-        Weight = 0.4
+        Weight = 0.8
       },
       Distance = {
         Start = 0
@@ -176,7 +180,7 @@ SkyStudioDataStore.tUserRenderParameters = {
       Moon = {
         Disk = {
           Size = 3,
-          Intensity = 17.5,
+          Intensity = 50,
         },
         Scatter = {
           Intensity = 1
@@ -419,6 +423,24 @@ function SkyStudioDataStore:ResetAtmosphereToDefaults()
   current.Lights.Sky.Scatter.Intensity = defaults.Lights.Sky.Scatter.Intensity
 end
 
+-- Reset all rendering (GI + HDR) values
+function SkyStudioDataStore:ResetRenderingToDefaults()
+  local defaults = SkyStudioDataStore.defaultValues.tUserRenderParameters.View
+  local current = SkyStudioDataStore.tUserRenderParameters.View
+  
+  -- Global Illumination
+  current.GlobalIllumination.SkyIntensity = defaults.GlobalIllumination.SkyIntensity
+  current.GlobalIllumination.SunIntensity = defaults.GlobalIllumination.SunIntensity
+  current.GlobalIllumination.BounceBoost = defaults.GlobalIllumination.BounceBoost
+  current.GlobalIllumination.MultiBounceIntensity = defaults.GlobalIllumination.MultiBounceIntensity
+  current.GlobalIllumination.EmissiveIntensity = defaults.GlobalIllumination.EmissiveIntensity
+  current.GlobalIllumination.AmbientOcclusionWeight = defaults.GlobalIllumination.AmbientOcclusionWeight
+  
+  -- HDR / Luminance
+  current.LookAdjust.Luminance.AdaptionTime = defaults.LookAdjust.Luminance.AdaptionTime
+  current.LookAdjust.Luminance.AdaptionDarknessScale = defaults.LookAdjust.Luminance.AdaptionDarknessScale
+end
+
 -- Reset all user settings
 function SkyStudioDataStore:ResetAllToDefaults()
   for key, value in pairs(SkyStudioDataStore.defaultValues) do
@@ -517,6 +539,29 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     tActive.Atmospherics.Lights.Moon.Disk = {
       Size = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size,
       Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity
+    }
+  end
+
+  -- Global Illumination overrides
+  if SkyStudioDataStore.bUserOverrideGI then
+    tActive.View = tActive.View or {}
+    tActive.View.GlobalIllumination = {
+      SkyIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SkyIntensity,
+      SunIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SunIntensity,
+      BounceBoost = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.BounceBoost,
+      MultiBounceIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.MultiBounceIntensity,
+      EmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.EmissiveIntensity,
+      AmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight
+    }
+  end
+
+  -- HDR / Luminance overrides
+  if SkyStudioDataStore.bUserOverrideHDR then
+    tActive.View = tActive.View or {}
+    tActive.View.LookAdjust = tActive.View.LookAdjust or {}
+    tActive.View.LookAdjust.Luminance = {
+      AdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
+      AdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale
     }
   end
 

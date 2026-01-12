@@ -94,6 +94,22 @@ type Config = {
   // Fog and Haze colors (as 0xRRGGBB integers for the color picker)
   nUserFogColor: number;
   nUserHazeColor: number;
+
+  // Sun and Moon colors (as 0xRRGGBB integers for the color picker)
+  nUserSunColor: number;
+  nUserMoonColor: number;
+
+  // Rendering tab: GI and HDR
+  bUserOverrideGI: boolean;
+  bUserOverrideHDR: boolean;
+  nUserGISkyIntensity: number;
+  nUserGISunIntensity: number;
+  nUserGIBounceBoost: number;
+  nUserGIMultiBounceIntensity: number;
+  nUserGIEmissiveIntensity: number;
+  nUserGIAmbientOcclusionWeight: number;
+  nUserHDRAdaptionTime: number;
+  nUserHDRAdaptionDarknessScale: number;
 };
 
 type State = {
@@ -112,6 +128,7 @@ type State = {
   confirmResetMoon?: boolean;
   confirmResetAll?: boolean;
   confirmResetAtmosphere?: boolean;
+  confirmResetRendering?: boolean;
 };
 
 const baseConfig = {
@@ -180,6 +197,22 @@ const baseConfig = {
   // Fog and Haze colors (as 0xRRGGBB integers)
   nUserFogColor: 0x5D7E9A, // Default fog color
   nUserHazeColor: 0x7DD1F9, // Default haze color
+
+  // Sun and Moon colors (as 0xRRGGBB integers)
+  nUserSunColor: 0xFFFFFF, // Default sun color (white)
+  nUserMoonColor: 0x5796FF, // Default moon color (blueish)
+
+  // Rendering tab: GI and HDR
+  bUserOverrideGI: false,
+  bUserOverrideHDR: false,
+  nUserGISkyIntensity: 1.0,
+  nUserGISunIntensity: 1.0,
+  nUserGIBounceBoost: 0.39,
+  nUserGIMultiBounceIntensity: 1.0,
+  nUserGIEmissiveIntensity: 1.0,
+  nUserGIAmbientOcclusionWeight: 0.0,
+  nUserHDRAdaptionTime: 1.35,
+  nUserHDRAdaptionDarknessScale: 0.9,
 };
 
 let focusDebuginterval: number;
@@ -401,6 +434,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserSunColorR",
       "nUserSunColorG",
       "nUserSunColorB",
+      "nUserSunColor",
       "nUserSunIntensity",
       "nUserSunGroundMultiplier",
       "nUserSunFade",
@@ -430,6 +464,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserMoonColorR",
       "nUserMoonColorG",
       "nUserMoonColorB",
+      "nUserMoonColor",
       "nUserMoonIntensity",
       "nUserMoonGroundMultiplier",
       "nUserMoonFade",
@@ -458,8 +493,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const atmosphereKeys = [
       "nUserFogDensity",
       "nUserFogScaleHeight",
+      "nUserFogColor",
       "nUserHazeDensity",
       "nUserHazeScaleHeight",
+      "nUserHazeColor",
       "nUserSkyDensity",
       "nUserSunScatterIntensity",
       "nUserMoonScatterIntensity",
@@ -482,6 +519,43 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     });
 
     Engine.sendEvent("SkyStudio_ResetAtmosphere");
+  };
+
+  beginResetRendering = () => {
+    this.setState({ confirmResetRendering: true });
+  };
+
+  cancelResetRendering = () => {
+    this.setState({ confirmResetRendering: false });
+  };
+
+  private resetRenderingToDefault = () => {
+    const defaultConfig = this.state.defaultConfig;
+
+    // All rendering-related values (GI + HDR)
+    const renderingKeys = [
+      "nUserGISkyIntensity",
+      "nUserGISunIntensity",
+      "nUserGIBounceBoost",
+      "nUserGIMultiBounceIntensity",
+      "nUserGIEmissiveIntensity",
+      "nUserGIAmbientOcclusionWeight",
+      "nUserHDRAdaptionTime",
+      "nUserHDRAdaptionDarknessScale",
+    ];
+
+    const newConfig: Config = { ...this.state.config };
+
+    renderingKeys.forEach((key) => {
+      newConfig[key] = defaultConfig[key];
+    });
+
+    this.setState({
+      config: newConfig,
+      confirmResetRendering: false,
+    });
+
+    Engine.sendEvent("SkyStudio_ResetRendering");
   };
 
   private resetAllToDefault = () => {
@@ -590,6 +664,21 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
       nUserFogColor,
       nUserHazeColor,
+
+      nUserSunColor,
+      nUserMoonColor,
+
+      // Rendering tab
+      bUserOverrideGI,
+      bUserOverrideHDR,
+      nUserGISkyIntensity,
+      nUserGISunIntensity,
+      nUserGIBounceBoost,
+      nUserGIMultiBounceIntensity,
+      nUserGIEmissiveIntensity,
+      nUserGIAmbientOcclusionWeight,
+      nUserHDRAdaptionTime,
+      nUserHDRAdaptionDarknessScale,
     } = this.state.config;
 
     const visibleTabIndex = this.state.visibleTabIndex;
@@ -612,6 +701,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const atmosphereOverrideOn = bUserOverrideAtmosphere;
     const sunDiskOverrideOn = bUserOverrideSunDisk;
     const moonDiskOverrideOn = bUserOverrideMoonDisk;
+
+    const giOverrideOn = bUserOverrideGI;
+    const hdrOverrideOn = bUserOverrideHDR;
 
     const showResetConfirmation =
       this.state.confirmResetAll ||
@@ -644,6 +736,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         outcome="SkyStudio_Tab_Atmospherer"
       />,
       <Tab
+        key="rendering"
+        icon={"img/icons/eye.svg"}
+        label={Format.stringLiteral("Rendering")}
+        outcome="SkyStudio_Tab_Rendering"
+      />,
+      <Tab
         key="other"
         icon={"img/icons/dataList.svg"}
         label={Format.stringLiteral("Misc")}
@@ -653,7 +751,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     const tabViews = [
       // TAB 0: Time of day
-      <div key="time" className="skystudio_scrollPane">
+      <ScrollPane key="time" rootClassName="skystudio_scrollPane">
         <PanelArea modifiers="skystudio_section">
           <ToggleRow
             label={Format.stringLiteral("Override Time of Day")}
@@ -785,14 +883,14 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             focusable={true}
           />
         </PanelArea>
-      </div>,
+      </ScrollPane>,
 
       // <div key="orientation" className="skystudio_scrollPane">
       //    This section moved to Time of Day for now
       // </div>,
 
       // TAB 2: Sun color + intensity
-      <div key="suncolor" className="skystudio_scrollPane">
+      <ScrollPane key="suncolor" rootClassName="skystudio_scrollPane">
         {this.state.confirmResetSun && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -833,55 +931,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled}
           />
 
-          <ColorPickerRow
+          <FocusableDataRow
             label={Format.stringLiteral("Sun Color")}
-            r={nUserSunColorR}
-            g={nUserSunColorG}
-            b={nUserSunColorB}
             disabled={!customLightingEnabled || !sunColorOverrideOn}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Sun Color R")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserSunColorR}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunColorR", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Sun Color G")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserSunColorG}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunColorG", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Sun Color B")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserSunColorB}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunColorB", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !sunColorOverrideOn}
-            focusable={true}
-          />
+          >
+            <ColorPickerSwatch
+              defaultColor={nUserSunColor}
+              onCommit={this.onColorValueChanged("nUserSunColor")}
+              disabled={!customLightingEnabled || !sunColorOverrideOn}
+            />
+          </FocusableDataRow>
 
           <SliderRow
             label={Format.stringLiteral("Sun Intensity")}
@@ -959,7 +1018,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea
+        {/* <PanelArea
           modifiers={classNames(
             "skystudio_section",
             this.state.confirmResetSun && "skystudio_blur"
@@ -985,7 +1044,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !sunFadeOverrideOn}
             focusable={true}
           />
-        </PanelArea>
+        </PanelArea> */}
 
         {/* Reset button */}
         <PanelArea
@@ -1005,10 +1064,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </div>,
+      </ScrollPane>,
 
       // TAB 3: Moon color + intensity
-      <div key="mooncolor" className="skystudio_scrollPane">
+      <ScrollPane key="mooncolor" rootClassName="skystudio_scrollPane">
         {this.state.confirmResetMoon && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1049,64 +1108,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled}
           />
 
-          <ColorPickerRow
+          <FocusableDataRow
             label={Format.stringLiteral("Moon Color")}
-            r={nUserMoonColorR}
-            g={nUserMoonColorG}
-            b={nUserMoonColorB}
             disabled={!customLightingEnabled || !moonColorOverrideOn}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon Color R")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserMoonColorR}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserMoonColorR",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon Color G")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserMoonColorG}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserMoonColorG",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon Color B")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserMoonColorB}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserMoonColorB",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !moonColorOverrideOn}
-            focusable={true}
-          />
+          >
+            <ColorPickerSwatch
+              defaultColor={nUserMoonColor}
+              onCommit={this.onColorValueChanged("nUserMoonColor")}
+              disabled={!customLightingEnabled || !moonColorOverrideOn}
+            />
+          </FocusableDataRow>
 
           <SliderRow
             label={Format.stringLiteral("Moon Intensity")}
@@ -1175,7 +1186,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <SliderRow
             label={Format.stringLiteral("Moon Disk Intensity")}
             min={0}
-            max={50}
+            max={100}
             step={0.1}
             value={nUserMoonDiskIntensity}
             onChange={(newValue: number) =>
@@ -1187,7 +1198,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
         </PanelArea>
 
-        <PanelArea
+        {/* <PanelArea
           modifiers={classNames(
             "skystudio_section",
             this.state.confirmResetMoon && "skystudio_blur"
@@ -1214,7 +1225,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             disabled={!customLightingEnabled || !moonFadeOverrideOn}
             focusable={true}
           />
-        </PanelArea>
+        </PanelArea> */}
 
         {/* Reset button */}
         <PanelArea
@@ -1234,9 +1245,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </div>,
+      </ScrollPane>,
 
-      <div key="atmosphere" className="skystudio_scrollPane">
+      <ScrollPane key="atmosphere" rootClassName="skystudio_scrollPane">
         {this.state.confirmResetAtmosphere && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1475,9 +1486,218 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </div>,
+      </ScrollPane>,
 
-      // TAB 4: Miscellaneous -- Hide the less user-friendly features here
+      // TAB 4: Rendering (GI + HDR)
+      <ScrollPane key="rendering" rootClassName="skystudio_scrollPane">
+        {this.state.confirmResetRendering && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset Rendering Settings to Default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetRenderingToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetRendering}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetRendering && "skystudio_blur"
+          )}
+        >
+          <ToggleRow
+            label={Format.stringLiteral("Override Global Illumination")}
+            toggled={giOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideGI")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sky Ambient Intensity")}
+            min={0}
+            max={10}
+            step={0.01}
+            value={nUserGISkyIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGISkyIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Sun Direct Intensity")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserGISunIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGISunIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Bounce Boost")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserGIBounceBoost}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGIBounceBoost",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Multi-Bounce Intensity")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserGIMultiBounceIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGIMultiBounceIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          />
+
+          {/* <SliderRow
+            label={Format.stringLiteral("Emissive Intensity")}
+            min={0}
+            max={5}
+            step={0.01}
+            value={nUserGIEmissiveIntensity}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGIEmissiveIntensity",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Ambient Occlusion Weight")}
+            min={0}
+            max={1}
+            step={0.01}
+            value={nUserGIAmbientOcclusionWeight}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserGIAmbientOcclusionWeight",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !giOverrideOn}
+            focusable={true}
+          /> */}
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetRendering && "skystudio_blur"
+          )}
+        >
+          <ToggleRow
+            label={Format.stringLiteral("Override HDR Adaptation")}
+            toggled={hdrOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Adaptation Time")}
+            min={0.1}
+            max={2}
+            step={0.01}
+            value={nUserHDRAdaptionTime}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserHDRAdaptionTime",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !hdrOverrideOn}
+            focusable={true}
+          />
+
+          {/* <SliderRow
+            label={Format.stringLiteral("Darkness Adaptation Scale")}
+            min={0}
+            max={2}
+            step={0.01}
+            value={nUserHDRAdaptionDarknessScale}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserHDRAdaptionDarknessScale",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !hdrOverrideOn}
+            focusable={true}
+          /> */}
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetRendering && "skystudio_blur"
+          )}
+        >
+          <FocusableDataRow label={Format.stringLiteral("Reset Rendering Settings")}>
+            <Button
+              icon={"img/icons/restart.svg"}
+              label={Format.stringLiteral("Reset Rendering")}
+              onSelect={this.beginResetRendering}
+              rootClassName={"skystudio_reset_confirm_button"}
+            />
+          </FocusableDataRow>
+        </PanelArea>
+      </ScrollPane>,
+
+      // TAB 5: Miscellaneous -- Hide the less user-friendly features here
       <div key="other" className="skystudio_scrollPane">
         {this.state.confirmResetAll && (
           <div className={"skystudio_confirm_modal"}>
@@ -1561,28 +1781,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             this.state.confirmResetAll && "skystudio_blur"
           )}
         >
-          {/* <FocusableDataRow
-            label={Format.stringLiteral("Reset Sun Color/Intensity")}
-          >
-            <Button
-              icon={"img/icons/restart.svg"}
-              label={Format.stringLiteral("Reset Sun Color")}
-              onSelect={this.beginResetSun}
-              rootClassName={"skystudio_reset_confirm_button"}
-            />
-          </FocusableDataRow>
-
-          <FocusableDataRow
-            label={Format.stringLiteral("Reset Moon Color/Intensity")}
-          >
-            <Button
-              icon={"img/icons/restart.svg"}
-              label={Format.stringLiteral("Reset Moon Color")}
-              onSelect={this.beginResetMoon}
-              rootClassName={"skystudio_reset_confirm_button"}
-            />
-          </FocusableDataRow> */}
-
           <FocusableDataRow label={Format.stringLiteral("Reset All Slider Values")}>
             <Button
               icon={"img/icons/restart.svg"}
