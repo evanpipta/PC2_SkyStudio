@@ -560,27 +560,62 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
   private resetAllToDefault = () => {
     const keysToReset = [
+      // Sun settings
       "nUserSunAzimuth",
       "nUserSunLatitudeOffset",
       "nUserSunTimeOfDay",
       "nUserSunColorR",
       "nUserSunColorG",
       "nUserSunColorB",
+      "nUserSunColor",
       "nUserSunIntensity",
       "nUserSunGroundMultiplier",
+      "nUserSunFade",
+      "nUserSunDiskSize",
+      "nUserSunDiskIntensity",
+      "nUserSunScatterIntensity",
 
+      // Moon settings
       "nUserMoonAzimuth",
       "nUserMoonLatitudeOffset",
       "nUserMoonPhase",
       "nUserMoonColorR",
       "nUserMoonColorG",
       "nUserMoonColorB",
+      "nUserMoonColor",
       "nUserMoonIntensity",
       "nUserMoonGroundMultiplier",
-
-      "nUserDayNightTransition",
-      "nUserSunFade",
       "nUserMoonFade",
+      "nUserMoonDiskSize",
+      "nUserMoonDiskIntensity",
+      "nUserMoonScatterIntensity",
+
+      // Day/Night transition
+      "nUserDayNightTransition",
+
+      // Atmosphere settings
+      "nUserFogDensity",
+      "nUserFogScaleHeight",
+      "nUserFogColor",
+      "nUserHazeDensity",
+      "nUserHazeScaleHeight",
+      "nUserHazeColor",
+      "nUserSkyDensity",
+      "nUserIrradianceScatterIntensity",
+      "nUserSkyLightIntensity",
+      "nUserSkyScatterIntensity",
+      "nUserVolumetricScatterWeight",
+      "nUserVolumetricDistanceStart",
+
+      // Rendering settings (GI + HDR)
+      "nUserGISkyIntensity",
+      "nUserGISunIntensity",
+      "nUserGIBounceBoost",
+      "nUserGIMultiBounceIntensity",
+      "nUserGIEmissiveIntensity",
+      "nUserGIAmbientOcclusionWeight",
+      "nUserHDRAdaptionTime",
+      "nUserHDRAdaptionDarknessScale",
     ];
 
     const defaultConfig = this.state.defaultConfig;
@@ -890,7 +925,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       // </div>,
 
       // TAB 2: Sun color + intensity
-      <ScrollPane key="suncolor" rootClassName="skystudio_scrollPane">
+      <div key="suncolor" className="relative">
         {this.state.confirmResetSun && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -914,8 +949,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-
-        <PanelArea
+        <ScrollPane rootClassName="skystudio_scrollPane">
+          <PanelArea
           modifiers={classNames(
             "skystudio_section",
             this.state.confirmResetSun && "skystudio_blur"
@@ -1064,10 +1099,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </ScrollPane>,
+        </ScrollPane>
+      </div>,
 
       // TAB 3: Moon color + intensity
-      <ScrollPane key="mooncolor" rootClassName="skystudio_scrollPane">
+      <div key="mooncolor" className="relative">
         {this.state.confirmResetMoon && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1091,15 +1127,15 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetMoon && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override Moon Color & Intensity")}
+        <ScrollPane rootClassName="skystudio_scrollPane">
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetMoon && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override Moon Color & Intensity")}
             toggled={moonColorOverrideOn}
             onToggle={this.onToggleValueChanged(
               "bUserOverrideMoonColorAndIntensity"
@@ -1245,9 +1281,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </ScrollPane>,
+        </ScrollPane>
+      </div>,
 
-      <ScrollPane key="atmosphere" rootClassName="skystudio_scrollPane">
+      <div key="atmosphere" className="relative">
         {this.state.confirmResetAtmosphere && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1271,225 +1308,226 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAtmosphere && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override Atmosphere")}
-            toggled={atmosphereOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideAtmosphere")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAtmosphere && "skystudio_blur"
-          )}
-        >
-         <SliderRow
-            label={Format.stringLiteral("Atmosphere Density")}
-            min={0}
-            max={10}
-            step={0.01}
-            value={nUserSkyDensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSkyDensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-          
-          <SliderRow
-            label={Format.stringLiteral("Fog Density")}
-            min={0}
-            max={200}
-            step={0.01}
-            value={nUserFogDensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserFogDensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <FocusableDataRow
-            label={Format.stringLiteral("Fog Color")}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+        <ScrollPane rootClassName="skystudio_scrollPane">
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAtmosphere && "skystudio_blur"
+            )}
           >
-            <ColorPickerSwatch
-              defaultColor={nUserFogColor}
-              onCommit={this.onColorValueChanged("nUserFogColor")}
-              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            <ToggleRow
+              label={Format.stringLiteral("Override Atmosphere")}
+              toggled={atmosphereOverrideOn}
+              onToggle={this.onToggleValueChanged("bUserOverrideAtmosphere")}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
             />
-          </FocusableDataRow>
+          </PanelArea>
 
-          <SliderRow
-            label={Format.stringLiteral("Haze Density")}
-            min={0}
-            max={100}
-            step={0.1}
-            value={nUserHazeDensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserHazeDensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <FocusableDataRow
-            label={Format.stringLiteral("Haze Color")}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAtmosphere && "skystudio_blur"
+            )}
           >
-            <ColorPickerSwatch
-              defaultColor={nUserHazeColor}
-              onCommit={this.onColorValueChanged("nUserHazeColor")}
+          <SliderRow
+              label={Format.stringLiteral("Atmosphere Density")}
+              min={0}
+              max={10}
+              step={0.01}
+              value={nUserSkyDensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserSkyDensity", newValue)
+              }
+              editable={true}
               disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
             />
-          </FocusableDataRow>
-
-          <SliderRow
-            label={Format.stringLiteral("Fog/Haze Start Distance")}
-            min={0}
-            max={500}
-            step={1}
-            value={nUserVolumetricDistanceStart}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserVolumetricDistanceStart", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Fog/Haze Scatter Weight")}
-            min={0}
-            max={1}
-            step={0.01}
-            value={nUserVolumetricScatterWeight}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserVolumetricScatterWeight", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAtmosphere && "skystudio_blur"
-          )}
-        >
-          <SliderRow
-            label={Format.stringLiteral("Sun Scatter Intensity")}
-            min={0.01}
-            max={10}
-            step={0.01}
-            value={nUserSunScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSunScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Moon Scatter Intensity")}
-            min={0.01}
-            max={3}
-            step={0.01}
-            value={nUserMoonScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserMoonScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Ambient Scatter Intensity")}
-            min={0}
-            max={2}
-            step={0.01}
-            value={nUserIrradianceScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserIrradianceScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAtmosphere && "skystudio_blur"
-          )}
-        >
-          <SliderRow
-            label={Format.stringLiteral("Clouds Light Intensity")}
-            min={0}
-            max={5}
-            step={0.01}
-            value={nUserSkyLightIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSkyLightIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Clouds Scatter Intensity")}
-            min={0}
-            max={5}
-            step={0.01}
-            value={nUserSkyScatterIntensity}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged("nUserSkyScatterIntensity", newValue)
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !atmosphereOverrideOn}
-            focusable={true}
-          />
-        </PanelArea>
-
-        {/* Reset button */}
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAtmosphere && "skystudio_blur"
-          )}
-        >
-          <FocusableDataRow label={Format.stringLiteral("Reset Atmosphere Settings")}>
-            <Button
-              icon={"img/icons/restart.svg"}
-              label={Format.stringLiteral("Reset Atmosphere")}
-              onSelect={this.beginResetAtmosphere}
-              rootClassName={"skystudio_reset_confirm_button"}
+            
+            <SliderRow
+              label={Format.stringLiteral("Fog Density")}
+              min={0}
+              max={200}
+              step={0.01}
+              value={nUserFogDensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserFogDensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
             />
-          </FocusableDataRow>
-        </PanelArea>
-      </ScrollPane>,
+
+            <FocusableDataRow
+              label={Format.stringLiteral("Fog Color")}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            >
+              <ColorPickerSwatch
+                defaultColor={nUserFogColor}
+                onCommit={this.onColorValueChanged("nUserFogColor")}
+                disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              />
+            </FocusableDataRow>
+
+            <SliderRow
+              label={Format.stringLiteral("Haze Density")}
+              min={0}
+              max={100}
+              step={0.1}
+              value={nUserHazeDensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserHazeDensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+
+            <FocusableDataRow
+              label={Format.stringLiteral("Haze Color")}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+            >
+              <ColorPickerSwatch
+                defaultColor={nUserHazeColor}
+                onCommit={this.onColorValueChanged("nUserHazeColor")}
+                disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              />
+            </FocusableDataRow>
+
+            <SliderRow
+              label={Format.stringLiteral("Fog/Haze Start Distance")}
+              min={0}
+              max={500}
+              step={1}
+              value={nUserVolumetricDistanceStart}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserVolumetricDistanceStart", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Fog/Haze Scatter Weight")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={nUserVolumetricScatterWeight}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserVolumetricScatterWeight", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAtmosphere && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Sun Scatter Intensity")}
+              min={0.01}
+              max={10}
+              step={0.01}
+              value={nUserSunScatterIntensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserSunScatterIntensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Moon Scatter Intensity")}
+              min={0.01}
+              max={3}
+              step={0.01}
+              value={nUserMoonScatterIntensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserMoonScatterIntensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Ambient Scatter Intensity")}
+              min={0}
+              max={2}
+              step={0.01}
+              value={nUserIrradianceScatterIntensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserIrradianceScatterIntensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAtmosphere && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Clouds Light Intensity")}
+              min={0}
+              max={2}
+              step={0.01}
+              value={nUserSkyLightIntensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserSkyLightIntensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Clouds Scatter Intensity")}
+              min={0}
+              max={2}
+              step={0.01}
+              value={nUserSkyScatterIntensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserSkyScatterIntensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !atmosphereOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          {/* Reset button */}
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAtmosphere && "skystudio_blur"
+            )}
+          >
+            <FocusableDataRow label={Format.stringLiteral("Reset Atmosphere Settings")}>
+              <Button
+                icon={"img/icons/restart.svg"}
+                label={Format.stringLiteral("Reset Atmosphere")}
+                onSelect={this.beginResetAtmosphere}
+                rootClassName={"skystudio_reset_confirm_button"}
+              />
+            </FocusableDataRow>
+          </PanelArea>
+        </ScrollPane>
+      </div>,
 
       // TAB 4: Rendering (GI + HDR)
-      <ScrollPane key="rendering" rootClassName="skystudio_scrollPane">
+      <div key="rendering" className="relative">
         {this.state.confirmResetRendering && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1513,8 +1551,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-
-        <PanelArea
+        <ScrollPane rootClassName="skystudio_scrollPane">
+          <PanelArea
           modifiers={classNames(
             "skystudio_section",
             this.state.confirmResetRendering && "skystudio_blur"
@@ -1695,10 +1733,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
-      </ScrollPane>,
+        </ScrollPane>
+      </div>,
 
       // TAB 5: Miscellaneous -- Hide the less user-friendly features here
-      <div key="other" className="skystudio_scrollPane">
+      <div key="other" className="relative">
         {this.state.confirmResetAll && (
           <div className={"skystudio_confirm_modal"}>
             <div>
@@ -1722,8 +1761,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-
-        <PanelArea
+        <div className="skystudio_scrollPane">
+          <PanelArea
           modifiers={classNames(
             "skystudio_section",
             this.state.confirmResetAll && "skystudio_blur"
@@ -1790,6 +1829,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
           </FocusableDataRow>
         </PanelArea>
+        </div>
       </div>,
     ];
 

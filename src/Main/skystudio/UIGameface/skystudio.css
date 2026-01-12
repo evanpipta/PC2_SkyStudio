@@ -87,10 +87,8 @@
 
 .skystudio_confirm_modal {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  width: 45rem;
+  height: 35vh;
   padding-bottom: 2rem;
   background: rgba(255,255,255,0.7);
   display: flex;
@@ -128,4 +126,8 @@
 
 .skystudio_blur {
   filter: blur(4px);
+}
+
+.relative {
+  position: relative;
 }

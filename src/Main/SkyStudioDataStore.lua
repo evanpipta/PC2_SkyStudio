@@ -124,7 +124,7 @@ SkyStudioDataStore.tUserRenderParameters = {
   Atmospherics = {
     Volumetric = {
       Scatter = {
-        Weight = 0.8
+        Weight = 0.4
       },
       Distance = {
         Start = 0
@@ -144,7 +144,7 @@ SkyStudioDataStore.tUserRenderParameters = {
         type = "colour",
         value = {0.49019607843, 0.81960784314, 0.97647058824}
       },
-      Density = 1,
+      Density = 5,
       Altitude = 0,
       ScaleHeight = 1200.0
     },
@@ -520,31 +520,46 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     }
   end
 
-  -- Sun Disk overrides
+  -- Sun Disk overrides - ALWAYS include to reset to defaults when toggle is off
+  local defaults = SkyStudioDataStore.defaultValues.tUserRenderParameters
+  
+  tActive.Atmospherics = tActive.Atmospherics or {}
+  tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
+  tActive.Atmospherics.Lights.Sun = tActive.Atmospherics.Lights.Sun or {}
+  
   if SkyStudioDataStore.bUserOverrideSunDisk then
-    tActive.Atmospherics = tActive.Atmospherics or {}
-    tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
-    tActive.Atmospherics.Lights.Sun = tActive.Atmospherics.Lights.Sun or {}
     tActive.Atmospherics.Lights.Sun.Disk = {
       Size = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Size,
       Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Sun.Disk.Intensity
     }
+  else
+    -- Use defaults when toggle is off
+    tActive.Atmospherics.Lights.Sun.Disk = {
+      Size = defaults.Atmospherics.Lights.Sun.Disk.Size,
+      Intensity = defaults.Atmospherics.Lights.Sun.Disk.Intensity
+    }
   end
 
-  -- Moon Disk overrides
+  -- Moon Disk overrides - ALWAYS include to reset to defaults when toggle is off
+  tActive.Atmospherics.Lights.Moon = tActive.Atmospherics.Lights.Moon or {}
+  
   if SkyStudioDataStore.bUserOverrideMoonDisk then
-    tActive.Atmospherics = tActive.Atmospherics or {}
-    tActive.Atmospherics.Lights = tActive.Atmospherics.Lights or {}
-    tActive.Atmospherics.Lights.Moon = tActive.Atmospherics.Lights.Moon or {}
     tActive.Atmospherics.Lights.Moon.Disk = {
       Size = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Size,
       Intensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Lights.Moon.Disk.Intensity
     }
+  else
+    -- Use defaults when toggle is off
+    tActive.Atmospherics.Lights.Moon.Disk = {
+      Size = defaults.Atmospherics.Lights.Moon.Disk.Size,
+      Intensity = defaults.Atmospherics.Lights.Moon.Disk.Intensity
+    }
   end
 
-  -- Global Illumination overrides
+  -- Global Illumination overrides - ALWAYS include to reset to defaults when toggle is off
+  tActive.View = tActive.View or {}
+  
   if SkyStudioDataStore.bUserOverrideGI then
-    tActive.View = tActive.View or {}
     tActive.View.GlobalIllumination = {
       SkyIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SkyIntensity,
       SunIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SunIntensity,
@@ -553,15 +568,31 @@ function SkyStudioDataStore:GetActiveRenderParameters()
       EmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.EmissiveIntensity,
       AmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight
     }
+  else
+    -- Use defaults when toggle is off
+    tActive.View.GlobalIllumination = {
+      SkyIntensity = defaults.View.GlobalIllumination.SkyIntensity,
+      SunIntensity = defaults.View.GlobalIllumination.SunIntensity,
+      BounceBoost = defaults.View.GlobalIllumination.BounceBoost,
+      MultiBounceIntensity = defaults.View.GlobalIllumination.MultiBounceIntensity,
+      EmissiveIntensity = defaults.View.GlobalIllumination.EmissiveIntensity,
+      AmbientOcclusionWeight = defaults.View.GlobalIllumination.AmbientOcclusionWeight
+    }
   end
 
-  -- HDR / Luminance overrides
+  -- HDR / Luminance overrides - ALWAYS include to reset to defaults when toggle is off
+  tActive.View.LookAdjust = tActive.View.LookAdjust or {}
+  
   if SkyStudioDataStore.bUserOverrideHDR then
-    tActive.View = tActive.View or {}
-    tActive.View.LookAdjust = tActive.View.LookAdjust or {}
     tActive.View.LookAdjust.Luminance = {
       AdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
       AdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale
+    }
+  else
+    -- Use defaults when toggle is off
+    tActive.View.LookAdjust.Luminance = {
+      AdaptionTime = defaults.View.LookAdjust.Luminance.AdaptionTime,
+      AdaptionDarknessScale = defaults.View.LookAdjust.Luminance.AdaptionDarknessScale
     }
   end
 
