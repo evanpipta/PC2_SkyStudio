@@ -127,18 +127,28 @@ SkyStudioDataStore.tUserRenderParameters = {
       }
     },
     Fog = {
+      Albedo = {
+        type = "colour",
+        value = {0.36470588235, 0.49411764706, 0.60392156863}
+      },
       Density = 0.5,
       Altitude = 0,
       ScaleHeight = 500.0 
     },
     Haze = {
-      -- Albedo =
+      Albedo = {
+        type = "colour",
+        value = {0.49019607843, 0.81960784314, 0.97647058824}
+      },
       Density = 1,
       Altitude = 0,
       ScaleHeight = 1200.0
     },
     Sky = {
-      -- Albedo = 
+      -- Albedo = {
+      --   type = "colour",
+      --   value = {255, 0, 0, 255}
+      -- },
       Density = 1,
       Altitude = 0,
       ScaleHeight = 7994.0
@@ -419,6 +429,10 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     
     -- Fog
     tActive.Atmospherics.Fog = {
+      Albedo = {
+        type = "colour",
+        value = {1,0,0}
+      },
       Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
       Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Altitude,
       ScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight
@@ -426,6 +440,10 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     
     -- Haze
     tActive.Atmospherics.Haze = {
+      Albedo = {
+        type = "colour",
+        value = {1,0,0}
+      },
       Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
       Altitude = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Altitude,
       ScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight

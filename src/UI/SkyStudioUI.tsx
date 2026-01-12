@@ -1312,7 +1312,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           />
 
           <SliderRow
-            label={Format.stringLiteral("fog/Haze Scatter Weight")}
+            label={Format.stringLiteral("Fog/Haze Scatter Weight")}
             min={0}
             max={1}
             step={0.01}
