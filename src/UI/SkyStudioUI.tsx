@@ -344,19 +344,55 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       Engine.sendEvent(`SkyStudioChangedValue_${key}`, toggled);
     };
 
-  // Color picker handler - converts integer color (0xRRGGBB) to RGB floats [0-1]
-  onColorValueChanged = (key: keyof Config) => (colorInt: number) => {
+  // Track the original color before preview starts for each key
+  _colorPreviewOriginal: Partial<Record<keyof Config, number>> = {};
+
+  // Color picker preview handler - sends to engine for live preview only
+  // Does NOT update React state so the original value is preserved if user cancels
+  onColorPreview = (key: keyof Config) => (colorInt: number) => {
+    // Store the original value if this is the first preview change
+    if (this._colorPreviewOriginal[key] === undefined) {
+      this._colorPreviewOriginal[key] = this.state.config[key] as number;
+    }
+    // Send to engine for live preview (don't update React state)
+    const r = ((colorInt >> 16) & 0xff) / 255;
+    const g = ((colorInt >> 8) & 0xff) / 255;
+    const b = (colorInt & 0xff) / 255;
+    Engine.sendEvent(`SkyStudioChangedValue_${key}`, r, g, b);
+  };
+
+  // Color picker commit handler - called when user confirms the color
+  onColorCommit = (key: keyof Config) => (colorInt: number) => {
+    // Update React state with the committed color
     this.setState({
       config: {
         ...this.state.config,
         [key]: colorInt,
       },
     });
-    // Convert integer color to RGB floats (0-1 range)
+    // Clear the preview original since we've committed
+    delete this._colorPreviewOriginal[key];
+    // Send to engine to confirm (it may already have this from preview)
     const r = ((colorInt >> 16) & 0xff) / 255;
     const g = ((colorInt >> 8) & 0xff) / 255;
     const b = (colorInt & 0xff) / 255;
     Engine.sendEvent(`SkyStudioChangedValue_${key}`, r, g, b);
+  };
+
+  // Color picker cancel handler - reverts the engine to the original color
+  // Note: ColorPickerSwatch doesn't actually call this prop callback, so we also
+  // handle revert via onColorPickerClose which is called on blur/click-outside
+  onColorCanceled = (key: keyof Config) => () => {
+    const originalColor = this._colorPreviewOriginal[key];
+    if (originalColor !== undefined) {
+      // Revert the engine to the original color
+      const r = ((originalColor >> 16) & 0xff) / 255;
+      const g = ((originalColor >> 8) & 0xff) / 255;
+      const b = (originalColor & 0xff) / 255;
+      Engine.sendEvent(`SkyStudioChangedValue_${key}`, r, g, b);
+      // Clear the preview tracking
+      delete this._colorPreviewOriginal[key];
+    }
   };
 
   handleToggleControls = (value?: boolean) => {
@@ -972,7 +1008,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           >
             <ColorPickerSwatch
               defaultColor={nUserSunColor}
-              onCommit={this.onColorValueChanged("nUserSunColor")}
+              onChange={this.onColorPreview("nUserSunColor")}
+              onCommit={this.onColorCommit("nUserSunColor")}
+              onCancel={this.onColorCanceled("nUserSunColor")}
               disabled={!customLightingEnabled || !sunColorOverrideOn}
             />
           </FocusableDataRow>
@@ -1150,7 +1188,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           >
             <ColorPickerSwatch
               defaultColor={nUserMoonColor}
-              onCommit={this.onColorValueChanged("nUserMoonColor")}
+              onChange={this.onColorPreview("nUserMoonColor")}
+              onCommit={this.onColorCommit("nUserMoonColor")}
+              onCancel={this.onColorCanceled("nUserMoonColor")}
               disabled={!customLightingEnabled || !moonColorOverrideOn}
             />
           </FocusableDataRow>
@@ -1364,7 +1404,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             >
               <ColorPickerSwatch
                 defaultColor={nUserFogColor}
-                onCommit={this.onColorValueChanged("nUserFogColor")}
+                onChange={this.onColorPreview("nUserFogColor")}
+                onCommit={this.onColorCommit("nUserFogColor")}
+                onCancel={this.onColorCanceled("nUserFogColor")}
                 disabled={!customLightingEnabled || !atmosphereOverrideOn}
               />
             </FocusableDataRow>
@@ -1389,7 +1431,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             >
               <ColorPickerSwatch
                 defaultColor={nUserHazeColor}
-                onCommit={this.onColorValueChanged("nUserHazeColor")}
+                onChange={this.onColorPreview("nUserHazeColor")}
+                onCommit={this.onColorCommit("nUserHazeColor")}
+                onCancel={this.onColorCanceled("nUserHazeColor")}
                 disabled={!customLightingEnabled || !atmosphereOverrideOn}
               />
             </FocusableDataRow>

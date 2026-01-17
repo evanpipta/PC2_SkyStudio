@@ -443,11 +443,18 @@ end
 
 -- Reset all user settings
 function SkyStudioDataStore:ResetAllToDefaults()
+  -- Reset simple nUser* values
   for key, value in pairs(SkyStudioDataStore.defaultValues) do
     if string.sub(key, 1, 5) == "nUser" then -- or string.sub(key, 1, 5) == "bUser" then
       SkyStudioDataStore[key] = value
     end
   end
+  
+  -- Reset all render parameter sections
+  SkyStudioDataStore:ResetSunToDefaults()
+  SkyStudioDataStore:ResetMoonToDefaults()
+  SkyStudioDataStore:ResetAtmosphereToDefaults()
+  SkyStudioDataStore:ResetRenderingToDefaults()
 end
 
 -- Build a render parameters table containing only values for enabled overrides

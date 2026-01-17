@@ -98,18 +98,14 @@ function Patched.Advance(self, _nDeltaTime)
         local nBlendFactor = 1 - (self.tTransitionEntity).nTimeLeft / (self.tEntityTransitionTimes)[(self.tTransitionEntity).nEntityID]
 
         if bHasOverrideParameters then
-          trace("BlendParametersTo with override")
           self.RenderParametersAPI:BlendParametersTo(self.tGlobalParameters, (self.tTransitionEntity).tParameters, self.tOverrideParameters, nBlendFactor)
         else
-          trace("BlendParameters without override")
           self.RenderParametersAPI:BlendParameters(self.tGlobalParameters, (self.tTransitionEntity).tParameters, nBlendFactor)
         end
 
       elseif bHasOverrideParameters then
-        trace("ApplyParametersTo with override")
         self.RenderParametersAPI:ApplyParametersTo(self.tGlobalParameters, self.tOverrideParameters)
       else
-        trace("ApplyParameters without override")
         self.RenderParametersAPI:ApplyParameters(self.tGlobalParameters)
       end
 
@@ -139,8 +135,6 @@ function Patched.Advance(self, _nDeltaTime)
 end
 
 function Patched.SetEditorOverrideRenderParametersCollection(self, _parameterCollection)
-  trace('Patched.SetEditorOverrideRenderParametersCollection')
-  trace(_parameterCollection)
   self.tEditorOverrideRenderParametersCollection = _parameterCollection
 end
 
@@ -153,7 +147,7 @@ function RenderParametersComponentManager:Setup()
 end
 
 function RenderParametersComponentManager:Init()
-  trace("Init")
+  -- trace("Init")
 end
 
 return RenderParametersComponentManager
