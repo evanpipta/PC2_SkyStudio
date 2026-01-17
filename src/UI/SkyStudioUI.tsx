@@ -110,6 +110,22 @@ type Config = {
   nUserGIAmbientOcclusionWeight: number;
   nUserHDRAdaptionTime: number;
   nUserHDRAdaptionDarknessScale: number;
+
+  // Shadows
+  nUserShadowFilterSoftness: number;
+
+  // Clouds tab
+  bUserOverrideClouds: boolean;
+  nUserCloudsDensity: number;
+  nUserCloudsScale: number;
+  nUserCloudsSpeed: number;
+  nUserCloudsAltitudeMin: number;
+  nUserCloudsAltitudeMax: number;
+  nUserCloudsCoverageMin: number;
+  nUserCloudsCoverageMax: number;
+  nUserCloudsHorizonDensity: number;
+  nUserCloudsHorizonCoverageMin: number;
+  nUserCloudsHorizonCoverageMax: number;
 };
 
 type State = {
@@ -129,6 +145,7 @@ type State = {
   confirmResetAll?: boolean;
   confirmResetAtmosphere?: boolean;
   confirmResetRendering?: boolean;
+  confirmResetClouds?: boolean;
 };
 
 const baseConfig = {
@@ -213,6 +230,22 @@ const baseConfig = {
   nUserGIAmbientOcclusionWeight: 0.0,
   nUserHDRAdaptionTime: 1.35,
   nUserHDRAdaptionDarknessScale: 0.9,
+
+  // Shadows
+  nUserShadowFilterSoftness: 2.5,
+
+  // Clouds tab
+  bUserOverrideClouds: false,
+  nUserCloudsDensity: 150.0,
+  nUserCloudsScale: 1.24,
+  nUserCloudsSpeed: 70.0,
+  nUserCloudsAltitudeMin: 1500.0,
+  nUserCloudsAltitudeMax: 2700.0,
+  nUserCloudsCoverageMin: 0.73,
+  nUserCloudsCoverageMax: 1.0,
+  nUserCloudsHorizonDensity: 0.0,
+  nUserCloudsHorizonCoverageMin: 0.1,
+  nUserCloudsHorizonCoverageMax: 1.0,
 };
 
 let focusDebuginterval: number;
@@ -283,6 +316,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetMoon: false,
     confirmResetAll: false,
     confirmResetAtmosphere: false,
+    confirmResetClouds: false,
   };
 
   componentWillMount() {
@@ -565,6 +599,45 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     this.setState({ confirmResetRendering: false });
   };
 
+  beginResetClouds = () => {
+    this.setState({ confirmResetClouds: true });
+  };
+
+  cancelResetClouds = () => {
+    this.setState({ confirmResetClouds: false });
+  };
+
+  private resetCloudsToDefault = () => {
+    const defaultConfig = this.state.defaultConfig;
+
+    // All cloud-related values
+    const cloudKeys = [
+      "nUserCloudsDensity",
+      "nUserCloudsScale",
+      "nUserCloudsSpeed",
+      "nUserCloudsAltitudeMin",
+      "nUserCloudsAltitudeMax",
+      "nUserCloudsCoverageMin",
+      "nUserCloudsCoverageMax",
+      "nUserCloudsHorizonDensity",
+      "nUserCloudsHorizonCoverageMin",
+      "nUserCloudsHorizonCoverageMax",
+    ];
+
+    const newConfig: Config = { ...this.state.config };
+
+    cloudKeys.forEach((key) => {
+      newConfig[key] = defaultConfig[key];
+    });
+
+    this.setState({
+      config: newConfig,
+      confirmResetClouds: false,
+    });
+
+    Engine.sendEvent("SkyStudio_ResetClouds");
+  };
+
   private resetRenderingToDefault = () => {
     const defaultConfig = this.state.defaultConfig;
 
@@ -652,6 +725,21 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserGIAmbientOcclusionWeight",
       "nUserHDRAdaptionTime",
       "nUserHDRAdaptionDarknessScale",
+
+      // Shadow settings
+      "nUserShadowFilterSoftness",
+
+      // Cloud settings
+      "nUserCloudsDensity",
+      "nUserCloudsScale",
+      "nUserCloudsSpeed",
+      "nUserCloudsAltitudeMin",
+      "nUserCloudsAltitudeMax",
+      "nUserCloudsCoverageMin",
+      "nUserCloudsCoverageMax",
+      "nUserCloudsHorizonDensity",
+      "nUserCloudsHorizonCoverageMin",
+      "nUserCloudsHorizonCoverageMax",
     ];
 
     const defaultConfig = this.state.defaultConfig;
@@ -750,6 +838,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserGIAmbientOcclusionWeight,
       nUserHDRAdaptionTime,
       nUserHDRAdaptionDarknessScale,
+
+      // Shadows
+      nUserShadowFilterSoftness,
+
+      // Clouds tab
+      bUserOverrideClouds,
+      nUserCloudsDensity,
+      nUserCloudsScale,
+      nUserCloudsSpeed,
+      nUserCloudsAltitudeMin,
+      nUserCloudsAltitudeMax,
+      nUserCloudsCoverageMin,
+      nUserCloudsCoverageMax,
+      nUserCloudsHorizonDensity,
+      nUserCloudsHorizonCoverageMin,
+      nUserCloudsHorizonCoverageMax,
     } = this.state.config;
 
     const visibleTabIndex = this.state.visibleTabIndex;
@@ -775,6 +879,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     const giOverrideOn = bUserOverrideGI;
     const hdrOverrideOn = bUserOverrideHDR;
+    const cloudsOverrideOn = bUserOverrideClouds;
 
     const showResetConfirmation =
       this.state.confirmResetAll ||
@@ -805,6 +910,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         icon={"img/icons/biomeTaiga.svg"}
         label={Format.stringLiteral("Atmosphere")}
         outcome="SkyStudio_Tab_Atmospherer"
+      />,
+      <Tab
+        key="clouds"
+        icon={"img/icons/cloud.svg"}
+        label={Format.stringLiteral("Clouds")}
+        outcome="SkyStudio_Tab_Clouds"
       />,
       <Tab
         key="rendering"
@@ -1523,7 +1634,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             )}
           >
             <SliderRow
-              label={Format.stringLiteral("Clouds Light Intensity")}
+              label={Format.stringLiteral("Sky Light Intensity")}
               min={0}
               max={2}
               step={0.01}
@@ -1537,7 +1648,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             />
 
             <SliderRow
-              label={Format.stringLiteral("Clouds Scatter Intensity")}
+              label={Format.stringLiteral("Sky Scatter Intensity")}
               min={0}
               max={2}
               step={0.01}
@@ -1570,7 +1681,235 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         </ScrollPane>
       </div>,
 
-      // TAB 4: Rendering (GI + HDR)
+      // TAB 5: Clouds
+      <div key="clouds" className="relative">
+        {this.state.confirmResetClouds && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset Cloud Settings to Default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetCloudsToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetClouds}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        <ScrollPane rootClassName="skystudio_scrollPane">
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override Clouds")}
+              toggled={cloudsOverrideOn}
+              onToggle={this.onToggleValueChanged("bUserOverrideClouds")}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Cloud Scale")}
+              min={0.1}
+              max={2}
+              step={0.1}
+              value={nUserCloudsScale}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsScale", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Cloud Speed")}
+              min={0}
+              max={300}
+              step={1}
+              value={nUserCloudsSpeed}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsSpeed", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Altitude Min")}
+              min={0}
+              max={5000}
+              step={10}
+              value={nUserCloudsAltitudeMin}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsAltitudeMin", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Altitude Max")}
+              min={0}
+              max={10000}
+              step={10}
+              value={nUserCloudsAltitudeMax}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsAltitudeMax", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Density")}
+              min={0}
+              max={200}
+              step={1}
+              value={nUserCloudsDensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsDensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Coverage")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={1 - nUserCloudsCoverageMin}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsCoverageMin", 1 - newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Thickness")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={1 - nUserCloudsCoverageMax}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsCoverageMax", 1 - newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <SliderRow
+              label={Format.stringLiteral("Horizon Density")}
+              min={0}
+              max={200}
+              step={1}
+              value={nUserCloudsHorizonDensity}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsHorizonDensity", newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Horizon Coverage")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={1 - nUserCloudsHorizonCoverageMin}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsHorizonCoverageMin", 1 - newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Horizon Thickness")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={1 - nUserCloudsHorizonCoverageMax}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged("nUserCloudsHorizonCoverageMax", 1 - newValue)
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !cloudsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          {/* Reset button */}
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetClouds && "skystudio_blur"
+            )}
+          >
+            <FocusableDataRow label={Format.stringLiteral("Reset Cloud Settings")}>
+              <Button
+                icon={"img/icons/restart.svg"}
+                label={Format.stringLiteral("Reset Clouds")}
+                onSelect={this.beginResetClouds}
+                rootClassName={"skystudio_reset_confirm_button"}
+              />
+            </FocusableDataRow>
+          </PanelArea>
+        </ScrollPane>
+      </div>,
+
+      // TAB 6: Rendering (GI + HDR)
       <div key="rendering" className="relative">
         {this.state.confirmResetRendering && (
           <div className={"skystudio_confirm_modal"}>
@@ -1836,6 +2175,30 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             }
             editable={true}
             disabled={!customLightingEnabled || !dayNightOverrideOn}
+            focusable={true}
+          />
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
+            this.state.confirmResetAll && "skystudio_blur"
+          )}
+        >
+          <SliderRow
+            label={Format.stringLiteral("Shadow Softness")}
+            min={0}
+            max={100}
+            step={0.1}
+            value={nUserShadowFilterSoftness}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserShadowFilterSoftness",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled}
             focusable={true}
           />
         </PanelArea>

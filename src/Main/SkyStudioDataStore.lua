@@ -101,6 +101,9 @@ SkyStudioDataStore.bUserOverrideMoonDisk = false
 SkyStudioDataStore.bUserOverrideGI = false
 SkyStudioDataStore.bUserOverrideHDR = false
 
+-- Clouds tab override
+SkyStudioDataStore.bUserOverrideClouds = false
+
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
@@ -157,15 +160,20 @@ SkyStudioDataStore.tUserRenderParameters = {
       Altitude = 0,
       ScaleHeight = 7994.0
     },
-    -- Clouds = {
-    --   Density = 150,
-    --   Scale = 1.24,
-    --   Speed = 70.0,
-    --   AltitudeMin = 1500,
-    --   AltitudeMax = 2700,
-    --   CoverageMin = 0.73,
-    --   CoverageMax = 1.0,
-    -- },
+    Clouds = {
+      Density = 150.0,
+      Scale = 1.24,
+      Speed = 70.0,
+      AltitudeMin = 1500.0,
+      AltitudeMax = 2700.0,
+      CoverageMin = 0.73,
+      CoverageMax = 1.0,
+      Horizon = {
+        Density = 0.0,
+        CoverageMin = 0.1,
+        CoverageMax = 1.0
+      }
+    },
     Lights = {
       IrradianceScatterIntensity = 1.0,
       Sun  = {
@@ -441,6 +449,23 @@ function SkyStudioDataStore:ResetRenderingToDefaults()
   current.LookAdjust.Luminance.AdaptionDarknessScale = defaults.LookAdjust.Luminance.AdaptionDarknessScale
 end
 
+-- Reset all cloud values
+function SkyStudioDataStore:ResetCloudsToDefaults()
+  local defaults = SkyStudioDataStore.defaultValues.tUserRenderParameters.Atmospherics.Clouds
+  local current = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds
+  
+  current.Density = defaults.Density
+  current.Scale = defaults.Scale
+  current.Speed = defaults.Speed
+  current.AltitudeMin = defaults.AltitudeMin
+  current.AltitudeMax = defaults.AltitudeMax
+  current.CoverageMin = defaults.CoverageMin
+  current.CoverageMax = defaults.CoverageMax
+  current.Horizon.Density = defaults.Horizon.Density
+  current.Horizon.CoverageMin = defaults.Horizon.CoverageMin
+  current.Horizon.CoverageMax = defaults.Horizon.CoverageMax
+end
+
 -- Reset all user settings
 function SkyStudioDataStore:ResetAllToDefaults()
   -- Reset simple nUser* values
@@ -455,6 +480,7 @@ function SkyStudioDataStore:ResetAllToDefaults()
   SkyStudioDataStore:ResetMoonToDefaults()
   SkyStudioDataStore:ResetAtmosphereToDefaults()
   SkyStudioDataStore:ResetRenderingToDefaults()
+  SkyStudioDataStore:ResetCloudsToDefaults()
 end
 
 -- Build a render parameters table containing only values for enabled overrides
@@ -600,6 +626,33 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     tActive.View.LookAdjust.Luminance = {
       AdaptionTime = defaults.View.LookAdjust.Luminance.AdaptionTime,
       AdaptionDarknessScale = defaults.View.LookAdjust.Luminance.AdaptionDarknessScale
+    }
+  end
+
+  -- Shadows - always include (no toggle, always applied)
+  tActive.Shadows = {
+    Collect = {
+      FilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness
+    }
+  }
+
+  -- Clouds overrides - ALWAYS include to reset to defaults when toggle is off
+  tActive.Atmospherics = tActive.Atmospherics or {}
+  
+  if SkyStudioDataStore.bUserOverrideClouds then
+    tActive.Atmospherics.Clouds = {
+      Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density,
+      Scale = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale,
+      Speed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed,
+      AltitudeMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin,
+      AltitudeMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax,
+      CoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin,
+      CoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax,
+      Horizon = {
+        Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density,
+        CoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
+        CoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax
+      }
     }
   end
 

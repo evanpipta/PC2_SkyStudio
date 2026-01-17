@@ -6,8 +6,6 @@ local RenderParametersComponent = require("components.render.renderparameterscom
 
 local SkyStudioDataStore = require("SkyStudioDataStore")
 
--- local SkyStudioDataStore = require("SkyStudioDataStore")
-
 local trace = require("SkyStudioTrace")
 
 local RenderParametersComponentManager = {}
@@ -47,33 +45,6 @@ function Patched.Advance(self, _nDeltaTime)
         self.RenderParametersAPI:ApplyParametersTo(self.tCommittedParameters, self.tGlobalParameters)
       end
 
-      -- local testing = {
-      --   Atmospherics = {
-      --     Fog = {
-      --       Density = 1
-      --     },
-      --     Haze = {
-      --       Density = 1
-      --     },
-      --     Lights = {
-      --       Sun  = {
-      --         Disk = {
-      --           Size = 0.5,
-      --           Intensity = 10
-      --         }
-      --       },
-      --       Moon = {
-      --         Disk = {
-      --           Size = 0.5,
-      --           Intensity = 15,
-      --         }
-      --       },
-      --     },
-      --     Stars = {
-      --       Strength = 1
-      --     }
-      --   }
-      -- }
 
       -- Get only the active render parameters based on enabled overrides
       local tActiveRenderParameters = SkyStudioDataStore:GetActiveRenderParameters()
@@ -108,25 +79,6 @@ function Patched.Advance(self, _nDeltaTime)
       else
         self.RenderParametersAPI:ApplyParameters(self.tGlobalParameters)
       end
-
-
-      -- if tUserRenderParameters ~= nil then
-      --   trace('APPLYING USER PARAMETERS')
-      --   self.RenderParametersAPI:ApplyParameters(tUserRenderParameters)
-      -- end
-      
-
-      -- if bHasOverrideParameters then
-      --   if tMotionBlurParameters ~= nil then
-      --     (self.RenderParametersAPI):ApplyParametersTo(tMotionBlurParameters, self.tOverrideParameters)
-      --   end
-      --   if self.tEditorOverrideRenderParametersCollection ~= nil then
-      --     -- With editor override parameters
-      --     (self.RenderParametersAPI):ApplyParametersTo(self.tEditorOverrideRenderParametersCollection, self.tOverrideParameters)
-      --   end
-      --   -- non-editor override parameters ... ???
-      --   (self.RenderParametersAPI):ApplyParameters(self.tOverrideParameters)
-      -- end
       
     end
 

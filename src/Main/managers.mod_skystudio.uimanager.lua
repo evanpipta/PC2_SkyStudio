@@ -394,6 +394,74 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore:ResetAtmosphereToDefaults()
     end, self)
 
+    -- Clouds tab: override toggle
+    self.ui:SkyStudioChangedValue_bUserOverrideClouds(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideClouds: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideClouds = value
+    end, self)
+
+    -- Clouds tab: parameters
+    self.ui:SkyStudioChangedValue_nUserCloudsDensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsDensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsScale(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsScale: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsSpeed(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsSpeed: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsAltitudeMin(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsAltitudeMin: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsAltitudeMax(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsAltitudeMax: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsCoverageMin(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsCoverageMin: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsCoverageMax(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsCoverageMax: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsHorizonDensity(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsHorizonDensity: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsHorizonCoverageMin(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsHorizonCoverageMin: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserCloudsHorizonCoverageMax(function(_, value)
+      trace("SkyStudioChangedValue_nUserCloudsHorizonCoverageMax: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax = value
+    end, self)
+
+    self.ui:SkyStudio_ResetClouds(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetClouds()")
+      SkyStudioDataStore:ResetCloudsToDefaults()
+    end, self)
+
+    -- Shadow parameter
+    self.ui:SkyStudioChangedValue_nUserShadowFilterSoftness(function(_, value)
+      trace("SkyStudioChangedValue_nUserShadowFilterSoftness: " .. tostring(value))
+      SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness = value
+    end, self)
+
 
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
@@ -479,7 +547,22 @@ function SkyStudioUIManager:Init()
       nUserGIAmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight,
       -- Rendering tab: HDR parameters
       nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
-      nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale
+      nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale,
+      -- Shadow parameter
+      nUserShadowFilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness,
+      -- Clouds tab: toggle
+      bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,
+      -- Clouds tab: parameters
+      nUserCloudsDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density,
+      nUserCloudsScale = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale,
+      nUserCloudsSpeed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed,
+      nUserCloudsAltitudeMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin,
+      nUserCloudsAltitudeMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax,
+      nUserCloudsCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin,
+      nUserCloudsCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax,
+      nUserCloudsHorizonDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density,
+      nUserCloudsHorizonCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
+      nUserCloudsHorizonCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax
     })
   end)
 end

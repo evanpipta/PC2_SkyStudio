@@ -428,3 +428,72 @@ SkyStudioUI.SkyStudio_ResetAtmosphere = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudio_ResetAtmosphere")
   return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetAtmosphere", 1, _callback, _self)
 end
+
+-- Clouds tab bindings
+
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideClouds = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideClouds")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideClouds", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsDensity = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsDensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsDensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsScale = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsScale")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsScale", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsSpeed = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsSpeed")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsSpeed", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsAltitudeMin = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsAltitudeMin")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsAltitudeMin", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsAltitudeMax = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsAltitudeMax")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsAltitudeMax", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsCoverageMin = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsCoverageMin")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsCoverageMin", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsCoverageMax = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsCoverageMax")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsCoverageMax", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonDensity = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonDensity")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsHorizonDensity", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonCoverageMin = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonCoverageMin")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsHorizonCoverageMin", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonCoverageMax = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserCloudsHorizonCoverageMax")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserCloudsHorizonCoverageMax", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_ResetClouds = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_ResetClouds")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_ResetClouds", 1, _callback, _self)
+end
+
+-- Shadow bindings
+
+SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserShadowFilterSoftness", 1, _callback, _self)
+end
