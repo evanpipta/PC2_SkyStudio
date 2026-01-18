@@ -493,6 +493,10 @@ end
 
 -- Shadow bindings
 
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideShadows = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideShadows", 1, _callback, _self)
+end
+
 SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserShadowFilterSoftness", 1, _callback, _self)

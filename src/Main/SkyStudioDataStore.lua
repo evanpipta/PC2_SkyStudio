@@ -104,6 +104,9 @@ SkyStudioDataStore.bUserOverrideHDR = false
 -- Clouds tab override
 SkyStudioDataStore.bUserOverrideClouds = false
 
+-- Shadows override
+SkyStudioDataStore.bUserOverrideShadows = false
+
 SkyStudioDataStore.nUserDayNightTransition = 90
 SkyStudioDataStore.nUserSunFade = 1
 SkyStudioDataStore.nUserMoonFade = 0
@@ -629,12 +632,14 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     }
   end
 
-  -- Shadows - always include (no toggle, always applied)
-  tActive.Shadows = {
-    Collect = {
-      FilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness
+  -- Shadows - only include when toggle is on
+  if SkyStudioDataStore.bUserOverrideShadows then
+    tActive.Shadows = {
+      Collect = {
+        FilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness
+      }
     }
-  }
+  end
 
   -- Clouds overrides - ALWAYS include to reset to defaults when toggle is off
   tActive.Atmospherics = tActive.Atmospherics or {}

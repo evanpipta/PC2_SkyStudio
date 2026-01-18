@@ -456,7 +456,12 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore:ResetCloudsToDefaults()
     end, self)
 
-    -- Shadow parameter
+    -- Shadow parameters
+    self.ui:SkyStudioChangedValue_bUserOverrideShadows(function(_, value)
+      trace("SkyStudioChangedValue_bUserOverrideShadows: " .. tostring(value))
+      SkyStudioDataStore.bUserOverrideShadows = value
+    end, self)
+
     self.ui:SkyStudioChangedValue_nUserShadowFilterSoftness(function(_, value)
       trace("SkyStudioChangedValue_nUserShadowFilterSoftness: " .. tostring(value))
       SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness = value
@@ -548,7 +553,8 @@ function SkyStudioUIManager:Init()
       -- Rendering tab: HDR parameters
       nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
       nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale,
-      -- Shadow parameter
+      -- Shadow parameters
+      bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
       nUserShadowFilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness,
       -- Clouds tab: toggle
       bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,

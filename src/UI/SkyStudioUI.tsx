@@ -112,6 +112,7 @@ type Config = {
   nUserHDRAdaptionDarknessScale: number;
 
   // Shadows
+  bUserOverrideShadows: boolean;
   nUserShadowFilterSoftness: number;
 
   // Clouds tab
@@ -232,6 +233,7 @@ const baseConfig = {
   nUserHDRAdaptionDarknessScale: 0.9,
 
   // Shadows
+  bUserOverrideShadows: false,
   nUserShadowFilterSoftness: 2.5,
 
   // Clouds tab
@@ -727,6 +729,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserHDRAdaptionDarknessScale",
 
       // Shadow settings
+      "bUserOverrideShadows",
       "nUserShadowFilterSoftness",
 
       // Cloud settings
@@ -840,6 +843,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       nUserHDRAdaptionDarknessScale,
 
       // Shadows
+      bUserOverrideShadows,
       nUserShadowFilterSoftness,
 
       // Clouds tab
@@ -879,6 +883,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     const giOverrideOn = bUserOverrideGI;
     const hdrOverrideOn = bUserOverrideHDR;
+    const shadowsOverrideOn = bUserOverrideShadows;
     const cloudsOverrideOn = bUserOverrideClouds;
 
     const showResetConfirmation =
@@ -913,14 +918,14 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       />,
       <Tab
         key="clouds"
-        icon={"img/icons/cloud.svg"}
+        icon={"img/icons/footer_weather.svg"}
         label={Format.stringLiteral("Clouds")}
         outcome="SkyStudio_Tab_Clouds"
       />,
       <Tab
         key="rendering"
         icon={"img/icons/eye.svg"}
-        label={Format.stringLiteral("Rendering")}
+        label={Format.stringLiteral("GI")}
         outcome="SkyStudio_Tab_Rendering"
       />,
       <Tab
@@ -1915,7 +1920,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <div className={"skystudio_confirm_modal"}>
             <div>
               <div className={"skystudio_reset_header"}>
-                Reset Rendering Settings to Default?
+                Reset Global Illumination Settings to Default?
               </div>
               <div className={"skystudio_reset_confirm_buttons"}>
                 <Button
@@ -2052,54 +2057,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           /> */}
         </PanelArea>
 
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetRendering && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override HDR Adaptation")}
-            toggled={hdrOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
 
-          <SliderRow
-            label={Format.stringLiteral("Adaptation Time")}
-            min={0.1}
-            max={2}
-            step={0.01}
-            value={nUserHDRAdaptionTime}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserHDRAdaptionTime",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !hdrOverrideOn}
-            focusable={true}
-          />
-
-          {/* <SliderRow
-            label={Format.stringLiteral("Darkness Adaptation Scale")}
-            min={0}
-            max={2}
-            step={0.01}
-            value={nUserHDRAdaptionDarknessScale}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserHDRAdaptionDarknessScale",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !hdrOverrideOn}
-            focusable={true}
-          /> */}
-        </PanelArea>
 
         <PanelArea
           modifiers={classNames(
@@ -2107,10 +2065,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             this.state.confirmResetRendering && "skystudio_blur"
           )}
         >
-          <FocusableDataRow label={Format.stringLiteral("Reset Rendering Settings")}>
+          <FocusableDataRow label={Format.stringLiteral("Reset GI Settings")}>
             <Button
               icon={"img/icons/restart.svg"}
-              label={Format.stringLiteral("Reset Rendering")}
+              label={Format.stringLiteral("Reset GI")}
               onSelect={this.beginResetRendering}
               rootClassName={"skystudio_reset_confirm_button"}
             />
@@ -2182,9 +2140,66 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         <PanelArea
           modifiers={classNames(
             "skystudio_section",
+            this.state.confirmResetRendering && "skystudio_blur"
+          )}
+        >
+          <ToggleRow
+            label={Format.stringLiteral("Override HDR Adaptation")}
+            toggled={hdrOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Adaptation Time")}
+            min={0.1}
+            max={2}
+            step={0.01}
+            value={nUserHDRAdaptionTime}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserHDRAdaptionTime",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !hdrOverrideOn}
+            focusable={true}
+          />
+
+          {/* <SliderRow
+            label={Format.stringLiteral("Darkness Adaptation Scale")}
+            min={0}
+            max={2}
+            step={0.01}
+            value={nUserHDRAdaptionDarknessScale}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserHDRAdaptionDarknessScale",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={!customLightingEnabled || !hdrOverrideOn}
+            focusable={true}
+          /> */}
+        </PanelArea>
+
+        <PanelArea
+          modifiers={classNames(
+            "skystudio_section",
             this.state.confirmResetAll && "skystudio_blur"
           )}
         >
+          <ToggleRow
+            label={Format.stringLiteral("Override Shadow Softness")}
+            toggled={shadowsOverrideOn}
+            onToggle={this.onToggleValueChanged("bUserOverrideShadows")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled}
+          />
+
           <SliderRow
             label={Format.stringLiteral("Shadow Softness")}
             min={0}
@@ -2198,7 +2213,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               )
             }
             editable={true}
-            disabled={!customLightingEnabled}
+            disabled={!customLightingEnabled || !shadowsOverrideOn}
             focusable={true}
           />
         </PanelArea>
