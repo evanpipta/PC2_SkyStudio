@@ -1736,8 +1736,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             <SliderRow
               label={Format.stringLiteral("Cloud Scale")}
               min={0.1}
-              max={2}
-              step={0.1}
+              max={3}
+              step={0.01}
               value={nUserCloudsScale}
               onChange={(newValue: number) =>
                 this.onNumericalValueChanged("nUserCloudsScale", newValue)
@@ -1769,28 +1769,32 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             )}
           >
             <SliderRow
-              label={Format.stringLiteral("Altitude Min")}
-              min={0}
-              max={5000}
-              step={10}
+              label={Format.stringLiteral("Altitude (m)")}
+              min={100}
+              max={6000}
+              step={1}
               value={nUserCloudsAltitudeMin}
-              onChange={(newValue: number) =>
-                this.onNumericalValueChanged("nUserCloudsAltitudeMin", newValue)
-              }
+              onChange={(newValue: number) => {
+                // Keep the same height when changing altitude
+                const currentHeight = nUserCloudsAltitudeMax - nUserCloudsAltitudeMin;
+                this.onNumericalValueChanged("nUserCloudsAltitudeMin", newValue);
+                this.onNumericalValueChanged("nUserCloudsAltitudeMax", newValue + currentHeight);
+              }}
               editable={true}
               disabled={!customLightingEnabled || !cloudsOverrideOn}
               focusable={true}
             />
 
             <SliderRow
-              label={Format.stringLiteral("Altitude Max")}
-              min={0}
-              max={10000}
-              step={10}
-              value={nUserCloudsAltitudeMax}
-              onChange={(newValue: number) =>
-                this.onNumericalValueChanged("nUserCloudsAltitudeMax", newValue)
-              }
+              label={Format.stringLiteral("Height (m)")}
+              min={35}
+              max={5000}
+              step={1}
+              value={nUserCloudsAltitudeMax - nUserCloudsAltitudeMin}
+              onChange={(newValue: number) => {
+                // Height changes only affect AltitudeMax
+                this.onNumericalValueChanged("nUserCloudsAltitudeMax", nUserCloudsAltitudeMin + newValue);
+              }}
               editable={true}
               disabled={!customLightingEnabled || !cloudsOverrideOn}
               focusable={true}
@@ -1806,7 +1810,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             <SliderRow
               label={Format.stringLiteral("Density")}
               min={0}
-              max={200}
+              max={300}
               step={1}
               value={nUserCloudsDensity}
               onChange={(newValue: number) =>
@@ -1834,7 +1838,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             <SliderRow
               label={Format.stringLiteral("Thickness")}
               min={0}
-              max={1}
+              max={0.5}
               step={0.01}
               value={1 - nUserCloudsCoverageMax}
               onChange={(newValue: number) =>
@@ -1855,7 +1859,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             <SliderRow
               label={Format.stringLiteral("Horizon Density")}
               min={0}
-              max={200}
+              max={300}
               step={1}
               value={nUserCloudsHorizonDensity}
               onChange={(newValue: number) =>
@@ -1883,7 +1887,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             <SliderRow
               label={Format.stringLiteral("Horizon Thickness")}
               min={0}
-              max={1}
+              max={0.5}
               step={0.01}
               value={1 - nUserCloudsHorizonCoverageMax}
               onChange={(newValue: number) =>
