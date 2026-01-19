@@ -2106,156 +2106,156 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
-        <div className="skystudio_scrollPane">
+        <ScrollPane rootClassName="skystudio_scrollPane">
           <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAll && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override RenderParameters Transition")}
-            toggled={dayNightOverrideOn}
-            onToggle={this.onToggleValueChanged(
-              "bUserOverrideDayNightTransition"
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAll && "skystudio_blur"
             )}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("RenderParameters Day/Night Fade")}
-            min={0}
-            max={100}
-            step={0.01}
-            value={nUserDayNightTransition}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserDayNightTransition",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !dayNightOverrideOn}
-            focusable={true}
-          />
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetRendering && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override HDR Adaptation")}
-            toggled={hdrOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Adaptation Time")}
-            min={0.1}
-            max={2}
-            step={0.01}
-            value={nUserHDRAdaptionTime}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserHDRAdaptionTime",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !hdrOverrideOn}
-            focusable={true}
-          />
-
-          {/* <SliderRow
-            label={Format.stringLiteral("Darkness Adaptation Scale")}
-            min={0}
-            max={2}
-            step={0.01}
-            value={nUserHDRAdaptionDarknessScale}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserHDRAdaptionDarknessScale",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !hdrOverrideOn}
-            focusable={true}
-          /> */}
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAll && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral("Override Shadow Softness")}
-            toggled={shadowsOverrideOn}
-            onToggle={this.onToggleValueChanged("bUserOverrideShadows")}
-            inputName={InputName.Select}
-            disabled={!customLightingEnabled}
-          />
-
-          <SliderRow
-            label={Format.stringLiteral("Shadow Softness")}
-            min={0}
-            max={100}
-            step={0.1}
-            value={nUserShadowFilterSoftness}
-            onChange={(newValue: number) =>
-              this.onNumericalValueChanged(
-                "nUserShadowFilterSoftness",
-                newValue as number
-              )
-            }
-            editable={true}
-            disabled={!customLightingEnabled || !shadowsOverrideOn}
-            focusable={true}
-          />
-        </PanelArea>
-
-        {/* Global enable/disable */}
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAll && "skystudio_blur"
-          )}
-        >
-          <ToggleRow
-            label={Format.stringLiteral(
-              "Use Vanilla Lighting (Disables all mod features)"
-            )}
-            toggled={useVanillaLighting}
-            onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
-            inputName={InputName.Select}
-            disabled={false}
-          />
-        </PanelArea>
-
-        <PanelArea
-          modifiers={classNames(
-            "skystudio_section",
-            this.state.confirmResetAll && "skystudio_blur"
-          )}
-        >
-          <FocusableDataRow label={Format.stringLiteral("Reset All Slider Values")}>
-            <Button
-              icon={"img/icons/restart.svg"}
-              label={Format.stringLiteral("Reset All")}
-              onSelect={this.beginResetAll}
-              rootClassName={"skystudio_reset_confirm_button"}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override RenderParameters Transition")}
+              toggled={dayNightOverrideOn}
+              onToggle={this.onToggleValueChanged(
+                "bUserOverrideDayNightTransition"
+              )}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
             />
-          </FocusableDataRow>
-        </PanelArea>
-        </div>
+
+            <SliderRow
+              label={Format.stringLiteral("RenderParameters Day/Night Fade")}
+              min={0}
+              max={100}
+              step={0.01}
+              value={nUserDayNightTransition}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged(
+                  "nUserDayNightTransition",
+                  newValue as number
+                )
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !dayNightOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetRendering && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override HDR Adaptation")}
+              toggled={hdrOverrideOn}
+              onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Adaptation Time")}
+              min={0.1}
+              max={2}
+              step={0.01}
+              value={nUserHDRAdaptionTime}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged(
+                  "nUserHDRAdaptionTime",
+                  newValue as number
+                )
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !hdrOverrideOn}
+              focusable={true}
+            />
+
+            {/* <SliderRow
+              label={Format.stringLiteral("Darkness Adaptation Scale")}
+              min={0}
+              max={2}
+              step={0.01}
+              value={nUserHDRAdaptionDarknessScale}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged(
+                  "nUserHDRAdaptionDarknessScale",
+                  newValue as number
+                )
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !hdrOverrideOn}
+              focusable={true}
+            /> */}
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAll && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override Shadow Softness")}
+              toggled={shadowsOverrideOn}
+              onToggle={this.onToggleValueChanged("bUserOverrideShadows")}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Shadow Softness")}
+              min={0}
+              max={100}
+              step={0.1}
+              value={nUserShadowFilterSoftness}
+              onChange={(newValue: number) =>
+                this.onNumericalValueChanged(
+                  "nUserShadowFilterSoftness",
+                  newValue as number
+                )
+              }
+              editable={true}
+              disabled={!customLightingEnabled || !shadowsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          {/* Global enable/disable */}
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAll && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral(
+                "Use Vanilla Lighting (Disables all mod features)"
+              )}
+              toggled={useVanillaLighting}
+              onToggle={this.onToggleValueChanged("bUseVanillaLighting")}
+              inputName={InputName.Select}
+              disabled={false}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetAll && "skystudio_blur"
+            )}
+          >
+            <FocusableDataRow label={Format.stringLiteral("Reset All Slider Values")}>
+              <Button
+                icon={"img/icons/restart.svg"}
+                label={Format.stringLiteral("Reset All")}
+                onSelect={this.beginResetAll}
+                rootClassName={"skystudio_reset_confirm_button"}
+              />
+            </FocusableDataRow>
+          </PanelArea>
+        </ScrollPane>
       </div>,
     ];
 
