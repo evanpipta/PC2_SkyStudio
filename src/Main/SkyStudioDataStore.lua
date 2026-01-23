@@ -1,3 +1,9 @@
+local global = _G
+local api = api
+local ParkLoadSaveManager = require("managers.parkloadsavemanager")
+
+local trace = require('SkyStudioTrace')
+
 local SkyStudioDataStore = {}
 
 -- Deep copy helper function for tables
@@ -662,6 +668,65 @@ function SkyStudioDataStore:GetActiveRenderParameters()
   end
 
   return tActive
+end
+
+
+
+-- If saving over an existing save, pass in the save token
+-- Otherwise leave it nil to generate a new one
+function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken()
+  local tMetadata = {}
+  tMetadata.tUserRenderParameters = deepCopy(self.tUserRenderParameters)
+
+  -- Convert the current sky studio data store to a table, skipping only defaultValues
+  -- Then write it to the metadata using the key tSkyStudioConfig
+  -- Then save that as a blueprint to a save token
+  -- If we have a save token already loaded, use that
+  -- Otherwise, make sure we have a string name to generate a new one from
+
+  -- ParkLoadSaveManager.SaveBlueprintToSaveToken(nil, nil, nil, tMetadata, nil)
+
+end
+
+function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken) 
+  local tMetadata = api.save.GetSaveMetadata(cSaveToken)
+  trace("Metadata")
+  trace(tMetadata)
+
+  if tMetadata.tBlueprint.tSkyStudioConfig ~= nil then
+    -- Overwrite data store config with config saved in blueprint metadata
+
+    -- Also store the save token in a new value in the data store so we can use it to overwrite the save later if we save over the existing config
+
+  end
+  
+end
+
+function SkyStudioDataStore:LoadBlueprints()
+  trace("EnumerateInstalledBlueprints")
+
+  local bWorkshopSuccess, tWorkshopItems = ParkLoadSaveManager:EnumerateInstalledBlueprints()
+
+  if (bWorkshopSuccess) then
+    trace(tWorkshopItems)
+  else 
+    trace('Failed to load blueprionts from workshop')
+  end
+
+  trace('EnumerateBlueprintSaves')
+
+  local bLocalSuccess, tLocalItems = ParkLoadSaveManager:EnumerateBlueprintSaves()
+
+  if (bLocalSuccess) then
+    trace(tLocalItems)
+  else 
+    trace('Failed to load blueprionts from local')
+  end
+
+  -- TODO - iterate both sets of blueprints and filter down ones that include a tSkyStudioConfig key, then store the tokens of those blueprints somewhere
+  -- Store a list that ust has the name and the save token
+  -- We don't need to store the whole config because that will happen when we call LoadSettingsFromBlueprintWithSaveToken
+  
 end
 
 return SkyStudioDataStore

@@ -14,6 +14,7 @@ import { ToggleRow } from "/js/project/components/ToggleRow.js";
 import { FocusableDataRow } from "/js/project/components/DataRow.js";
 import { ScrollPane } from "/js/common/components/ScrollPane.js";
 import { Tab } from "/js/common/components/Tab.js";
+import { InputField } from "/js/project/components/InputField.js";
 
 import { Button } from "/js/project/components/Button.js";
 import { ColorPickerSwatch } from "/js/project/components/colorPicker/ColorPickerSwatch.js";
@@ -147,6 +148,14 @@ type State = {
   confirmResetAtmosphere?: boolean;
   confirmResetRendering?: boolean;
   confirmResetClouds?: boolean;
+
+  // Preset tab state
+  currentPresetName: string | null;
+  presetList: string[];
+  presetModalState: 'none' | 'confirmSave' | 'confirmDelete' | 'confirmLoad' | 'saveAs' | 'confirmDeleteFromList';
+  presetModalTarget?: string; // For load/delete from list - which preset is targeted
+  saveAsInputValue: string;
+  saveAsError: string | null;
 };
 
 const baseConfig = {
@@ -319,6 +328,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetAll: false,
     confirmResetAtmosphere: false,
     confirmResetClouds: false,
+
+    currentPresetName: null,
+    presetList: [],
+    presetModalState: 'none',
+    presetModalTarget: undefined,
+    saveAsInputValue: '',
+    saveAsError: null,
   };
 
   componentWillMount() {
@@ -764,6 +780,160 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     Engine.sendEvent("SkyStudio_ResetAll");
   };
 
+  // ========== PRESET TAB METHODS ==========
+  
+  // Called when preset list is received from engine
+  onPresetListReceived = (presetList: string[]) => {
+    this.setState({ presetList });
+  };
+
+  // Called when a preset is loaded from engine
+  onPresetLoaded = (presetName: string) => {
+    this.setState({ currentPresetName: presetName });
+  };
+
+  // Save current preset (overwrite)
+  onSavePreset = () => {
+    if (this.state.currentPresetName) {
+      Engine.sendEvent("SkyStudio_Preset_Save", this.state.currentPresetName);
+      this.setState({ presetModalState: 'none' });
+    }
+  };
+
+  beginSavePreset = () => {
+    this.setState({ presetModalState: 'confirmSave' });
+  };
+
+  cancelSavePreset = () => {
+    this.setState({ presetModalState: 'none' });
+  };
+
+  // Save As (new preset or copy)
+  beginSaveAsPreset = () => {
+    this.setState({ 
+      presetModalState: 'saveAs',
+      saveAsInputValue: this.state.currentPresetName || '',
+      saveAsError: null
+    });
+  };
+
+  onSaveAsInputChange = (e: { text: string }) => {
+    const newName = e.text;
+    let error: string | null = null;
+    
+    // Check if name already exists in preset list
+    if (this.state.presetList.includes(newName)) {
+      error = "A preset with this name already exists";
+    }
+    
+    this.setState({ 
+      saveAsInputValue: newName,
+      saveAsError: error
+    });
+  };
+
+  onSaveAsConfirm = () => {
+    const name = this.state.saveAsInputValue.trim();
+    if (name && !this.state.presetList.includes(name)) {
+      Engine.sendEvent("SkyStudio_Preset_SaveAs", name);
+      this.setState({ 
+        presetModalState: 'none',
+        currentPresetName: name,
+        saveAsInputValue: '',
+        saveAsError: null
+      });
+    }
+  };
+
+  cancelSaveAs = () => {
+    this.setState({ 
+      presetModalState: 'none',
+      saveAsInputValue: '',
+      saveAsError: null
+    });
+  };
+
+  // Delete current preset
+  beginDeleteCurrentPreset = () => {
+    this.setState({ presetModalState: 'confirmDelete' });
+  };
+
+  onDeleteCurrentPreset = () => {
+    if (this.state.currentPresetName) {
+      Engine.sendEvent("SkyStudio_Preset_Delete", this.state.currentPresetName);
+      this.setState({ 
+        currentPresetName: null,
+        presetModalState: 'none'
+      });
+    }
+  };
+
+  cancelDeletePreset = () => {
+    this.setState({ presetModalState: 'none' });
+  };
+
+  // Load preset from list
+  beginLoadPreset = (presetName: string) => {
+    this.setState({ 
+      presetModalState: 'confirmLoad',
+      presetModalTarget: presetName
+    });
+  };
+
+  onLoadPreset = () => {
+    const presetName = this.state.presetModalTarget;
+    if (presetName) {
+      Engine.sendEvent("SkyStudio_Preset_Load", presetName);
+      this.setState({ 
+        currentPresetName: presetName,
+        presetModalState: 'none',
+        presetModalTarget: undefined
+      });
+    }
+  };
+
+  cancelLoadPreset = () => {
+    this.setState({ 
+      presetModalState: 'none',
+      presetModalTarget: undefined
+    });
+  };
+
+  // Delete preset from list
+  beginDeletePresetFromList = (presetName: string) => {
+    this.setState({ 
+      presetModalState: 'confirmDeleteFromList',
+      presetModalTarget: presetName
+    });
+  };
+
+  onDeletePresetFromList = () => {
+    const presetName = this.state.presetModalTarget;
+    if (presetName) {
+      Engine.sendEvent("SkyStudio_Preset_Delete", presetName);
+      // If we deleted the currently loaded preset, clear it
+      if (this.state.currentPresetName === presetName) {
+        this.setState({ currentPresetName: null });
+      }
+      this.setState({ 
+        presetModalState: 'none',
+        presetModalTarget: undefined
+      });
+    }
+  };
+
+  cancelDeleteFromList = () => {
+    this.setState({ 
+      presetModalState: 'none',
+      presetModalTarget: undefined
+    });
+  };
+
+  // Request preset list refresh
+  refreshPresetList = () => {
+    Engine.sendEvent("SkyStudio_Preset_RefreshList");
+  };
+
   render() {
     const {
       bUseVanillaLighting,
@@ -895,7 +1065,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       <Tab
         key="time"
         icon={"img/icons/clock.svg"}
-        label={Format.stringLiteral("Time of Day")}
+        label={Format.stringLiteral("Time")}
         outcome="SkyStudio_Tab_Time"
       />,
       <Tab
@@ -933,6 +1103,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
         icon={"img/icons/dataList.svg"}
         label={Format.stringLiteral("Misc")}
         outcome="SkyStudio_Tab_Other"
+      />,
+      <Tab
+        key="preset"
+        icon={"img/icons/save.svg"}
+        label={Format.stringLiteral("Presets")}
+        outcome="SkyStudio_Tab_Presets"
       />,
     ];
 
@@ -1961,7 +2137,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <SliderRow
             label={Format.stringLiteral("Sky Ambient Intensity")}
             min={0}
-            max={10}
+            max={10} 
             step={0.01}
             value={nUserGISkyIntensity}
             onChange={(newValue: number) =>
@@ -2223,7 +2399,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           </PanelArea>
 
           {/* Global enable/disable */}
-          <PanelArea
+          {/* <PanelArea
             modifiers={classNames(
               "skystudio_section",
               this.state.confirmResetAll && "skystudio_blur"
@@ -2238,7 +2414,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               inputName={InputName.Select}
               disabled={false}
             />
-          </PanelArea>
+          </PanelArea> */}
 
           <PanelArea
             modifiers={classNames(
@@ -2257,6 +2433,242 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           </PanelArea>
         </ScrollPane>
       </div>,
+      // TAB 7: Presets
+      <div key="presets" className="relative">
+            {/* Confirm Save Modal */}
+            {this.state.presetModalState === 'confirmSave' && (
+              <div className={"skystudio_confirm_modal"}>
+                <div>
+                  <div className={"skystudio_reset_header"}>
+                    Save changes to "{this.state.currentPresetName}"?
+                  </div>
+                  <div className={"skystudio_reset_confirm_buttons"}>
+                    <Button
+                      label={Format.stringLiteral("Confirm")}
+                      onSelect={this.onSavePreset}
+                      modifiers={"positive"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                    <Button
+                      label={Format.stringLiteral("Cancel")}
+                      onSelect={this.cancelSavePreset}
+                      modifiers={"negative"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+    
+            {/* Confirm Delete Current Preset Modal */}
+            {this.state.presetModalState === 'confirmDelete' && (
+              <div className={"skystudio_confirm_modal"}>
+                <div>
+                  <div className={"skystudio_reset_header"}>
+                    Delete preset "{this.state.currentPresetName}"?
+                  </div>
+                  <div className={"skystudio_reset_confirm_buttons"}>
+                    <Button
+                      label={Format.stringLiteral("Delete")}
+                      onSelect={this.onDeleteCurrentPreset}
+                      modifiers={"negative"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                    <Button
+                      label={Format.stringLiteral("Cancel")}
+                      onSelect={this.cancelDeletePreset}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+    
+            {/* Confirm Load Modal */}
+            {this.state.presetModalState === 'confirmLoad' && (
+              <div className={"skystudio_confirm_modal"}>
+                <div>
+                  <div className={"skystudio_reset_header"}>
+                    Load preset "{this.state.presetModalTarget}"?
+                  </div>
+                  <div style={{ marginBottom: '12px', opacity: 0.7 }}>
+                    Unsaved changes will be lost.
+                  </div>
+                  <div className={"skystudio_reset_confirm_buttons"}>
+                    <Button
+                      label={Format.stringLiteral("Load")}
+                      onSelect={this.onLoadPreset}
+                      modifiers={"positive"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                    <Button
+                      label={Format.stringLiteral("Cancel")}
+                      onSelect={this.cancelLoadPreset}
+                      modifiers={"negative"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+    
+            {/* Confirm Delete From List Modal */}
+            {this.state.presetModalState === 'confirmDeleteFromList' && (
+              <div className={"skystudio_confirm_modal"}>
+                <div>
+                  <div className={"skystudio_reset_header"}>
+                    Delete preset "{this.state.presetModalTarget}"?
+                  </div>
+                  <div className={"skystudio_reset_confirm_buttons"}>
+                    <Button
+                      label={Format.stringLiteral("Delete")}
+                      onSelect={this.onDeletePresetFromList}
+                      modifiers={"negative"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                    <Button
+                      label={Format.stringLiteral("Cancel")}
+                      onSelect={this.cancelDeleteFromList}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+    
+            {/* Save As Modal */}
+            {this.state.presetModalState === 'saveAs' && (
+              <div className={"skystudio_confirm_modal"}>
+                <div>
+                  <div className={"skystudio_reset_header"}>
+                    Save As New Preset
+                  </div>
+                  <div className="skystudio_preset_input_wrapper">
+                    <InputField
+                      text={this.state.saveAsInputValue}
+                      onChange={this.onSaveAsInputChange}
+                      onCommit={this.onSaveAsInputChange}
+                      maxInputLength={64}
+                      promptText={Format.stringLiteral("Enter preset name...")}
+                      rootClassName="skystudio_preset_input"
+                    />
+                  </div>
+                  {this.state.saveAsError && (
+                    <div style={{ color: '#ff6b6b', marginBottom: '12px', fontSize: '12px' }}>
+                      {this.state.saveAsError}
+                    </div>
+                  )}
+                  <div className={"skystudio_reset_confirm_buttons"}>
+                    <Button
+                      label={Format.stringLiteral("Save")}
+                      onSelect={this.onSaveAsConfirm}
+                      modifiers={"positive"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                      disabled={!this.state.saveAsInputValue.trim() || !!this.state.saveAsError}
+                    />
+                    <Button
+                      label={Format.stringLiteral("Cancel")}
+                      onSelect={this.cancelSaveAs}
+                      modifiers={"negative"}
+                      rootClassName={"skystudio_reset_confirm_button"}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+    
+            <ScrollPane rootClassName="skystudio_scrollPane">
+              {/* Current Preset Section */}
+              <PanelArea
+                modifiers={classNames(
+                  "skystudio_section",
+                  this.state.presetModalState !== 'none' && "skystudio_blur"
+                )}
+              >
+                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
+                  {this.state.currentPresetName ? "Current Preset: " + this.state.currentPresetName : "No Preset Loaded"}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {this.state.currentPresetName && (
+                  <Button
+                    icon={"img/icons/save.svg"}
+                    label={Format.stringLiteral("Save")}
+                    onSelect={this.beginSavePreset}
+                    rootClassName={"skystudio_preset_button"}
+                    disabled={!this.state.currentPresetName}
+                  />
+                  )}
+                  <Button
+                    icon={"img/icons/save.svg"}
+                    label={Format.stringLiteral("Save As New")}
+                    onSelect={this.beginSaveAsPreset}
+                    rootClassName={"skystudio_preset_button"}
+                  />
+                  {this.state.currentPresetName && (
+                  <Button
+                    icon={"img/icons/delete.svg"}
+                    label={Format.stringLiteral("Delete")}
+                    onSelect={this.beginDeleteCurrentPreset}
+                    modifiers={"negative"}
+                    rootClassName={"skystudio_preset_button"}
+                    disabled={!this.state.currentPresetName}
+                  />)}
+                </div>
+              {/* </PanelArea> */}
+    
+              {/* Preset List Section */}
+              {/* <PanelArea
+                modifiers={classNames(
+                  "skystudio_section",
+                  this.state.presetModalState !== 'none' && "skystudio_blur"
+                )}
+              > */}
+                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
+                  Saved Presets
+                </div>
+                
+                {this.state.presetList.length === 0 ? (
+                  <div style={{ opacity: 0.6, fontStyle: 'italic' }}>
+                    No presets saved yet. Use "Save As" to create one.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {this.state.presetList.map((presetName) => (
+                      <div 
+                        key={presetName}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          background: this.state.currentPresetName === presetName 
+                            ? 'rgba(100, 200, 255, 0.2)' 
+                            : 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        <span style={{ flex: 1 }}>{presetName}</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <Button
+                            icon={"img/icons/load.svg"}
+                            onSelect={() => this.beginLoadPreset(presetName)}
+                            rootClassName={"skystudio_preset_list_button"}
+                          />
+                          <Button
+                            icon={"img/icons/delete.svg"}
+                            onSelect={() => this.beginDeletePresetFromList(presetName)}
+                            modifiers={"negative"}
+                            rootClassName={"skystudio_preset_list_button"}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </PanelArea>
+            </ScrollPane>
+          </div>,
     ];
 
     return (

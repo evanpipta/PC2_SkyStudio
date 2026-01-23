@@ -30,6 +30,8 @@ local SkyStudioUI = require("UI.Mod_SkyStudio")
 function SkyStudioUIManager:Init()
   trace("SkyStudioUIManager:Init()")
 
+  SkyStudioDataStore:LoadBlueprints()
+
   self.ui = SkyStudioUI:new(function()
     trace("SkyStudioUIManager:SkyStudioUI is ready")
   
@@ -466,7 +468,6 @@ function SkyStudioUIManager:Init()
       trace("SkyStudioChangedValue_nUserShadowFilterSoftness: " .. tostring(value))
       SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness = value
     end, self)
-
 
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
