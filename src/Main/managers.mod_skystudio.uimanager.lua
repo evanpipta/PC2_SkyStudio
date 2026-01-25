@@ -649,9 +649,15 @@ function SkyStudioUIManager:Activate()
         return false
       end
       
+      -- Check if already saving
+      if SkyStudioDataStore.bIsSavingPreset then
+        trace('Already saving a preset, please wait...')
+        return false
+      end
+      
       -- All checks passed, safe to save
       trace('All checks passed, calling SaveSettingsAsBlueprintWithSaveToken')
-      SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
+      SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
     end, self)
 
 
@@ -777,6 +783,18 @@ function SkyStudioUIManager:Activate()
       sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
     })
   end)
+end
+
+-- Advance is called every frame - use it to run the save coroutine
+function SkyStudioUIManager:Advance(_dt)
+  -- Advance the save coroutine if it's running
+  if SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine then
+    SkyStudioDataStore:AdvanceSaveCoroutine()
+    -- If we just finished, trace it
+    if not SkyStudioDataStore.fnSavePresetCoroutine and not SkyStudioDataStore.bIsSavingPreset then
+      trace('UIManager: Save process fully complete')
+    end
+  end
 end
 
 -- / Validate class methods and interfaces, the game needs

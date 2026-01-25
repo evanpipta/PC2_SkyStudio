@@ -1,5 +1,9 @@
 local global = _G
 local api = global.api
+local coroutine = global.coroutine
+local math = global.math
+local pairs = global.pairs
+local tostring = global.tostring
 local ParkLoadSaveManager = require("managers.parkloadsavemanager")
 
 local trace = require('SkyStudioTrace')
@@ -7,6 +11,11 @@ local trace = require('SkyStudioTrace')
 local BaseEditMode = require("Editors.Shared.BaseEditMode")
 
 local SkyStudioDataStore = {}
+
+-- Flag to prevent multiple concurrent saves
+SkyStudioDataStore.bIsSavingPreset = false
+-- Coroutine for async save operation
+SkyStudioDataStore.fnSavePresetCoroutine = nil
 
 -- Deep copy helper function for tables
 local function deepCopy(original)
@@ -732,110 +741,217 @@ end
 -- end
 
 
-function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
-  trace('SaveSettingsAsBlueprintWithSaveToken')
+-- Internal function to capture a screenshot (called from within coroutine)
+local function _PerformCameraCapture()
+  trace('_PerformCameraCapture: Starting...')
+  
+  -- Wait for capture system to be ready
+  while not api.render.IsCaptureSystemReady() do
+    trace('_PerformCameraCapture: Waiting for capture system...')
+    coroutine.yield()
+  end
+  trace('_PerformCameraCapture: Capture system ready')
+  
+  local vBackBufferDimensions = api.render.GetBackBufferDimensions()
+  local nX = vBackBufferDimensions:GetX()
+  local nY = vBackBufferDimensions:GetY()
+  trace('_PerformCameraCapture: Screen dimensions: ' .. tostring(nX) .. 'x' .. tostring(nY))
+  
+  local nMaxDimension = 1280
+  local nPictureAspectRatio = 1.777778  -- 16:9
+  local nScreenAspectRatio = nX / nY
+  
+  -- Adjust for aspect ratio
+  if nPictureAspectRatio < nScreenAspectRatio then
+    nX = nY * nPictureAspectRatio
+  elseif nScreenAspectRatio < nPictureAspectRatio then
+    nY = nX / nPictureAspectRatio
+  end
+  
+  -- Scale down if needed
+  local nScaleFactor = 1
+  if nMaxDimension < nX then
+    nScaleFactor = nMaxDimension / nX
+  end
+  nX = math.floor(nX * nScaleFactor)
+  nY = math.floor(nY * nScaleFactor)
+  
+  trace('_PerformCameraCapture: Adjusted dimensions: ' .. tostring(nX) .. 'x' .. tostring(nY))
+  
+  -- Capture full screen (minU=0, minV=0, maxU=1, maxV=1)
+  -- Two captures: thumbnail (416x232) and big image
+  trace('_PerformCameraCapture: Starting capture...')
+  api.render.StartCaptureFromSourceArea(
+    {minU = 0, minV = 0, maxU = 1, maxV = 1, width = 416, height = 232, quality = 75},  -- thumbnail
+    {minU = 0, minV = 0, maxU = 1, maxV = 1, width = nX, height = nY, maxFileSize = 1048576, quality = 90}  -- big
+  )
+  
+  -- Wait for capture to complete
+  while not api.render.IsCaptureSystemReady() do
+    trace('_PerformCameraCapture: Waiting for capture to complete...')
+    coroutine.yield()
+  end
+  
+  local cToken = api.render.GetCaptureToken()
+  trace('_PerformCameraCapture: Got capture token: ' .. tostring(cToken))
+  
+  return cToken
+end
 
+-- Start the async save process (creates a coroutine)
+function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
+  trace('StartSaveSettingsAsBlueprint called')
+  
+  -- Check if already saving
+  if self.bIsSavingPreset then
+    trace('Already saving a preset, ignoring request')
+    return false
+  end
+  
   -- Validate selection parameter
   if not selection then
     trace('selection is nil')
     return false
   end
-
+  
   trace('selection CountParts: ' .. tostring(selection:CountParts()))
-
+  
   if selection:CountParts() == 0 then
     trace('selection countParts == 0')
     return false
   end
-
-  local tConfig = buildSkyStudioConfigSnapshot(self)
-  local sName = (self.sCurrentPresetName and self.sCurrentPresetName ~= "") and self.sCurrentPresetName or "SkyStudio Preset"
-
-  local tMetadata = {
-    tBlueprint = {
-      tSkyStudioConfig = tConfig,
-      sSkyStudioConfigName = sName,
-    }
-  }
-
-  local tSaveInfo = {
-    type = "blpr2",
-    location = "local",
-    customname = sName,
-    metadata = tMetadata,
-    selection = selection,
-    screenshotInfo = nil,  -- Explicitly set to nil to test if oncomplete fires
-    oncomplete = function(_tSaveInfo)
-      trace('RequestSave oncomplete CALLED!')
-      trace('_tSaveInfo type: ' .. type(_tSaveInfo))
+  
+  -- Set flag
+  self.bIsSavingPreset = true
+  trace('bIsSavingPreset = true')
+  
+  -- Create the coroutine that will do the actual save
+  self.fnSavePresetCoroutine = coroutine.create(function()
+    trace('Save coroutine started')
+    
+    -- Get APIs needed for creating SaveSelection
+    local worldSerialisationAPI = tWorldAPIs and tWorldAPIs.worldserialisation
+    local sceneryAPI = tWorldAPIs and tWorldAPIs.scenery
+    
+    -- Convert BuildingPartSet to SaveSelection (required by api.save.RequestSave)
+    local saveSelection = nil
+    if worldSerialisationAPI and worldSerialisationAPI.CreateSaveSelection then
+      saveSelection = worldSerialisationAPI:CreateSaveSelection()
+      trace('Created SaveSelection via worldSerialisationAPI')
       
-      if _tSaveInfo then
-        trace('_tSaveInfo keys:')
-        for k, v in pairs(_tSaveInfo) do
-          trace('  - ' .. tostring(k) .. ' = ' .. tostring(v))
-        end
-      end
-      
-      if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
-        -- THIS is the token you must keep
-        self.cLoadedBlueprintSaveToken = _tSaveInfo.save
-        self.sCurrentPresetName = sName
-
-        trace("Saved SkyStudio preset token:")
-        trace(tostring(_tSaveInfo.save))
-        trace("Type: " .. tostring(api.save.GetSaveType(_tSaveInfo.save)))
-        trace("Location: " .. tostring(api.save.GetSaveLocation(_tSaveInfo.save)))
-      else
-        trace("SkyStudio preset save failed or had exception")
-        if _tSaveInfo then
-          trace("exception: " .. tostring(_tSaveInfo.exception))
+      -- Add parts from our BuildingPartSet to the SaveSelection
+      if sceneryAPI and sceneryAPI.AddSceneryToBlueprintSelection then
+        local tPartIDs = selection:GetPartIDCollection()
+        if tPartIDs then
+          for i = 1, #tPartIDs do
+            sceneryAPI:AddSceneryToBlueprintSelection(tPartIDs[i], saveSelection)
+            trace('Added partID ' .. tostring(tPartIDs[i]) .. ' to SaveSelection')
+          end
         else
-          trace("_tSaveInfo was nil")
+          trace('ERROR: GetPartIDCollection returned nil')
+          self.bIsSavingPreset = false
+          return
+        end
+      else
+        trace('ERROR: AddSceneryToBlueprintSelection not available')
+        self.bIsSavingPreset = false
+        return
+      end
+    else
+      trace('ERROR: worldSerialisationAPI.CreateSaveSelection not available')
+      self.bIsSavingPreset = false
+      return
+    end
+    
+    -- Capture screenshot
+    trace('Starting screenshot capture...')
+    local imgToken = _PerformCameraCapture()
+    
+    -- Build screenshot info
+    local tScreenshotInfo = nil
+    if imgToken then
+      tScreenshotInfo = {nIndex = 0, cToken = imgToken, nBigIndex = 1}
+      trace('Built tScreenshotInfo with token')
+    else
+      trace('WARNING: No screenshot token, tScreenshotInfo will be nil')
+    end
+    
+    -- Build config and metadata
+    local tConfig = buildSkyStudioConfigSnapshot(self)
+    local sName = (self.sCurrentPresetName and self.sCurrentPresetName ~= "") and self.sCurrentPresetName or "SkyStudio Preset"
+    
+    local tMetadata = {
+      tBlueprint = {
+        tSkyStudioConfig = tConfig,
+        sSkyStudioConfigName = sName,
+      }
+    }
+    
+    -- Use api.save.RequestSave with proper SaveSelection
+    local tSaveInfo = {
+      type = "blpr2",
+      location = "local",
+      customname = sName,
+      metadata = tMetadata,
+      selection = saveSelection,  -- Must be a SaveSelection, not BuildingPartSet
+      screenshotInfo = tScreenshotInfo,
+      oncomplete = function(_tSaveInfo)
+        trace('RequestSave oncomplete called!')
+        if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
+          self.cLoadedBlueprintSaveToken = _tSaveInfo.save
+          trace("Saved SkyStudio preset, token: " .. tostring(_tSaveInfo.save))
+        else
+          trace("Save failed or had exception: " .. tostring(_tSaveInfo and _tSaveInfo.exception))
         end
       end
-    end
-  }
-
-  trace('Calling api.save.RequestSave...')
-  api.save.RequestSave(self.cLoadedBlueprintSaveToken or api.player.GetGameOwner(), tSaveInfo)
-  trace('api.save.RequestSave called successfully')
-  
-  -- TEST: Try api.file to see if it's available in production build
-  trace('Testing api.file availability...')
-  trace('api.file exists: ' .. tostring(api.file ~= nil))
-  
-  if api.file then
-    trace('api.file methods:')
-    for k, v in pairs(api.file) do
-      trace('  - ' .. tostring(k) .. ' (' .. type(v) .. ')')
-    end
+    }
     
-    -- Try to write a test file (may crash if stripped/unavailable)
-    trace('Attempting to write test file...')
-    local sTestContent = "-- SkyStudio Test File\n-- Written at: " .. tostring(os.time and os.time() or "unknown") .. "\nreturn { test = true }\n"
+    -- For new saves, pass player owner. For overwriting existing, pass the existing token.
+    local saveToken = self.cLoadedBlueprintSaveToken or api.player.GetGameOwner()
     
-    -- Try different potential write methods
-    if api.file.Write then
-      trace('Trying api.file.Write...')
-      api.file.Write("/run/skystudio_test.lua", sTestContent)
-      trace('api.file.Write completed (no crash)')
-    elseif api.file.SaveFile then
-      trace('Trying api.file.SaveFile...')
-      api.file.SaveFile("/run/skystudio_test.lua", sTestContent)
-      trace('api.file.SaveFile completed (no crash)')
-    elseif api.file.WriteFile then
-      trace('Trying api.file.WriteFile...')
-      api.file.WriteFile("/run/skystudio_test.lua", sTestContent)
-      trace('api.file.WriteFile completed (no crash)')
-    else
-      trace('No known write method found on api.file')
-    end
-  else
-    trace('api.file is nil - not available')
-  end
+    trace('Calling api.save.RequestSave...')
+    trace('  saveToken: ' .. tostring(saveToken))
+    trace('  saveSelection type: ' .. tostring(type(saveSelection)))
+    trace('  screenshotInfo: ' .. tostring(tScreenshotInfo ~= nil))
+    
+    api.save.RequestSave(saveToken, tSaveInfo)
+    
+    trace('api.save.RequestSave called successfully')
+    
+    -- Update current preset name
+    self.sCurrentPresetName = sName
+    
+    -- Clear flag
+    self.bIsSavingPreset = false
+    trace('bIsSavingPreset = false, save complete!')
+  end)
   
-  trace('SaveSettingsAsBlueprintWithSaveToken function complete')
+  trace('Save coroutine created')
   return true
+end
+
+-- Advance function to be called each frame to run the save coroutine
+function SkyStudioDataStore:AdvanceSaveCoroutine()
+  if self.fnSavePresetCoroutine then
+    local status = coroutine.status(self.fnSavePresetCoroutine)
+    if status == "suspended" then
+      local bOk, sErr = coroutine.resume(self.fnSavePresetCoroutine)
+      if not bOk then
+        trace('Save coroutine error: ' .. tostring(sErr))
+        self.fnSavePresetCoroutine = nil
+        self.bIsSavingPreset = false
+      end
+    elseif status == "dead" then
+      trace('Coroutine dead, clearing reference')
+      self.fnSavePresetCoroutine = nil
+      trace('Coroutine reference cleared')
+    end
+  end
+end
+
+-- Legacy function for compatibility (now starts the async save)
+function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
+  return self:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
 end
 
 function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
