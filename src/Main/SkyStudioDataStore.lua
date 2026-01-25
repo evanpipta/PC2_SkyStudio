@@ -764,8 +764,18 @@ function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
     customname = sName,
     metadata = tMetadata,
     selection = selection,
+    screenshotInfo = nil,  -- Explicitly set to nil to test if oncomplete fires
     oncomplete = function(_tSaveInfo)
-      trace('RequestSave oncomplete')
+      trace('RequestSave oncomplete CALLED!')
+      trace('_tSaveInfo type: ' .. type(_tSaveInfo))
+      
+      if _tSaveInfo then
+        trace('_tSaveInfo keys:')
+        for k, v in pairs(_tSaveInfo) do
+          trace('  - ' .. tostring(k) .. ' = ' .. tostring(v))
+        end
+      end
+      
       if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
         -- THIS is the token you must keep
         self.cLoadedBlueprintSaveToken = _tSaveInfo.save
@@ -776,8 +786,12 @@ function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
         trace("Type: " .. tostring(api.save.GetSaveType(_tSaveInfo.save)))
         trace("Location: " .. tostring(api.save.GetSaveLocation(_tSaveInfo.save)))
       else
-        trace("SkyStudio preset save failed")
-        trace(_tSaveInfo and tostring(_tSaveInfo.exception) or "unknown error")
+        trace("SkyStudio preset save failed or had exception")
+        if _tSaveInfo then
+          trace("exception: " .. tostring(_tSaveInfo.exception))
+        else
+          trace("_tSaveInfo was nil")
+        end
       end
     end
   }
@@ -785,6 +799,42 @@ function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
   trace('Calling api.save.RequestSave...')
   api.save.RequestSave(self.cLoadedBlueprintSaveToken or api.player.GetGameOwner(), tSaveInfo)
   trace('api.save.RequestSave called successfully')
+  
+  -- TEST: Try api.file to see if it's available in production build
+  trace('Testing api.file availability...')
+  trace('api.file exists: ' .. tostring(api.file ~= nil))
+  
+  if api.file then
+    trace('api.file methods:')
+    for k, v in pairs(api.file) do
+      trace('  - ' .. tostring(k) .. ' (' .. type(v) .. ')')
+    end
+    
+    -- Try to write a test file (may crash if stripped/unavailable)
+    trace('Attempting to write test file...')
+    local sTestContent = "-- SkyStudio Test File\n-- Written at: " .. tostring(os.time and os.time() or "unknown") .. "\nreturn { test = true }\n"
+    
+    -- Try different potential write methods
+    if api.file.Write then
+      trace('Trying api.file.Write...')
+      api.file.Write("/run/skystudio_test.lua", sTestContent)
+      trace('api.file.Write completed (no crash)')
+    elseif api.file.SaveFile then
+      trace('Trying api.file.SaveFile...')
+      api.file.SaveFile("/run/skystudio_test.lua", sTestContent)
+      trace('api.file.SaveFile completed (no crash)')
+    elseif api.file.WriteFile then
+      trace('Trying api.file.WriteFile...')
+      api.file.WriteFile("/run/skystudio_test.lua", sTestContent)
+      trace('api.file.WriteFile completed (no crash)')
+    else
+      trace('No known write method found on api.file')
+    end
+  else
+    trace('api.file is nil - not available')
+  end
+  
+  trace('SaveSettingsAsBlueprintWithSaveToken function complete')
   return true
 end
 
