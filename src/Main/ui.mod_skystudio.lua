@@ -39,36 +39,6 @@ SkyStudioUI.Hide = function(self)
   self:TriggerEventAtNextAdvance("Hide")
 end
 
--- Data store key names to map listeners for:
---
--- SkyStudioDataStore.bUseVanillaLighting,
--- SkyStudioDataStore.nUserSunAzimuth,
--- SkyStudioDataStore.nUserSunLatitudeOffset,
--- SkyStudioDataStore.nUserSunTimeOfDay,
--- SkyStudioDataStore.nUserSunColorR,
--- SkyStudioDataStore.nUserSunColorG,
--- SkyStudioDataStore.nUserSunColorB,
--- SkyStudioDataStore.nUserSunIntensity,
--- SkyStudioDataStore.bUserSunUseLinearColors,
--- SkyStudioDataStore.nUserMoonAzimuth,
--- SkyStudioDataStore.nUserMoonLatitudeOffset,
--- SkyStudioDataStore.nUserMoonPhase,
--- SkyStudioDataStore.nUserMoonColorR,
--- SkyStudioDataStore.nUserMoonColorG,
--- SkyStudioDataStore.nUserMoonColorB,
--- SkyStudioDataStore.nUserMoonIntensity,
--- SkyStudioDataStore.bUserMoonUseLinearColors,
--- SkyStudioDataStore.nUserDayNightTransition,
--- SkyStudioDataStore.nUserSunFade,
--- SkyStudioDataStore.nUserMoonFade,
--- SkyStudioDataStore.bUserOverrideSunTimeOfDay,
--- SkyStudioDataStore.bUserOverrideSunOrientation,
--- SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
--- SkyStudioDataStore.bUserOverrideMoonOrientation,
--- SkyStudioDataStore.bUserOverrideMoonPhase,
--- SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
--- SkyStudioDataStore.bUserOverrideDayNightTransition
-
 SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUseVanillaLighting", 1, _callback, _self)
@@ -501,3 +471,24 @@ SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness = function(self, _ca
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserShadowFilterSoftness")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserShadowFilterSoftness", 1, _callback, _self)
 end
+
+SkyStudioUI.SkyStudioChangedValue_sCurrentPresetName = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_sCurrentPresetName")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_sCurrentPresetName", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_Preset_Save = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_Save")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Save", 1, _callback, _self)
+end
+
+-- SkyStudioUI.SkyStudio_Preset_Delete = function(self, _callback, _self)
+--   -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_Delete")
+--   return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Delete", 1, _callback, _self)
+-- end
+
+SkyStudioUI.SkyStudio_Preset_Load = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_Load")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Load", 1, _callback, _self)
+end
+

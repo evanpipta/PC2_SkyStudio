@@ -27,8 +27,23 @@ local SkyStudioUIManager = module(..., Mutators.Manager())
 
 local SkyStudioUI = require("UI.Mod_SkyStudio")
 
-function SkyStudioUIManager:Init()
+function SkyStudioUIManager:Init(_tProperties, _tEnvironment)
   trace("SkyStudioUIManager:Init()")
+  -- Store environment reference for later use
+  self.tEnvironment = _tEnvironment
+end
+
+-- Activate is called after all managers are initialized, safe to access world APIs here
+function SkyStudioUIManager:Activate()
+  trace("SkyStudioUIManager:Activate()")
+  
+  -- Cache world APIs during Activate - this is safe and will be used by UI callbacks
+  self.tWorldAPIs = api.world.GetWorldAPIs()
+  if self.tWorldAPIs then
+    trace("Cached tWorldAPIs successfully")
+  else
+    trace("WARNING: Could not cache tWorldAPIs")
+  end
 
   SkyStudioDataStore:LoadBlueprints()
 
@@ -469,6 +484,109 @@ function SkyStudioUIManager:Init()
       SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness = value
     end, self)
 
+    self.ui:SkyStudioChangedValue_sCurrentPresetName(function(_, value)
+      trace("SkyStudioChangedValue_sCurrentPresetName: " .. tostring(value))
+      SkyStudioDataStore.sCurrentPresetName = value
+    end, self)
+
+    self.ui:SkyStudio_Preset_Save(function()
+      trace('SkyStudio_Preset_Save called')
+      
+      -- Use cached tWorldAPIs from Activate() - calling GetWorldAPIs() in UI callbacks crashes
+      local tWorldAPIs = self.tWorldAPIs
+      if not tWorldAPIs then
+        trace("Cannot save: tWorldAPIs not cached (manager not activated?)")
+        return false
+      end
+      trace('Step 1: Using cached tWorldAPIs')
+      
+      -- Get UniqueNameComponent
+      local UniqueNameComponent = tWorldAPIs.UniqueNameComponent
+      if not UniqueNameComponent then
+        trace("Cannot save: UniqueNameComponent not available")
+        return false
+      end
+      trace('Step 2: UniqueNameComponent exists')
+      
+      -- Get editor entity ID
+      local editorEntityID = UniqueNameComponent:GetEntityID("EditorModesHelper")
+      if not editorEntityID then
+        trace("Cannot save: Not in editor mode (no EditorModesHelper entity)")
+        return false
+      end
+      trace('Step 3: editorEntityID = ' .. tostring(editorEntityID))
+      
+      -- Get GameModeHelperComponent
+      local gameModeHelperComponent = tWorldAPIs.GameModeHelperComponent
+      if not gameModeHelperComponent then
+        trace("Cannot save: GameModeHelperComponent not available")
+        return false
+      end
+      trace('Step 4: gameModeHelperComponent exists')
+      
+      -- Get current edit mode
+      local editMode = gameModeHelperComponent:GetCurrentMode(editorEntityID)
+      if not editMode then
+        trace("Cannot save: No edit mode active")
+        return false
+      end
+      trace('Step 5: editMode obtained')
+      
+      -- Check if mode supports GetEditorContext
+      if not editMode.GetEditorContext then
+        trace("Cannot save: Current mode doesn't have GetEditorContext")
+        return false
+      end
+      trace('Step 6: GetEditorContext method exists')
+      
+      -- Get editor context
+      local editorContext = editMode:GetEditorContext()
+      if not editorContext then
+        trace("Cannot save: GetEditorContext returned nil")
+        return false
+      end
+      trace('Step 7: editorContext obtained')
+      
+      -- Get selection
+      local selection = editorContext:GetSelectionSet()
+      if not selection then
+        trace("Cannot save: GetSelectionSet returned nil")
+        return false
+      end
+      trace('Step 8: selection obtained')
+      
+      -- Check selection has parts
+      local nPartCount = selection:CountParts()
+      trace('Step 9: nPartCount = ' .. tostring(nPartCount))
+      
+      if nPartCount == 0 then
+        trace("Cannot save: Select scenery first to save as blueprint")
+        return false
+      end
+      
+      -- All checks passed, safe to save
+      trace('All checks passed, calling SaveSettingsAsBlueprintWithSaveToken')
+      SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
+    end, self)
+
+
+
+    self.ui:SkyStudio_Preset_Load(function(sPresetName)
+      trace("SkyStudioUIManager:SkyStudio_Preset_Load()")
+
+      -- Look for save token matching the preset name requesting to be loaded
+      local cSavetoken = nil
+      for _k, v in pairs(SkyStudioDataStore.tSkyStudioBlueprintSaves) do
+        if v.sPresetName == sPresetName then
+          cSavetoken = v.cSaveToken
+        end
+      end
+
+      -- nil check happens in the function
+      SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSavetoken)
+    end, self)
+
+
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({
       bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,
@@ -569,7 +687,9 @@ function SkyStudioUIManager:Init()
       nUserCloudsCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax,
       nUserCloudsHorizonDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density,
       nUserCloudsHorizonCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
-      nUserCloudsHorizonCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax
+      nUserCloudsHorizonCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax,
+
+      sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
     })
   end)
 end

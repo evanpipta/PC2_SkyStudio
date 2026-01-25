@@ -1,8 +1,10 @@
 local global = _G
-local api = api
+local api = global.api
 local ParkLoadSaveManager = require("managers.parkloadsavemanager")
 
 local trace = require('SkyStudioTrace')
+
+local BaseEditMode = require("Editors.Shared.BaseEditMode")
 
 local SkyStudioDataStore = {}
 
@@ -670,63 +672,218 @@ function SkyStudioDataStore:GetActiveRenderParameters()
   return tActive
 end
 
+----------------------------------------------------------------
+-- SkyStudio Blueprint Presets (saved as blueprint metadata)
+----------------------------------------------------------------
 
+-- New datastore fields (put these near the top with the other SkyStudioDataStore.* fields)
+SkyStudioDataStore.tSkyStudioBlueprintSaves = SkyStudioDataStore.tSkyStudioBlueprintSaves or {}  -- [{sPresetName=string, cSaveToken=cSaveToken}, ...]
+SkyStudioDataStore.sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName or "SkyStudio Preset"
+SkyStudioDataStore.cLoadedBlueprintSaveToken = SkyStudioDataStore.cLoadedBlueprintSaveToken or nil
 
--- If saving over an existing save, pass in the save token
--- Otherwise leave it nil to generate a new one
-function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken()
-  local tMetadata = {}
-  tMetadata.tUserRenderParameters = deepCopy(self.tUserRenderParameters)
+-- Build a serializable config table from the datastore.
+-- Per your requirement: “entirety of configurable values (minus default values table)”.
+-- Also excludes runtime bookkeeping fields we add for blueprint browsing.
+local function buildSkyStudioConfigSnapshot(self)
+  local t = {}
 
-  -- Convert the current sky studio data store to a table, skipping only defaultValues
-  -- Then write it to the metadata using the key tSkyStudioConfig
-  -- Then save that as a blueprint to a save token
-  -- If we have a save token already loaded, use that
-  -- Otherwise, make sure we have a string name to generate a new one from
+  for k, v in pairs(self) do
+    if k ~= "defaultValues"
+      and k ~= "tSkyStudioBlueprintSaves"
+      and k ~= "cLoadedBlueprintSaveToken"
+    then
+      local tv = type(v)
+      if tv ~= "function" and tv ~= "userdata" and tv ~= "thread" then
+        t[k] = deepCopy(v)
+      end
+    end
+  end
 
-  -- ParkLoadSaveManager.SaveBlueprintToSaveToken(nil, nil, nil, tMetadata, nil)
-
+  return t
 end
 
-function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken) 
-  local tMetadata = api.save.GetSaveMetadata(cSaveToken)
-  trace("Metadata")
-  trace(tMetadata)
-
-  if tMetadata.tBlueprint.tSkyStudioConfig ~= nil then
-    -- Overwrite data store config with config saved in blueprint metadata
-
-    -- Also store the save token in a new value in the data store so we can use it to overwrite the save later if we save over the existing config
-
+-- Apply a loaded config snapshot onto the datastore (overwrite keys).
+local function applySkyStudioConfigSnapshot(self, tConfig)
+  if type(tConfig) ~= "table" then
+    return
   end
-  
+
+  for k, v in pairs(tConfig) do
+    if k ~= "defaultValues" then
+      local tv = type(v)
+      if tv ~= "function" and tv ~= "userdata" and tv ~= "thread" then
+        self[k] = deepCopy(v)
+      end
+    end
+  end
+end
+
+-- local SelectAndEditComponent = api.world.GetWorldAPIs().SelectAndEditComponent
+-- SelectAndEditComponent.
+
+-- Getting selection set:
+-- local selection = (self.editorContext):GetSelectionSet()
+
+-- Getting editor context:
+-- self.gameModeHelperComponent = (self.tWorldAPIs).GameModeHelperComponent
+-- local editMode = (self.gameModeHelperComponent):GetCurrentMode(editorEntityID)
+-- if editMode.GetEditorContext then
+--   local editorContext = editMode:GetEditorContext()
+-- end
+
+
+function SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection)
+  trace('SaveSettingsAsBlueprintWithSaveToken')
+
+  -- Validate selection parameter
+  if not selection then
+    trace('selection is nil')
+    return false
+  end
+
+  trace('selection CountParts: ' .. tostring(selection:CountParts()))
+
+  if selection:CountParts() == 0 then
+    trace('selection countParts == 0')
+    return false
+  end
+
+  local tConfig = buildSkyStudioConfigSnapshot(self)
+  local sName = (self.sCurrentPresetName and self.sCurrentPresetName ~= "") and self.sCurrentPresetName or "SkyStudio Preset"
+
+  local tMetadata = {
+    tBlueprint = {
+      tSkyStudioConfig = tConfig,
+      sSkyStudioConfigName = sName,
+    }
+  }
+
+  local tSaveInfo = {
+    type = "blpr2",
+    location = "local",
+    customname = sName,
+    metadata = tMetadata,
+    selection = selection,
+    oncomplete = function(_tSaveInfo)
+      trace('RequestSave oncomplete')
+      if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
+        -- THIS is the token you must keep
+        self.cLoadedBlueprintSaveToken = _tSaveInfo.save
+        self.sCurrentPresetName = sName
+
+        trace("Saved SkyStudio preset token:")
+        trace(tostring(_tSaveInfo.save))
+        trace("Type: " .. tostring(api.save.GetSaveType(_tSaveInfo.save)))
+        trace("Location: " .. tostring(api.save.GetSaveLocation(_tSaveInfo.save)))
+      else
+        trace("SkyStudio preset save failed")
+        trace(_tSaveInfo and tostring(_tSaveInfo.exception) or "unknown error")
+      end
+    end
+  }
+
+  trace('Calling api.save.RequestSave...')
+  api.save.RequestSave(self.cLoadedBlueprintSaveToken or api.player.GetGameOwner(), tSaveInfo)
+  trace('api.save.RequestSave called successfully')
+  return true
+end
+
+function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
+  if cSaveToken == nil then
+    return false
+  end
+
+  local tMetadata = api.save.GetSaveMetadata(cSaveToken)
+  if type(tMetadata) ~= "table" then
+    return false
+  end
+
+  local tBlueprint = tMetadata.tBlueprint
+  if type(tBlueprint) ~= "table" then
+    return false
+  end
+
+  local tConfig = tBlueprint.tSkyStudioConfig
+  if type(tConfig) ~= "table" then
+    -- This blueprint doesn’t contain SkyStudio config
+    return false
+  end
+
+  -- Apply loaded config to datastore
+  applySkyStudioConfigSnapshot(self, tConfig)
+
+  -- Track which blueprint token is currently loaded so "Save" can overwrite it
+  self.cLoadedBlueprintSaveToken = cSaveToken
+
+  -- Prefer explicit stored config name; fall back to save custom name
+  local sName = tBlueprint.sCurrentPresetName
+  if not sName or sName == "" then
+    sName = api.save.GetSaveCustomName(cSaveToken)
+  end
+  if sName and sName ~= "" then
+    self.sCurrentPresetName = sName
+  end
+
+  return true
 end
 
 function SkyStudioDataStore:LoadBlueprints()
-  trace("EnumerateInstalledBlueprints")
+  self.tSkyStudioBlueprintSaves = {}
+ 
+  -- 1) Local blueprint saves (blpr2)
+  local bLocalSuccess, tLocalTokens = ParkLoadSaveManager:EnumerateBlueprintSaves()
+  trace('tLocalTokens')
+  trace(tLocalTokens)
+  if bLocalSuccess and type(tLocalTokens) == "table" then
+    for i, cSaveToken in ipairs(tLocalTokens) do
+      local tMetadata = api.save.GetSaveMetadata(cSaveToken)
+      trace('blueprint ' .. tostring(i) .. ': ' .. tMetadata.sName)
+      if type(tMetadata) == "table" and type(tMetadata.tBlueprint.tSkyStudioConfig) == "table" then
+        local sName = tMetadata.tBlueprint.tSkyStudioConfig.sCurrentPresetName
+        if not sName or sName == "" then
+          sName = api.save.GetSaveCustomName(cSaveToken)
+        end
 
-  local bWorkshopSuccess, tWorkshopItems = ParkLoadSaveManager:EnumerateInstalledBlueprints()
-
-  if (bWorkshopSuccess) then
-    trace(tWorkshopItems)
-  else 
-    trace('Failed to load blueprionts from workshop')
+        table.insert(self.tSkyStudioBlueprintSaves, {
+          sPresetName = sName or "SkyStudio Preset",
+          cSaveToken = cSaveToken
+        })
+      end
+    end
+  else
+    trace("Failed to enumerate local blueprint saves")
   end
 
-  trace('EnumerateBlueprintSaves')
+  -- 2) Installed workshop blueprints
+  -- We can enumerate them, but in this decompiled manager there isn’t a guaranteed “get metadata” path
+  -- for installed items here (unlike save tokens via api.save.GetSaveMetadata).
+  -- So: best-effort only—if an item already contains metadata in its returned table, we’ll use it.
+  -- local bWorkshopSuccess, tWorkshopItems = ParkLoadSaveManager:EnumerateInstalledBlueprints()
+  -- trace('tWorkshopItems')
+  -- trace(tWorkshopItems)
+  -- if bWorkshopSuccess and type(tWorkshopItems) == "table" then
+  --   for _, item in ipairs(tWorkshopItems) do
+  --     -- Best-effort: some builds include metadata directly on the item record.
+  --     local tMetadata = item.metadata
+  --     if type(tMetadata) == "table" and type(tMetadata.tBlueprint.tSkyStudioConfig) == "table" then
+  --       local sName = tMetadata.tBlueprint.tSkyStudioConfig.sCurrentPresetName
 
-  local bLocalSuccess, tLocalItems = ParkLoadSaveManager:EnumerateBlueprintSaves()
+  --       if not sName or sName == "" then
+  --         sName = api.save.GetSaveCustomName(item.cSaveToken)
+  --       end
 
-  if (bLocalSuccess) then
-    trace(tLocalItems)
-  else 
-    trace('Failed to load blueprionts from local')
-  end
+  --       local token = item.token or item.cSaveToken or item.cItemToken -- unknown shape; kept for debugging/extension
+  --       if token ~= nil then
+  --         table.insert(self.tSkyStudioBlueprintSaves, { sPresetName = sName, cSaveToken = token })
+  --       end
+  --     end
+  --   end
+  -- end
 
-  -- TODO - iterate both sets of blueprints and filter down ones that include a tSkyStudioConfig key, then store the tokens of those blueprints somewhere
-  -- Store a list that ust has the name and the save token
-  -- We don't need to store the whole config because that will happen when we call LoadSettingsFromBlueprintWithSaveToken
-  
+  trace('tSkyStudioBlueprintSaves')
+  trace(self.tSkyStudioBlueprintSaves)
+
+  return self.tSkyStudioBlueprintSaves
 end
 
 return SkyStudioDataStore

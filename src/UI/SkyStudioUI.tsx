@@ -128,6 +128,8 @@ type Config = {
   nUserCloudsHorizonDensity: number;
   nUserCloudsHorizonCoverageMin: number;
   nUserCloudsHorizonCoverageMax: number;
+
+  sCurrentPresetName: string;
 };
 
 type State = {
@@ -150,7 +152,6 @@ type State = {
   confirmResetClouds?: boolean;
 
   // Preset tab state
-  currentPresetName: string | null;
   presetList: string[];
   presetModalState: 'none' | 'confirmSave' | 'confirmDelete' | 'confirmLoad' | 'saveAs' | 'confirmDeleteFromList';
   presetModalTarget?: string; // For load/delete from list - which preset is targeted
@@ -257,6 +258,8 @@ const baseConfig = {
   nUserCloudsHorizonDensity: 0.0,
   nUserCloudsHorizonCoverageMin: 0.1,
   nUserCloudsHorizonCoverageMax: 1.0,
+
+  sCurrentPresetName: "SkyStudio Preset"
 };
 
 let focusDebuginterval: number;
@@ -329,7 +332,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetAtmosphere: false,
     confirmResetClouds: false,
 
-    currentPresetName: null,
     presetList: [],
     presetModalState: 'none',
     presetModalTarget: undefined,
@@ -787,17 +789,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     this.setState({ presetList });
   };
 
-  // Called when a preset is loaded from engine
-  onPresetLoaded = (presetName: string) => {
-    this.setState({ currentPresetName: presetName });
-  };
-
   // Save current preset (overwrite)
   onSavePreset = () => {
-    if (this.state.currentPresetName) {
-      Engine.sendEvent("SkyStudio_Preset_Save", this.state.currentPresetName);
-      this.setState({ presetModalState: 'none' });
-    }
+    Engine.sendEvent("SkyStudio_Preset_Save");
+    this.setState({ presetModalState: 'none' });
   };
 
   beginSavePreset = () => {
@@ -812,7 +807,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   beginSaveAsPreset = () => {
     this.setState({ 
       presetModalState: 'saveAs',
-      saveAsInputValue: this.state.currentPresetName || '',
+      saveAsInputValue: this.state.config.sCurrentPresetName || '',
       saveAsError: null
     });
   };
@@ -830,15 +825,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       saveAsInputValue: newName,
       saveAsError: error
     });
+
   };
 
   onSaveAsConfirm = () => {
     const name = this.state.saveAsInputValue.trim();
     if (name && !this.state.presetList.includes(name)) {
-      Engine.sendEvent("SkyStudio_Preset_SaveAs", name);
+      Engine.sendEvent("SkyStudioChangedValue_sCurrentPresetName", name);
+      Engine.sendEvent("SkyStudio_Preset_SaveAs");
       this.setState({ 
         presetModalState: 'none',
-        currentPresetName: name,
         saveAsInputValue: '',
         saveAsError: null
       });
@@ -859,10 +855,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   onDeleteCurrentPreset = () => {
-    if (this.state.currentPresetName) {
-      Engine.sendEvent("SkyStudio_Preset_Delete", this.state.currentPresetName);
+    const presetExists = this.state.presetList.includes(this.state.config.sCurrentPresetName)
+    if (presetExists) {
+      Engine.sendEvent("SkyStudio_Preset_Delete", this.state.config.sCurrentPresetName);
       this.setState({ 
-        currentPresetName: null,
         presetModalState: 'none'
       });
     }
@@ -884,8 +880,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const presetName = this.state.presetModalTarget;
     if (presetName) {
       Engine.sendEvent("SkyStudio_Preset_Load", presetName);
-      this.setState({ 
-        currentPresetName: presetName,
+      this.setState({
         presetModalState: 'none',
         presetModalTarget: undefined
       });
@@ -911,10 +906,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const presetName = this.state.presetModalTarget;
     if (presetName) {
       Engine.sendEvent("SkyStudio_Preset_Delete", presetName);
-      // If we deleted the currently loaded preset, clear it
-      if (this.state.currentPresetName === presetName) {
-        this.setState({ currentPresetName: null });
-      }
       this.setState({ 
         presetModalState: 'none',
         presetModalTarget: undefined
@@ -2440,7 +2431,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               <div className={"skystudio_confirm_modal"}>
                 <div>
                   <div className={"skystudio_reset_header"}>
-                    Save changes to "{this.state.currentPresetName}"?
+                    Save changes to "{this.state.config.sCurrentPresetName}"?
                   </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
                     <Button
@@ -2465,7 +2456,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               <div className={"skystudio_confirm_modal"}>
                 <div>
                   <div className={"skystudio_reset_header"}>
-                    Delete preset "{this.state.currentPresetName}"?
+                    Delete preset "{this.state.config.sCurrentPresetName}"?
                   </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
                     <Button
@@ -2586,17 +2577,17 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                 )}
               >
                 <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
-                  {this.state.currentPresetName ? "Current Preset: " + this.state.currentPresetName : "No Preset Loaded"}
+                  {this.state.config.sCurrentPresetName ? "Current Preset: " + this.state.config.sCurrentPresetName : "No Preset Loaded"}
                 </div>
                 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {this.state.currentPresetName && (
+                  {this.state.config.sCurrentPresetName && (
                   <Button
                     icon={"img/icons/save.svg"}
                     label={Format.stringLiteral("Save")}
                     onSelect={this.beginSavePreset}
                     rootClassName={"skystudio_preset_button"}
-                    disabled={!this.state.currentPresetName}
+                    disabled={!this.state.config.sCurrentPresetName}
                   />
                   )}
                   <Button
@@ -2605,14 +2596,14 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                     onSelect={this.beginSaveAsPreset}
                     rootClassName={"skystudio_preset_button"}
                   />
-                  {this.state.currentPresetName && (
+                  {this.state.config.sCurrentPresetName && (
                   <Button
                     icon={"img/icons/delete.svg"}
                     label={Format.stringLiteral("Delete")}
                     onSelect={this.beginDeleteCurrentPreset}
                     modifiers={"negative"}
                     rootClassName={"skystudio_preset_button"}
-                    disabled={!this.state.currentPresetName}
+                    disabled={!this.state.config.sCurrentPresetName}
                   />)}
                 </div>
               {/* </PanelArea> */}
@@ -2642,7 +2633,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                           alignItems: 'center', 
                           justifyContent: 'space-between',
                           padding: '8px 12px',
-                          background: this.state.currentPresetName === presetName 
+                          background: this.state.config.sCurrentPresetName === presetName 
                             ? 'rgba(100, 200, 255, 0.2)' 
                             : 'rgba(255, 255, 255, 0.05)',
                           borderRadius: '4px'
