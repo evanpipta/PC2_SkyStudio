@@ -880,11 +880,52 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
     local tConfig = buildSkyStudioConfigSnapshot(self)
     local sName = (self.sCurrentPresetName and self.sCurrentPresetName ~= "") and self.sCurrentPresetName or "SkyStudio Preset"
     
+    -- Metadata must include all standard fields the game expects, plus our custom data
+    -- See SaveMetadataBuilder for the expected structure
     local tMetadata = {
+      nVersion = 23,  -- Current metadata version (SaveMetadataBuilder.cCurrentMetadataVersion)
+      sGameVersion = "1.0",  -- SaveMetadataBuilder.cCurrentGameVersion
+      nType = 1,  -- Type_Blueprint (SaveMetadataBuilder.Type_Blueprint)
+      bComplexityLimitDisabledWhenSaved = false,
+      sName = sName,
+      sDescription = "SkyStudio Lighting Preset",
+      tTags = {},  -- Empty array
+      nRequiredDLC = 0,
+      nLoadCriticalDLC = 0,
+      bIsModded = true,
       tBlueprint = {
+        nBuildingCount = 0,
+        nSceneryCount = 1,
+        nFlatRideCount = 0,
+        nTrackedRideCount = 0,
+        nPlacementCost = 0,
+        nRunningCost = 0,
+        tResearchPacks = nil,
+        tEFN = nil,
+        sRideID = nil,
+        -- Custom SkyStudio data stored within tBlueprint
         tSkyStudioConfig = tConfig,
         sSkyStudioConfigName = sName,
-      }
+      },
+      tSave = {
+        sParkName = nil,
+        sWorldName = nil,
+        sGeome = nil,
+        sGameMode = nil,
+        sScenarioCode = nil,
+        sChallengeName = nil,
+        tMedals = nil,
+        tObjectives = nil,
+        bContainsUGC = nil,
+        bIsUGCPark = nil,
+        nComplexity = nil,
+        nGuestCap = nil,
+        nGuestCount = nil,
+      },
+      tResource = {
+        nRunningCost = 0,
+        nPlacementCost = 0,
+      },
     }
     
     -- Use api.save.RequestSave with proper SaveSelection
@@ -900,6 +941,7 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
         if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
           self.cLoadedBlueprintSaveToken = _tSaveInfo.save
           trace("Saved SkyStudio preset, token: " .. tostring(_tSaveInfo.save))
+          -- api.messaging.SubmitGlobalMessage(api.messaging.MsgType_PlayerBlueprintSavedDeletedMessage, _tSaveInfo.save, "", true)
         else
           trace("Save failed or had exception: " .. tostring(_tSaveInfo and _tSaveInfo.exception))
         end
