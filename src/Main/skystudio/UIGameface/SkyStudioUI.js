@@ -895,6 +895,7 @@ class _SkyStudioUI extends preact.Component {
                             "Delete preset \"",
                             this.state.config.sCurrentPresetName,
                             "\"?"),
+                        preact.h("div", { style: { marginBottom: '12px', fontStyle: 'italic' } }, "This action cannot be undone. Are you sure you want to delete this preset?"),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Delete"), onSelect: this.onDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelDeletePreset, rootClassName: "skystudio_reset_confirm_button" }))))),
@@ -904,7 +905,7 @@ class _SkyStudioUI extends preact.Component {
                             "Load preset \"",
                             this.state.presetList[this.state.presetModalTargetIndex],
                             "\"?"),
-                        preact.h("div", { style: { marginBottom: '12px', opacity: 0.7 } }, "Unsaved changes will be lost."),
+                        preact.h("div", { style: { marginBottom: '12px' } }, "Unsaved changes will be lost."),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Load"), onSelect: this.onLoadPreset, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelLoadPreset, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),
@@ -936,7 +937,7 @@ class _SkyStudioUI extends preact.Component {
                         preact.h("div", { style: { marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
                             preact.h("span", { style: { fontWeight: 'bold' } }, "Saved Presets"),
                             preact.h(Button, { label: Format.stringLiteral("Refresh"), onSelect: this.onRefreshPresetList, rootClassName: "skystudio_small_button" })),
-                        presetListEntries.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListEntries.map(({ index, name }) => (preact.h("div", { key: index, style: {
+                        presetListEntries.length === 0 ? (preact.h("div", { style: { opacity: 0.7, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListEntries.map(({ index, name }) => (preact.h("div", { key: index, style: {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',

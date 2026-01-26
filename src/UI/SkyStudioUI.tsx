@@ -2485,7 +2485,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   <div className={"skystudio_reset_header"}>
                     Delete preset "{this.state.config.sCurrentPresetName}"?
                   </div>
-                  <div style={{ marginBottom: '12px', fontStyle: 'italic' }}>
+                  <div style={{ marginBottom: '12px', fontStyle: 'italic', maxWidth: '300px' }}>
                     This action cannot be undone. Are you sure you want to delete this preset?
                   </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
@@ -2675,11 +2675,12 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                         }}
                       >
                         <span style={{ flex: 1 }}>{name}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                        <div style={{ display: 'flex' }}>
                           <Button
                             icon={"img/icons/load.svg"}
                             onSelect={() => this.beginLoadPreset(index)}
                             rootClassName={"skystudio_preset_list_button"}
+                            style={{ marginRight: '4px' }}
                           />
                           <Button
                             icon={"img/icons/delete.svg"}
