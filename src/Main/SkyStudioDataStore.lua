@@ -801,7 +801,7 @@ local function _PerformCameraCapture()
   
   return cToken
 end
-
+ 
 -- Start the async save process (creates a coroutine)
 function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
   trace('StartSaveSettingsAsBlueprint called')
@@ -982,24 +982,7 @@ end
 
 -- Advance function to be called each frame to run the save coroutine
 function SkyStudioDataStore:AdvanceSaveCoroutine()
-  -- Check if we need to reload blueprints (set by oncomplete callback)
-  if self.bNeedsBlueprintReload then
-    -- Todo this is broken
-    
-    -- trace('Processing deferred blueprint reload...')
-    -- self.bNeedsBlueprintReload = false
-    
-    -- Now safe to call APIs
-    -- self:LoadBlueprints()
-    -- trace('Blueprints reloaded')
-    
-    -- -- Call the completion callback if set (to update UI)
-    -- if self.fnOnSaveComplete then
-    --   trace('Calling save complete callback')
-    --   self.fnOnSaveComplete()
-    -- end
-  end
-  
+  -- First, handle the coroutine if it exists
   if self.fnSavePresetCoroutine then
     local status = coroutine.status(self.fnSavePresetCoroutine)
     if status == "suspended" then
@@ -1013,6 +996,23 @@ function SkyStudioDataStore:AdvanceSaveCoroutine()
       trace('Coroutine dead, clearing reference')
       self.fnSavePresetCoroutine = nil
       trace('Coroutine reference cleared')
+    end
+  end
+  
+  -- Check if we need to reload blueprints (set by oncomplete callback)
+  -- Only process when the coroutine is done to ensure we're in a safe context
+  if self.bNeedsBlueprintReload and self.fnSavePresetCoroutine == nil then
+    trace('Processing deferred blueprint reload...')
+    self.bNeedsBlueprintReload = false
+    
+    -- Now safe to call APIs - reload the blueprint list from disk
+    self:LoadBlueprints()
+    trace('Blueprints reloaded, count: ' .. tostring(#self.tSkyStudioBlueprintSaves))
+    
+    -- Call the completion callback if set (to update UI)
+    if self.fnOnSaveComplete then
+      trace('Calling save complete callback')
+      self.fnOnSaveComplete()
     end
   end
 end
