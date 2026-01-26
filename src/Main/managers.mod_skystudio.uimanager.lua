@@ -49,8 +49,10 @@ function SkyStudioUIManager:Activate()
   
   -- Set callback to update UI when save completes
   SkyStudioDataStore.fnOnSaveComplete = function()
-    trace("Save complete callback - updating preset list UI")
+    trace("CALLBACK: fnOnSaveComplete called")
+    trace("CALLBACK: About to call UpdatePresetListUI...")
     self:UpdatePresetListUI()
+    trace("CALLBACK: UpdatePresetListUI completed")
   end
 
   self.ui = SkyStudioUI:new(function()
@@ -682,13 +684,22 @@ function SkyStudioUIManager:Activate()
       end
     end, self)
 
-    -- Save As handler - IDENTICAL to Save, except clears token first to create NEW file
+    -- Manual refresh list handler
+    self.ui:SkyStudio_Preset_RefreshList(function()
+      trace("SkyStudioUIManager:SkyStudio_Preset_RefreshList called")
+      
+      -- Reload blueprints from disk
+      SkyStudioDataStore:LoadBlueprints()
+      trace("Blueprints reloaded, count: " .. tostring(#SkyStudioDataStore.tSkyStudioBlueprintSaves))
+      
+      -- Update the UI
+      self:UpdatePresetListUI()
+      trace("Preset list UI updated")
+    end, self)
+
+    -- Save As handler - IDENTICAL to Save handler, just clears the token first
     self.ui:SkyStudio_Preset_SaveAs(function()
       trace('SkyStudio_Preset_SaveAs called')
-      
-      -- *** ONLY DIFFERENCE FROM SAVE: Clear the token so we create a NEW blueprint ***
-      SkyStudioDataStore.cLoadedBlueprintSaveToken = nil
-      trace("Cleared cLoadedBlueprintSaveToken for Save As (will create new blueprint)")
       
       -- Use cached tWorldAPIs from Activate() - calling GetWorldAPIs() in UI callbacks crashes
       local tWorldAPIs = self.tWorldAPIs
@@ -696,7 +707,10 @@ function SkyStudioUIManager:Activate()
         trace("Cannot save: tWorldAPIs not cached (manager not activated?)")
         return false
       end
-      trace('Step 1: Using cached tWorldAPIs')
+      
+      -- Clear the loaded blueprint token so SaveAs creates a NEW blueprint instead of overwriting
+      SkyStudioDataStore.cLoadedBlueprintSaveToken = nil
+      trace("Cleared cLoadedBlueprintSaveToken for Save As (will create new blueprint)")
       
       -- Get UniqueNameComponent
       local UniqueNameComponent = tWorldAPIs.UniqueNameComponent
@@ -704,7 +718,6 @@ function SkyStudioUIManager:Activate()
         trace("Cannot save: UniqueNameComponent not available")
         return false
       end
-      trace('Step 2: UniqueNameComponent exists')
       
       -- Get editor entity ID
       local editorEntityID = UniqueNameComponent:GetEntityID("EditorModesHelper")
@@ -712,7 +725,6 @@ function SkyStudioUIManager:Activate()
         trace("Cannot save: Not in editor mode (no EditorModesHelper entity)")
         return false
       end
-      trace('Step 3: editorEntityID = ' .. tostring(editorEntityID))
       
       -- Get GameModeHelperComponent
       local gameModeHelperComponent = tWorldAPIs.GameModeHelperComponent
@@ -720,7 +732,6 @@ function SkyStudioUIManager:Activate()
         trace("Cannot save: GameModeHelperComponent not available")
         return false
       end
-      trace('Step 4: gameModeHelperComponent exists')
       
       -- Get current edit mode
       local editMode = gameModeHelperComponent:GetCurrentMode(editorEntityID)
@@ -728,7 +739,6 @@ function SkyStudioUIManager:Activate()
         trace("Cannot save: No edit mode active")
         return false
       end
-      trace('Step 5: editMode obtained')
       
       local selection = nil
       
@@ -739,69 +749,41 @@ function SkyStudioUIManager:Activate()
       -- APPROACH 1: Try selectAndEditComponent (single selection mode)
       local selectAndEditComponent = editMode.selectAndEditComponent
       if selectAndEditComponent and selectAndEditComponent.tSelectedEntity then
-        trace('Step 6a: selectAndEditComponent available (single select mode)')
         local tSelectedEntity = selectAndEditComponent.tSelectedEntity
-        
-        -- Debug: show tSelectedEntity keys
-        trace('Step 6b: tSelectedEntity keys:')
-        for k, v in pairs(tSelectedEntity) do
-          trace('  - ' .. tostring(k) .. ' = ' .. tostring(v))
-        end
         
         -- Try to create a BuildingPartSet from the selected entity
         if sceneryAPI and sceneryAPI.CreateBuildingPartSet then
           selection = sceneryAPI:CreateBuildingPartSet()
-          trace('Step 6c: Created BuildingPartSet via sceneryAPI')
           
           -- Try adding by partID first (preferred)
           if tSelectedEntity.partID then
             selection:Add(tSelectedEntity.partID)
-            trace('Step 6d: Added partID ' .. tostring(tSelectedEntity.partID))
           -- Try adding by buildingGroupID
           elseif tSelectedEntity.buildingGroupID then
             selection:Add(tSelectedEntity.buildingGroupID)
-            trace('Step 6d: Added buildingGroupID ' .. tostring(tSelectedEntity.buildingGroupID))
           -- Try converting entityID to placementID
           elseif tSelectedEntity.entityID and placementAPI and placementAPI.EntityIDToPlacementID then
             local partID = placementAPI:EntityIDToPlacementID(tSelectedEntity.entityID)
             if partID then
               selection:Add(partID)
-              trace('Step 6d: Converted entityID to partID ' .. tostring(partID) .. ' and added')
-            else
-              trace('Step 6d: Could not convert entityID to partID')
             end
-          else
-            trace('Step 6d: No valid ID found to add to BuildingPartSet')
           end
-        else
-          trace('Step 6c: sceneryAPI.CreateBuildingPartSet not available')
         end
       end
       
       -- APPROACH 2: Try multiSelectHelper (multi-select mode)
       if (not selection or selection:CountParts() == 0) and editMode.multiSelectHelper then
-        trace('Step 6a: multiSelectHelper available (multi-select mode)')
         local multiSelectHelper = editMode.multiSelectHelper
-        
-        -- Debug: show multiSelectHelper keys
-        trace('Step 6b: multiSelectHelper keys:')
-        for k, v in pairs(multiSelectHelper) do
-          trace('  - ' .. tostring(k) .. ' (' .. type(v) .. ')')
-        end
         
         -- Try to get selection from multiSelectHelper
         if multiSelectHelper.GetSelectionSet then
           selection = multiSelectHelper:GetSelectionSet()
-          trace('Step 6c: Got selection from multiSelectHelper:GetSelectionSet()')
         elseif multiSelectHelper.selection then
           selection = multiSelectHelper.selection
-          trace('Step 6c: Got selection from multiSelectHelper.selection')
         elseif multiSelectHelper.partSet then
           selection = multiSelectHelper.partSet
-          trace('Step 6c: Got selection from multiSelectHelper.partSet')
         elseif multiSelectHelper.tSelectedParts then
           -- If it's a list of parts, create a BuildingPartSet
-          trace('Step 6c: Found tSelectedParts, creating BuildingPartSet')
           if sceneryAPI and sceneryAPI.CreateBuildingPartSet then
             selection = sceneryAPI:CreateBuildingPartSet()
             for _, partID in pairs(multiSelectHelper.tSelectedParts) do
@@ -813,25 +795,21 @@ function SkyStudioUIManager:Activate()
       
       -- APPROACH 3: Try GetEditorContext
       if (not selection or (selection.CountParts and selection:CountParts() == 0)) and editMode.GetEditorContext then
-        trace('Step 6a: Trying GetEditorContext')
         local editorContext = editMode:GetEditorContext()
         if editorContext and editorContext.GetSelectionSet then
           selection = editorContext:GetSelectionSet()
-          trace('Step 6b: Got selection from editorContext:GetSelectionSet()')
         end
       end
       
       -- If still no selection, show debug info
       if not selection then
-        trace('Step 6: Could not find selection. editMode keys:')
+        trace('Could not find selection. editMode keys:')
         for k, v in pairs(editMode) do
           trace('  - ' .. tostring(k) .. ' (' .. type(v) .. ')')
         end
         trace("Cannot save: Could not get selection from any source")
         return false
       end
-      
-      trace('Step 7: selection obtained, type: ' .. type(selection))
       
       -- Check selection has parts
       if not selection.CountParts then
@@ -840,8 +818,6 @@ function SkyStudioUIManager:Activate()
       end
       
       local nPartCount = selection:CountParts()
-      trace('Step 8: nPartCount = ' .. tostring(nPartCount))
-      
       if nPartCount == 0 then
         trace("Cannot save: Select scenery first to save as blueprint")
         return false
@@ -965,12 +941,16 @@ end
 
 -- Helper to build and send the preset list to UI
 function SkyStudioUIManager:UpdatePresetListUI()
+  trace("UpdatePresetListUI: START")
   local tPresetTable = {}
+  trace("UpdatePresetListUI: Building preset table...")
   for i, v in pairs(SkyStudioDataStore.tSkyStudioBlueprintSaves) do
     tPresetTable[i] = v.sPresetName
   end
-  trace("Sending preset list to UI with " .. tostring(#SkyStudioDataStore.tSkyStudioBlueprintSaves) .. " presets")
+  trace("UpdatePresetListUI: Built table with " .. tostring(#SkyStudioDataStore.tSkyStudioBlueprintSaves) .. " presets")
+  trace("UpdatePresetListUI: About to call self.ui:UpdatePresetList()...")
   self.ui:UpdatePresetList(tPresetTable)
+  trace("UpdatePresetListUI: DONE")
 end
 
 -- Helper to send current settings to UI (after loading a preset)

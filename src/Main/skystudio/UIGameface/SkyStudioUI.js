@@ -532,6 +532,10 @@ class _SkyStudioUI extends preact.Component {
             Engine.sendEvent("SkyStudio_Preset_Save");
             this.setState({ presetModalState: 'none' });
         };
+        // Refresh preset list from disk
+        this.onRefreshPresetList = () => {
+            Engine.sendEvent("SkyStudio_Preset_RefreshList");
+        };
         this.beginSavePreset = () => {
             this.setState({ presetModalState: 'confirmSave' });
         };
@@ -929,7 +933,9 @@ class _SkyStudioUI extends preact.Component {
                             this.state.config.sCurrentPresetName && (preact.h(Button, { icon: "img/icons/save.svg", label: Format.stringLiteral("Save"), onSelect: this.beginSavePreset, rootClassName: "skystudio_preset_button", disabled: !this.state.config.sCurrentPresetName })),
                             preact.h(Button, { icon: "img/icons/save.svg", label: Format.stringLiteral("Save As New"), onSelect: this.beginSaveAsPreset, rootClassName: "skystudio_preset_button" }),
                             this.state.config.sCurrentPresetName && (preact.h(Button, { icon: "img/icons/delete.svg", label: Format.stringLiteral("Delete"), onSelect: this.beginDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_preset_button", disabled: !this.state.config.sCurrentPresetName }))),
-                        preact.h("div", { style: { marginBottom: '8px', fontWeight: 'bold' } }, "Saved Presets"),
+                        preact.h("div", { style: { marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+                            preact.h("span", { style: { fontWeight: 'bold' } }, "Saved Presets"),
+                            preact.h(Button, { label: Format.stringLiteral("Refresh"), onSelect: this.onRefreshPresetList, rootClassName: "skystudio_small_button" })),
                         presetListEntries.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListEntries.map(({ index, name }) => (preact.h("div", { key: index, style: {
                                 display: 'flex',
                                 alignItems: 'center',

@@ -506,3 +506,8 @@ SkyStudioUI.SkyStudio_Preset_Load = function(self, _callback, _self)
   return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Load", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudio_Preset_RefreshList = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_RefreshList")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_RefreshList", 0, _callback, _self)
+end
+

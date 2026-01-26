@@ -809,6 +809,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     this.setState({ presetModalState: 'none' });
   };
 
+  // Refresh preset list from disk
+  onRefreshPresetList = () => {
+    Engine.sendEvent("SkyStudio_Preset_RefreshList");
+  };
+
   beginSavePreset = () => {
     this.setState({ presetModalState: 'confirmSave' });
   };
@@ -2637,8 +2642,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   this.state.presetModalState !== 'none' && "skystudio_blur"
                 )}
               > */}
-                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
-                  Saved Presets
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 'bold' }}>Saved Presets</span>
+                  <Button
+                    label={Format.stringLiteral("Refresh")}
+                    onSelect={this.onRefreshPresetList}
+                    rootClassName={"skystudio_small_button"}
+                  />
                 </div>
                 
                 {presetListEntries.length === 0 ? (

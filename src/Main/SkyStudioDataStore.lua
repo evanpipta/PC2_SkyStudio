@@ -1002,18 +1002,25 @@ function SkyStudioDataStore:AdvanceSaveCoroutine()
   -- Check if we need to reload blueprints (set by oncomplete callback)
   -- Only process when the coroutine is done to ensure we're in a safe context
   if self.bNeedsBlueprintReload and self.fnSavePresetCoroutine == nil then
-    trace('Processing deferred blueprint reload...')
+    trace('RELOAD: Starting deferred blueprint reload...')
     self.bNeedsBlueprintReload = false
+    trace('RELOAD: Cleared bNeedsBlueprintReload flag')
     
     -- Now safe to call APIs - reload the blueprint list from disk
+    trace('RELOAD: About to call LoadBlueprints()...')
     self:LoadBlueprints()
-    trace('Blueprints reloaded, count: ' .. tostring(#self.tSkyStudioBlueprintSaves))
+    trace('RELOAD: LoadBlueprints() completed, count: ' .. tostring(#self.tSkyStudioBlueprintSaves))
     
     -- Call the completion callback if set (to update UI)
+    trace('RELOAD: Checking fnOnSaveComplete callback...')
     if self.fnOnSaveComplete then
-      trace('Calling save complete callback')
+      trace('RELOAD: About to call fnOnSaveComplete()...')
       self.fnOnSaveComplete()
+      trace('RELOAD: fnOnSaveComplete() completed')
+    else
+      trace('RELOAD: No fnOnSaveComplete callback set')
     end
+    trace('RELOAD: Deferred reload fully complete')
   end
 end
 
@@ -1082,17 +1089,23 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nIndex)
 end
 
 function SkyStudioDataStore:LoadBlueprints()
+  trace('LoadBlueprints: START')
   self.tSkyStudioBlueprintSaves = {}
+  trace('LoadBlueprints: Cleared tSkyStudioBlueprintSaves')
  
   -- 1) Local blueprint saves (blpr2)
+  trace('LoadBlueprints: Calling EnumerateBlueprintSaves...')
   local bLocalSuccess, tLocalTokens = ParkLoadSaveManager:EnumerateBlueprintSaves()
-  -- trace('tLocalTokens')
-  -- trace(tLocalTokens)
+  trace('LoadBlueprints: EnumerateBlueprintSaves returned, bLocalSuccess=' .. tostring(bLocalSuccess))
+  
   if bLocalSuccess and type(tLocalTokens) == "table" then
+    trace('LoadBlueprints: Got ' .. tostring(#tLocalTokens) .. ' tokens')
     for i, cSaveToken in ipairs(tLocalTokens) do
+      trace('LoadBlueprints: Processing token ' .. tostring(i) .. '...')
       local tMetadata = api.save.GetSaveMetadata(cSaveToken)
-      -- trace('blueprint ' .. tostring(i) .. ': ' .. tMetadata.sName)
-      if type(tMetadata) == "table" and type(tMetadata.tBlueprint.tSkyStudioConfig) == "table" then
+      trace('LoadBlueprints: Got metadata for token ' .. tostring(i))
+      if type(tMetadata) == "table" and tMetadata.tBlueprint and type(tMetadata.tBlueprint.tSkyStudioConfig) == "table" then
+        trace('LoadBlueprints: Token ' .. tostring(i) .. ' is a SkyStudio preset')
         local sName = tMetadata.tBlueprint.tSkyStudioConfig.sCurrentPresetName
         if not sName or sName == "" then
           sName = api.save.GetSaveCustomName(cSaveToken)
@@ -1102,10 +1115,11 @@ function SkyStudioDataStore:LoadBlueprints()
           sPresetName = sName or "SkyStudio Preset",
           cSaveToken = cSaveToken
         })
+        trace('LoadBlueprints: Added preset "' .. tostring(sName) .. '"')
       end
     end
   else
-    trace("Failed to enumerate local blueprint saves")
+    trace("LoadBlueprints: Failed to enumerate local blueprint saves")
   end
   
   -- 2) Installed workshop blueprints
