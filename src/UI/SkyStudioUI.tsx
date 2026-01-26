@@ -874,9 +874,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   onDeleteCurrentPreset = () => {
-    const presetExists = (Object.values(this.state.presetList)).includes(this.state.config.sCurrentPresetName)
+    const presetExists = this.state.presetModalTargetIndex !== undefined;
     if (presetExists) {
-      Engine.sendEvent("SkyStudio_Preset_Delete", this.state.config.sCurrentPresetName);
+      Engine.sendEvent("SkyStudio_Preset_Delete", this.state.presetModalTargetIndex);
       this.setState({ 
         presetModalState: 'none'
       });
@@ -2485,6 +2485,9 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   <div className={"skystudio_reset_header"}>
                     Delete preset "{this.state.config.sCurrentPresetName}"?
                   </div>
+                  <div style={{ marginBottom: '12px', fontStyle: 'italic' }}>
+                    This action cannot be undone. Are you sure you want to delete this preset?
+                  </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
                     <Button
                       label={Format.stringLiteral("Delete")}
@@ -2509,7 +2512,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   <div className={"skystudio_reset_header"}>
                     Load preset "{this.state.presetList[this.state.presetModalTargetIndex]}"?
                   </div>
-                  <div style={{ marginBottom: '12px', opacity: 0.7 }}>
+                  <div style={{ marginBottom: '12px' }}>
                     Unsaved changes will be lost.
                   </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
@@ -2652,7 +2655,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                 </div>
                 
                 {presetListEntries.length === 0 ? (
-                  <div style={{ opacity: 0.6, fontStyle: 'italic' }}>
+                  <div style={{ opacity: 0.7, fontStyle: 'italic' }}>
                     No presets saved yet. Use "Save As" to create one.
                   </div>
                 ) : (

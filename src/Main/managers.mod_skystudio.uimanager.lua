@@ -55,6 +55,13 @@ function SkyStudioUIManager:Activate()
     trace("CALLBACK: UpdatePresetListUI completed")
   end
 
+  SkyStudioDataStore.fnOnDeleteComplete = function()
+    trace("CALLBACK: fnOnDeleteComplete called")
+    trace("CALLBACK: About to call UpdatePresetListUI...")
+    self:UpdatePresetListUI()
+    trace("CALLBACK: UpdatePresetListUI completed")
+  end
+
   self.ui = SkyStudioUI:new(function()
     trace("SkyStudioUIManager:SkyStudioUI is ready")
   
@@ -828,6 +835,10 @@ function SkyStudioUIManager:Activate()
       SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
     end, self)
 
+    self.ui:SkyStudio_Preset_Delete(function(_, nBlueprintIndex)
+      trace("SkyStudioUIManager:SkyStudio_Preset_Delete(" .. tostring(nBlueprintIndex) .. ")")
+      SkyStudioDataStore:DeleteSettingsBlueprintByIndex(nBlueprintIndex)
+    end, self)
 
     -- Show UI with current parameters (loaded from config file)
     self.ui:Show({

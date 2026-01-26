@@ -586,9 +586,9 @@ class _SkyStudioUI extends preact.Component {
             this.setState({ presetModalState: 'confirmDelete' });
         };
         this.onDeleteCurrentPreset = () => {
-            const presetExists = (Object.values(this.state.presetList)).includes(this.state.config.sCurrentPresetName);
+            const presetExists = this.state.presetModalTargetIndex !== undefined;
             if (presetExists) {
-                Engine.sendEvent("SkyStudio_Preset_Delete", this.state.config.sCurrentPresetName);
+                Engine.sendEvent("SkyStudio_Preset_Delete", this.state.presetModalTargetIndex);
                 this.setState({
                     presetModalState: 'none'
                 });

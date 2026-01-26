@@ -511,3 +511,7 @@ SkyStudioUI.SkyStudio_Preset_RefreshList = function(self, _callback, _self)
   return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_RefreshList", 0, _callback, _self)
 end
 
+SkyStudioUI.SkyStudio_Preset_Delete = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_Delete")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Delete", 1, _callback, _self)
+end

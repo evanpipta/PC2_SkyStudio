@@ -18,6 +18,7 @@ SkyStudioDataStore.bIsSavingPreset = false
 SkyStudioDataStore.fnSavePresetCoroutine = nil
 -- Callback function to be called when save completes successfully (updates UI)
 SkyStudioDataStore.fnOnSaveComplete = nil
+SkyStudioDataStore.fnOnDeleteComplete = nil
 
 -- Deep copy helper function for tables
 local function deepCopy(original)
@@ -689,7 +690,7 @@ end
 
 -- New datastore fields (put these near the top with the other SkyStudioDataStore.* fields)
 SkyStudioDataStore.tSkyStudioBlueprintSaves = SkyStudioDataStore.tSkyStudioBlueprintSaves or {}  -- [{sPresetName=string, cSaveToken=cSaveToken}, ...]
-SkyStudioDataStore.sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName or "SkyStudio Preset"
+SkyStudioDataStore.sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName or ""
 SkyStudioDataStore.cLoadedBlueprintSaveToken = SkyStudioDataStore.cLoadedBlueprintSaveToken or nil
 
 -- Build a serializable config table from the datastore.
@@ -1164,6 +1165,31 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
   return true
 end
 
+-- function SkyStudioDataStore:OnDeleteComplete(result)
+--   trace('deleted preset')
+--   trace(result)
+-- end
+
+function SkyStudioDataStore:DeleteSettingsBlueprint(cSaveToken)
+  local function onDeleteComplete()
+    trace('deleted preset, removing from presets list')
+
+    for i, entry in ipairs(self.tSkyStudioBlueprintSaves) do
+      if entry.cSaveToken == cSaveToken then
+        table.remove(self.tSkyStudioBlueprintSaves, i)
+        trace('Removed preset from list at index ' .. tostring(i))
+        break
+      end
+    end
+
+    if self.fnOnDeleteComplete then
+      self.fnOnDeleteComplete()
+    end
+  end
+
+  api.save.RequestDelete(cSaveToken, { oncomplete = onDeleteComplete })
+end
+
 -- Load settings from a blueprint by its index in tSkyStudioBlueprintSaves
 function SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nIndex)
   trace("LoadSettingsFromBlueprintByIndex: " .. tostring(nIndex))
@@ -1182,6 +1208,24 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nIndex)
   
   trace("Loading blueprint: " .. tostring(tBlueprintEntry.sPresetName))
   return self:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
+end
+
+function SkyStudioDataStore:DeleteSettingsBlueprintByIndex(nIndex)
+  trace("DeleteSettingsBlueprintByIndex: " .. tostring(nIndex))
+
+  local tBlueprintEntry = self.tSkyStudioBlueprintSaves[nIndex]
+  if not tBlueprintEntry then
+    trace("No blueprint found at index: " .. tostring(nIndex))
+    return false
+  end
+
+  local cSaveToken = tBlueprintEntry.cSaveToken
+  if not cSaveToken then
+    trace("Blueprint entry at index " .. tostring(nIndex) .. " has no save token")
+    return false
+  end
+
+  return self:DeleteSettingsBlueprint(cSaveToken)
 end
 
 function SkyStudioDataStore:LoadBlueprints()
