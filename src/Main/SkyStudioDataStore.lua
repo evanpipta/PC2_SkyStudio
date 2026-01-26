@@ -883,6 +883,25 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
     local tConfig = buildSkyStudioConfigSnapshot(self)
     local sName = (self.sCurrentPresetName and self.sCurrentPresetName ~= "") and self.sCurrentPresetName or "SkyStudio Preset"
     
+    -- Debug: trace Fog and Haze Albedo values being saved
+    if tConfig.tUserRenderParameters and tConfig.tUserRenderParameters.Atmospherics then
+      local atm = tConfig.tUserRenderParameters.Atmospherics
+      if atm.Fog and atm.Fog.Albedo and atm.Fog.Albedo.value then
+        local v = atm.Fog.Albedo.value
+        trace('SAVE Fog.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+      else
+        trace('SAVE Fog.Albedo: NOT FOUND in config')
+      end
+      if atm.Haze and atm.Haze.Albedo and atm.Haze.Albedo.value then
+        local v = atm.Haze.Albedo.value
+        trace('SAVE Haze.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+      else
+        trace('SAVE Haze.Albedo: NOT FOUND in config')
+      end
+    else
+      trace('SAVE: tUserRenderParameters.Atmospherics NOT FOUND in config')
+    end
+    
     -- Metadata must include all standard fields the game expects, plus our custom data
     -- See SaveMetadataBuilder for the expected structure
     local tMetadata = {
@@ -1052,8 +1071,46 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
     return false
   end
 
+  -- Debug: trace Fog and Haze Albedo values FROM the loaded config (before applying)
+  if tConfig.tUserRenderParameters and tConfig.tUserRenderParameters.Atmospherics then
+    local atm = tConfig.tUserRenderParameters.Atmospherics
+    if atm.Fog and atm.Fog.Albedo and atm.Fog.Albedo.value then
+      local v = atm.Fog.Albedo.value
+      trace('LOAD (from file) Fog.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+    else
+      trace('LOAD (from file) Fog.Albedo: NOT FOUND in config')
+    end
+    if atm.Haze and atm.Haze.Albedo and atm.Haze.Albedo.value then
+      local v = atm.Haze.Albedo.value
+      trace('LOAD (from file) Haze.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+    else
+      trace('LOAD (from file) Haze.Albedo: NOT FOUND in config')
+    end
+  else
+    trace('LOAD (from file): tUserRenderParameters.Atmospherics NOT FOUND in config')
+  end
+
   -- Apply loaded config to datastore
   applySkyStudioConfigSnapshot(self, tConfig)
+
+  -- Debug: trace Fog and Haze Albedo values AFTER applying to datastore
+  if self.tUserRenderParameters and self.tUserRenderParameters.Atmospherics then
+    local atm = self.tUserRenderParameters.Atmospherics
+    if atm.Fog and atm.Fog.Albedo and atm.Fog.Albedo.value then
+      local v = atm.Fog.Albedo.value
+      trace('LOAD (after apply) Fog.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+    else
+      trace('LOAD (after apply) Fog.Albedo: NOT FOUND in datastore')
+    end
+    if atm.Haze and atm.Haze.Albedo and atm.Haze.Albedo.value then
+      local v = atm.Haze.Albedo.value
+      trace('LOAD (after apply) Haze.Albedo.value: {' .. tostring(v[1]) .. ', ' .. tostring(v[2]) .. ', ' .. tostring(v[3]) .. '}')
+    else
+      trace('LOAD (after apply) Haze.Albedo: NOT FOUND in datastore')
+    end
+  else
+    trace('LOAD (after apply): tUserRenderParameters.Atmospherics NOT FOUND in datastore')
+  end
 
   -- Track which blueprint token is currently loaded so "Save" can overwrite it
   self.cLoadedBlueprintSaveToken = cSaveToken
