@@ -76,6 +76,20 @@
   position: relative;
 }
 
+.skystudio_scrollPane_presetList {
+  flex: 1 1 auto;
+  height: calc(35vh - 9rem);
+  width: 46rem;
+  position: relative;
+}
+
+.skystudio_preset_section_header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
 /* Color row layout */
 .skystudio_colorRow_swatchWrapper {
   width: 100%;
@@ -96,6 +110,17 @@
   justify-content: center;
   align-items: center;
   z-index: 10;
+}
+
+.skystudio_confirm_modal_content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 10rem;
+}
+.skystudio_confirm_modal_content > div {
+ text-align: center;
 }
 
 .skystudio_confirm_blur {
@@ -135,14 +160,45 @@
 /* Preset feature */
 .skystudio_preset_button {
   height: 2rem;
-  margin-right: 1rem;
+  margin-right: 0.5rem;
+}
+
+.skystudio_preset_list_button:last-child {
+  margin-right: 0;
 }
 
 .skystudio_preset_list_button {
   height: 2rem;
-  margin-right: 1rem;
+  margin-right: 0.5rem;
+}
+
+.skystudio_preset_list_button:last-child {
+  margin-right: 0;
 }
 
 .skystudio_preset_input {
   width: 100%;
+}
+
+.skystudio_preset_list_item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.skystudio_preset_list_item:hover {
+  background: rgba(15, 154, 229, 0.849);
+}
+
+/* TODO make this use the UI's accent color */
+.skystudio_preset_list_item_current {
+  background: rgba(11, 129, 192, 0.849);
+  font-weight: bold;
+}
+
+.skystudio_preset_list_item_current:hover {
+  background: rgba(15, 154, 229, 0.849);
 }
