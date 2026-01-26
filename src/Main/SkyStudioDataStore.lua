@@ -16,6 +16,8 @@ local SkyStudioDataStore = {}
 SkyStudioDataStore.bIsSavingPreset = false
 -- Coroutine for async save operation
 SkyStudioDataStore.fnSavePresetCoroutine = nil
+-- Callback function to be called when save completes successfully
+SkyStudioDataStore.fnOnSaveComplete = nil
 
 -- Deep copy helper function for tables
 local function deepCopy(original)
@@ -941,10 +943,26 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
         if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
           self.cLoadedBlueprintSaveToken = _tSaveInfo.save
           trace("Saved SkyStudio preset, token: " .. tostring(_tSaveInfo.save))
-          -- api.messaging.SubmitGlobalMessage(api.messaging.MsgType_PlayerBlueprintSavedDeletedMessage, _tSaveInfo.save, "", true)
+          
+          -- Update current preset name
+          self.sCurrentPresetName = sName
+          
+          -- Reload blueprints to pick up the new save (must be done AFTER save completes)
+          trace('Reloading blueprints after save...')
+          self:LoadBlueprints()
+          
+          -- Call the completion callback if set (to update UI)
+          if self.fnOnSaveComplete then
+            trace('Calling save complete callback')
+            self.fnOnSaveComplete()
+          end
         else
           trace("Save failed or had exception: " .. tostring(_tSaveInfo and _tSaveInfo.exception))
         end
+        
+        -- Clear flag regardless of success/failure
+        self.bIsSavingPreset = false
+        trace('bIsSavingPreset = false, save complete!')
       end
     }
     
@@ -958,14 +976,7 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
     
     api.save.RequestSave(saveToken, tSaveInfo)
     
-    trace('api.save.RequestSave called successfully')
-    
-    -- Update current preset name
-    self.sCurrentPresetName = sName
-    
-    -- Clear flag
-    self.bIsSavingPreset = false
-    trace('bIsSavingPreset = false, save complete!')
+    trace('api.save.RequestSave called, waiting for oncomplete...')
   end)
   
   trace('Save coroutine created')
@@ -1033,6 +1044,26 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
   end
 
   return true
+end
+
+-- Load settings from a blueprint by its index in tSkyStudioBlueprintSaves
+function SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nIndex)
+  trace("LoadSettingsFromBlueprintByIndex: " .. tostring(nIndex))
+  
+  local tBlueprintEntry = self.tSkyStudioBlueprintSaves[nIndex]
+  if not tBlueprintEntry then
+    trace("No blueprint found at index: " .. tostring(nIndex))
+    return false
+  end
+  
+  local cSaveToken = tBlueprintEntry.cSaveToken
+  if not cSaveToken then
+    trace("Blueprint entry at index " .. tostring(nIndex) .. " has no save token")
+    return false
+  end
+  
+  trace("Loading blueprint: " .. tostring(tBlueprintEntry.sPresetName))
+  return self:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
 end
 
 function SkyStudioDataStore:LoadBlueprints()

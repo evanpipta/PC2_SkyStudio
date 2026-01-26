@@ -46,6 +46,12 @@ function SkyStudioUIManager:Activate()
   end
 
   SkyStudioDataStore:LoadBlueprints()
+  
+  -- Set callback to update UI when save completes
+  SkyStudioDataStore.fnOnSaveComplete = function()
+    trace("Save complete callback - updating preset list UI")
+    self:UpdatePresetListUI()
+  end
 
   self.ui = SkyStudioUI:new(function()
     trace("SkyStudioUIManager:SkyStudioUI is ready")
@@ -662,19 +668,91 @@ function SkyStudioUIManager:Activate()
 
 
 
-    self.ui:SkyStudio_Preset_Load(function(sPresetName)
-      trace("SkyStudioUIManager:SkyStudio_Preset_Load()")
+    self.ui:SkyStudio_Preset_Load(function(_, nBlueprintIndex)
+      trace("SkyStudioUIManager:SkyStudio_Preset_Load(" .. tostring(nBlueprintIndex) .. ")")
 
-      -- Look for save token matching the preset name requesting to be loaded
-      local cSavetoken = nil
-      for _k, v in pairs(SkyStudioDataStore.tSkyStudioBlueprintSaves) do
-        if v.sPresetName == sPresetName then
-          cSavetoken = v.cSaveToken
+      -- Load settings from the blueprint at the given index
+      if SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nBlueprintIndex) then
+        trace("Loaded preset successfully, updating UI")
+        -- Re-show UI with new settings
+        -- self:SendCurrentSettingsToUI()
+      else
+        trace("Failed to load preset from index: " .. tostring(nBlueprintIndex))
+      end
+    end, self)
+
+    -- Save As handler - same as Save but preset name is already set by the UI
+    self.ui:SkyStudio_Preset_SaveAs(function()
+      trace('SkyStudio_Preset_SaveAs called')
+      
+      -- Use cached tWorldAPIs from Activate() - calling GetWorldAPIs() in UI callbacks crashes
+      local tWorldAPIs = self.tWorldAPIs
+      if not tWorldAPIs then
+        trace("Cannot save: tWorldAPIs not cached (manager not activated?)")
+        return false
+      end
+      
+      -- Get UniqueNameComponent
+      local uniqueNameComponent = tWorldAPIs.uniqueName
+      if not uniqueNameComponent then
+        trace("Cannot save: UniqueNameComponent not available")
+        return false
+      end
+      
+      -- Get GameModeHelperComponent
+      local gameModeHelperComponent = tWorldAPIs.gameModeHelper
+      if not gameModeHelperComponent then
+        trace("Cannot save: GameModeHelperComponent not available")
+        return false
+      end
+      
+      -- Get current edit mode
+      local editMode = gameModeHelperComponent:GetCurrentEditMode()
+      if not editMode then
+        trace("Cannot save: No current edit mode")
+        return false
+      end
+      
+      -- Get selection from edit mode
+      local selection = nil
+      
+      -- Try to get from selectAndEditComponent (single selection)
+      if editMode.selectAndEditComponent then
+        local tSelectedEntity = editMode.selectAndEditComponent:GetSelectedEntity()
+        if tSelectedEntity and tSelectedEntity.entityID then
+          local BuildingPartSet = require("BuildingPartSet")
+          selection = BuildingPartSet:new()
+          local partID = tSelectedEntity.partID or tSelectedEntity.entityID
+          selection:add(partID)
         end
       end
-
-      -- nil check happens in the function
-      SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSavetoken)
+      
+      -- If no single selection, try multiSelectHelper
+      if (not selection or selection:countParts() == 0) and editMode.multiSelectHelper then
+        selection = editMode.multiSelectHelper:GetSelection()
+      end
+      
+      -- Final fallback: try GetEditorContext
+      if (not selection or selection:countParts() == 0) and editMode.GetEditorContext then
+        local editorContext = editMode:GetEditorContext()
+        if editorContext and editorContext.GetSelectionSet then
+          selection = editorContext:GetSelectionSet()
+        end
+      end
+      
+      if not selection then
+        trace("Cannot save: Could not get selection from edit mode")
+        return false
+      end
+      
+      if selection:countParts() == 0 then
+        trace("Cannot save: No parts selected")
+        return false
+      end
+      
+      -- All checks passed, safe to save
+      trace('All checks passed (SaveAs), calling SaveSettingsAsBlueprintWithSaveToken')
+      SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
     end, self)
 
 
@@ -783,9 +861,129 @@ function SkyStudioUIManager:Activate()
       sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
     })
 
-    -- Key = blueprint id, value = blueprint name set by the user
-    self.ui:UpdatePresetList({ [12] = "Example Preset", [13] = "Another Example" })
+    -- Send the preset list to the UI (key = blueprint index, value = preset name)
+    self:UpdatePresetListUI()
   end)
+end
+
+-- Helper to build and send the preset list to UI
+function SkyStudioUIManager:UpdatePresetListUI()
+  local tPresetTable = {}
+  for i, v in pairs(SkyStudioDataStore.tSkyStudioBlueprintSaves) do
+    tPresetTable[i] = v.sPresetName
+  end
+  trace("Sending preset list to UI with " .. tostring(#SkyStudioDataStore.tSkyStudioBlueprintSaves) .. " presets")
+  self.ui:UpdatePresetList(tPresetTable)
+end
+
+-- Helper to send current settings to UI (after loading a preset)
+function SkyStudioUIManager:SendCurrentSettingsToUI()
+  self.ui:UpdateSettings({
+    bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,
+    nUserSunAzimuth = SkyStudioDataStore.nUserSunAzimuth,
+    nUserSunLatitudeOffset = SkyStudioDataStore.nUserSunLatitudeOffset,
+    nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay,
+    nUserSunColorR = SkyStudioDataStore.nUserSunColorR,
+    nUserSunColorG = SkyStudioDataStore.nUserSunColorG,
+    nUserSunColorB = SkyStudioDataStore.nUserSunColorB,
+    -- nUserSunColor = rgbFloatsToInt(
+    --   SkyStudioDataStore.nUserSunColorR,
+    --   SkyStudioDataStore.nUserSunColorG,
+    --   SkyStudioDataStore.nUserSunColorB
+    -- ),
+    nUserSunIntensity = SkyStudioDataStore.nUserSunIntensity,
+    bUserSunUseLinearColors = SkyStudioDataStore.bUserSunUseLinearColors,
+    nUserMoonAzimuth = SkyStudioDataStore.nUserMoonAzimuth,
+    nUserMoonLatitudeOffset = SkyStudioDataStore.nUserMoonLatitudeOffset,
+    nUserMoonPhase = SkyStudioDataStore.nUserMoonPhase,
+    nUserMoonColorR = SkyStudioDataStore.nUserMoonColorR,
+    nUserMoonColorG = SkyStudioDataStore.nUserMoonColorG,
+    nUserMoonColorB = SkyStudioDataStore.nUserMoonColorB,
+    -- nUserMoonColor = rgbFloatsToInt(
+    --   SkyStudioDataStore.nUserMoonColorR,
+    --   SkyStudioDataStore.nUserMoonColorG,
+    --   SkyStudioDataStore.nUserMoonColorB
+    -- ),
+    nUserMoonIntensity = SkyStudioDataStore.nUserMoonIntensity,
+    bUserMoonUseLinearColors = SkyStudioDataStore.bUserMoonUseLinearColors,
+    nUserSunGroundMultiplier = SkyStudioDataStore.nUserSunGroundMultiplier,
+    nUserMoonGroundMultiplier = SkyStudioDataStore.nUserMoonGroundMultiplier,
+    nUserDayNightTransition = SkyStudioDataStore.nUserDayNightTransition,
+    nUserSunFade = SkyStudioDataStore.nUserSunFade,
+    nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
+    bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
+    bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
+    bUserOverrideSunColorAndIntensity = SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
+    bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
+    bUserOverrideMoonPhase = SkyStudioDataStore.bUserOverrideMoonPhase,
+    bUserOverrideMoonColorAndIntensity = SkyStudioDataStore.bUserOverrideMoonColorAndIntensity,
+    bUserOverrideSunFade = SkyStudioDataStore.bUserOverrideSunFade,
+    bUserOverrideMoonFade = SkyStudioDataStore.bUserOverrideMoonFade,
+    bUserOverrideDayNightTransition = SkyStudioDataStore.bUserOverrideDayNightTransition,
+    bUserOverrideAtmosphere = SkyStudioDataStore.bUserOverrideAtmosphere,
+    bUserOverrideSunDisk = SkyStudioDataStore.bUserOverrideSunDisk,
+    bUserOverrideMoonDisk = SkyStudioDataStore.bUserOverrideMoonDisk,
+    bUserOverrideGI = SkyStudioDataStore.bUserOverrideGI,
+    bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
+    bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
+    bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,
+    nUserFogDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
+    nUserFogScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight,
+    nUserHazeDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
+    nUserHazeScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight,
+    nUserFogColor = rgbFloatsToInt(
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.R,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.G,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.B
+    ),
+    nUserHazeColor = rgbFloatsToInt(
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.R,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.G,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.B
+    ),
+    nUserSunDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.DiskSize,
+    nUserSunDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.DiskIntensity,
+    nUserSunScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.ScatterIntensity,
+    nUserSunColor = rgbFloatsToInt(
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.R,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.G,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.B
+    ),
+    nUserMoonDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.DiskSize,
+    nUserMoonDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.DiskIntensity,
+    nUserMoonScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.ScatterIntensity,
+    nUserMoonColor = rgbFloatsToInt(
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.R,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.G,
+      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.B
+    ),
+    nUserIrradianceScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Irradiance.ScatterIntensity,
+    nUserSkyLightIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.LightIntensity,
+    nUserSkyScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.ScatterIntensity,
+    nUserSkyDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.Density,
+    nUserVolumetricScatterWeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.ScatterWeight,
+    nUserVolumetricDistanceStart = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.DistanceStart,
+    nUserGISkyIntensity = SkyStudioDataStore.tUserRenderParameters.GI.SkyIntensity,
+    nUserGISunIntensity = SkyStudioDataStore.tUserRenderParameters.GI.SunIntensity,
+    nUserGIBounceBoost = SkyStudioDataStore.tUserRenderParameters.GI.BounceBoost,
+    nUserGIMultiBounceIntensity = SkyStudioDataStore.tUserRenderParameters.GI.MultiBounceIntensity,
+    nUserGIEmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.GI.EmissiveIntensity,
+    nUserGIAmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.GI.AmbientOcclusionWeight,
+    nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.HDR.AdaptionTime,
+    nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.HDR.AdaptionDarknessScale,
+    nUserShadowFilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.FilterSoftness,
+    nUserCloudsDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density,
+    nUserCloudsScale = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale,
+    nUserCloudsSpeed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed,
+    nUserCloudsAltitudeMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin,
+    nUserCloudsAltitudeMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax,
+    nUserCloudsCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin,
+    nUserCloudsCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax,
+    nUserCloudsHorizonDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density,
+    nUserCloudsHorizonCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
+    nUserCloudsHorizonCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax,
+    sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
+  })
 end
 
 -- Advance is called every frame - use it to run the save coroutine

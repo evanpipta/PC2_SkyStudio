@@ -154,7 +154,7 @@ type State = {
   // Preset tab state
   presetList: Record<number, string>;
   presetModalState: 'none' | 'confirmSave' | 'confirmDelete' | 'confirmLoad' | 'saveAs' | 'confirmDeleteFromList';
-  presetModalTarget?: string; // For load/delete from list - which preset is targeted
+  presetModalTargetIndex?: number; // For load/delete from list - which blueprint index is targeted
   saveAsInputValue: string;
   saveAsError: string | null;
 };
@@ -334,7 +334,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
     presetList: {},
     presetModalState: 'none',
-    presetModalTarget: undefined,
+    presetModalTargetIndex: undefined,
     saveAsInputValue: '',
     saveAsError: null,
   };
@@ -343,6 +343,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     Engine.addListener("Show", this.onShow);
     Engine.addListener("Hide", this.onHide);
     Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
+    Engine.addListener("UpdateSettings", this.onUpdateSettings);
 
     focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
   }
@@ -351,6 +352,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     Engine.removeListener("Show", this.onShow);
     Engine.removeListener("Hide", this.onHide);
     Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
+    Engine.removeListener("UpdateSettings", this.onUpdateSettings);
 
     clearInterval(focusDebuginterval);
   }
@@ -377,6 +379,16 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   onHide = () => this.setState({ visible: false });
+
+  // Called when settings are updated from Lua (e.g., after loading a preset)
+  onUpdateSettings = (data: Partial<Config>) => {
+    this.setState({
+      config: {
+        ...this.state.config,
+        ...data,
+      },
+    });
+  };
 
   onNumericalValueChanged = (key: keyof Config, newValue: number) => {
     this.setState({
@@ -871,20 +883,21 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   // Load preset from list
-  beginLoadPreset = (presetName: string) => {
+  beginLoadPreset = (blueprintIndex: number) => {
     this.setState({ 
       presetModalState: 'confirmLoad',
-      presetModalTarget: presetName
+      presetModalTargetIndex: blueprintIndex
     });
   };
 
   onLoadPreset = () => {
-    const presetName = this.state.presetModalTarget;
-    if (presetName) {
-      Engine.sendEvent("SkyStudio_Preset_Load", presetName);
+    const blueprintIndex = this.state.presetModalTargetIndex;
+    if (blueprintIndex !== undefined) {
+      // Add 1 to convert from JS 0-based index to Lua 1-based index
+      Engine.sendEvent("SkyStudio_Preset_Load", blueprintIndex + 1);
       this.setState({
         presetModalState: 'none',
-        presetModalTarget: undefined
+        presetModalTargetIndex: undefined
       });
     }
   };
@@ -892,25 +905,26 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   cancelLoadPreset = () => {
     this.setState({ 
       presetModalState: 'none',
-      presetModalTarget: undefined
+      presetModalTargetIndex: undefined
     });
   };
 
   // Delete preset from list
-  beginDeletePresetFromList = (presetName: string) => {
+  beginDeletePresetFromList = (blueprintIndex: number) => {
     this.setState({ 
       presetModalState: 'confirmDeleteFromList',
-      presetModalTarget: presetName
+      presetModalTargetIndex: blueprintIndex
     });
   };
 
   onDeletePresetFromList = () => {
-    const presetName = this.state.presetModalTarget;
-    if (presetName) {
-      Engine.sendEvent("SkyStudio_Preset_Delete", presetName);
+    const blueprintIndex = this.state.presetModalTargetIndex;
+    if (blueprintIndex !== undefined) {
+      // Add 1 to convert from JS 0-based index to Lua 1-based index
+      Engine.sendEvent("SkyStudio_Preset_Delete", blueprintIndex + 1);
       this.setState({ 
         presetModalState: 'none',
-        presetModalTarget: undefined
+        presetModalTargetIndex: undefined
       });
     }
   };
@@ -918,7 +932,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   cancelDeleteFromList = () => {
     this.setState({ 
       presetModalState: 'none',
-      presetModalTarget: undefined
+      presetModalTargetIndex: undefined
     });
   };
 
@@ -1054,7 +1068,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       this.state.confirmResetMoon ||
       this.state.confirmResetSun;
 
-    const presetListArr = Object.values(this.state.presetList)
+    // Get entries as [index, name] pairs for the preset list
+    const presetListEntries = Object.entries(this.state.presetList).map(([key, value]) => ({
+      index: Number(key),
+      name: value
+    }))
 
     const tabs = [
       <Tab
@@ -2480,11 +2498,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             )}
     
             {/* Confirm Load Modal */}
-            {this.state.presetModalState === 'confirmLoad' && (
+            {this.state.presetModalState === 'confirmLoad' && this.state.presetModalTargetIndex !== undefined && (
               <div className={"skystudio_confirm_modal"}>
                 <div>
                   <div className={"skystudio_reset_header"}>
-                    Load preset "{this.state.presetModalTarget}"?
+                    Load preset "{this.state.presetList[this.state.presetModalTargetIndex]}"?
                   </div>
                   <div style={{ marginBottom: '12px', opacity: 0.7 }}>
                     Unsaved changes will be lost.
@@ -2508,11 +2526,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             )}
     
             {/* Confirm Delete From List Modal */}
-            {this.state.presetModalState === 'confirmDeleteFromList' && (
+            {this.state.presetModalState === 'confirmDeleteFromList' && this.state.presetModalTargetIndex !== undefined && (
               <div className={"skystudio_confirm_modal"}>
                 <div>
                   <div className={"skystudio_reset_header"}>
-                    Delete preset "{this.state.presetModalTarget}"?
+                    Delete preset "{this.state.presetList[this.state.presetModalTargetIndex]}"?
                   </div>
                   <div className={"skystudio_reset_confirm_buttons"}>
                     <Button
@@ -2623,36 +2641,36 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   Saved Presets
                 </div>
                 
-                {presetListArr.length === 0 ? (
+                {presetListEntries.length === 0 ? (
                   <div style={{ opacity: 0.6, fontStyle: 'italic' }}>
                     No presets saved yet. Use "Save As" to create one.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {presetListArr.map((presetName) => (
+                    {presetListEntries.map(({ index, name }) => (
                       <div 
-                        key={presetName}
+                        key={index}
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'space-between',
                           padding: '8px 12px',
-                          background: this.state.config.sCurrentPresetName === presetName 
+                          background: this.state.config.sCurrentPresetName === name 
                             ? 'rgba(100, 200, 255, 0.2)' 
                             : 'rgba(255, 255, 255, 0.05)',
                           borderRadius: '4px'
                         }}
                       >
-                        <span style={{ flex: 1 }}>{presetName}</span>
+                        <span style={{ flex: 1 }}>{name}</span>
                         <div style={{ display: 'flex', gap: '4px' }}>
                           <Button
                             icon={"img/icons/load.svg"}
-                            onSelect={() => this.beginLoadPreset(presetName)}
+                            onSelect={() => this.beginLoadPreset(index)}
                             rootClassName={"skystudio_preset_list_button"}
                           />
                           <Button
                             icon={"img/icons/delete.svg"}
-                            onSelect={() => this.beginDeletePresetFromList(presetName)}
+                            onSelect={() => this.beginDeletePresetFromList(index)}
                             modifiers={"negative"}
                             rootClassName={"skystudio_preset_list_button"}
                           />

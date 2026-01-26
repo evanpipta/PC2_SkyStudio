@@ -44,6 +44,10 @@ SkyStudioUI.UpdatePresetList = function(self, presetList)
   self:TriggerEventAtNextAdvance("UpdatePresetList", presetList)
 end
 
+SkyStudioUI.UpdateSettings = function(self, settings)
+  self:TriggerEventAtNextAdvance("UpdateSettings", settings)
+end
+
 SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUseVanillaLighting", 1, _callback, _self)
@@ -485,6 +489,11 @@ end
 SkyStudioUI.SkyStudio_Preset_Save = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_Save")
   return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_Save", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudio_Preset_SaveAs = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudio_Preset_SaveAs")
+  return self:AddGlobalEnvironmentEventListener("SkyStudio_Preset_SaveAs", 1, _callback, _self)
 end
 
 -- SkyStudioUI.SkyStudio_Preset_Delete = function(self, _callback, _self)

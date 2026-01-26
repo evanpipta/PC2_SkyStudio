@@ -150,7 +150,7 @@ class _SkyStudioUI extends preact.Component {
             confirmResetClouds: false,
             presetList: {},
             presetModalState: 'none',
-            presetModalTarget: undefined,
+            presetModalTargetIndex: undefined,
             saveAsInputValue: '',
             saveAsError: null,
         };
@@ -174,6 +174,15 @@ class _SkyStudioUI extends preact.Component {
             });
         };
         this.onHide = () => this.setState({ visible: false });
+        // Called when settings are updated from Lua (e.g., after loading a preset)
+        this.onUpdateSettings = (data) => {
+            this.setState({
+                config: {
+                    ...this.state.config,
+                    ...data,
+                },
+            });
+        };
         this.onNumericalValueChanged = (key, newValue) => {
             this.setState({
                 config: {
@@ -585,49 +594,51 @@ class _SkyStudioUI extends preact.Component {
             this.setState({ presetModalState: 'none' });
         };
         // Load preset from list
-        this.beginLoadPreset = (presetName) => {
+        this.beginLoadPreset = (blueprintIndex) => {
             this.setState({
                 presetModalState: 'confirmLoad',
-                presetModalTarget: presetName
+                presetModalTargetIndex: blueprintIndex
             });
         };
         this.onLoadPreset = () => {
-            const presetName = this.state.presetModalTarget;
-            if (presetName) {
-                Engine.sendEvent("SkyStudio_Preset_Load", presetName);
+            const blueprintIndex = this.state.presetModalTargetIndex;
+            if (blueprintIndex !== undefined) {
+                // Add 1 to convert from JS 0-based index to Lua 1-based index
+                Engine.sendEvent("SkyStudio_Preset_Load", blueprintIndex + 1);
                 this.setState({
                     presetModalState: 'none',
-                    presetModalTarget: undefined
+                    presetModalTargetIndex: undefined
                 });
             }
         };
         this.cancelLoadPreset = () => {
             this.setState({
                 presetModalState: 'none',
-                presetModalTarget: undefined
+                presetModalTargetIndex: undefined
             });
         };
         // Delete preset from list
-        this.beginDeletePresetFromList = (presetName) => {
+        this.beginDeletePresetFromList = (blueprintIndex) => {
             this.setState({
                 presetModalState: 'confirmDeleteFromList',
-                presetModalTarget: presetName
+                presetModalTargetIndex: blueprintIndex
             });
         };
         this.onDeletePresetFromList = () => {
-            const presetName = this.state.presetModalTarget;
-            if (presetName) {
-                Engine.sendEvent("SkyStudio_Preset_Delete", presetName);
+            const blueprintIndex = this.state.presetModalTargetIndex;
+            if (blueprintIndex !== undefined) {
+                // Add 1 to convert from JS 0-based index to Lua 1-based index
+                Engine.sendEvent("SkyStudio_Preset_Delete", blueprintIndex + 1);
                 this.setState({
                     presetModalState: 'none',
-                    presetModalTarget: undefined
+                    presetModalTargetIndex: undefined
                 });
             }
         };
         this.cancelDeleteFromList = () => {
             this.setState({
                 presetModalState: 'none',
-                presetModalTarget: undefined
+                presetModalTargetIndex: undefined
             });
         };
         // Request preset list refresh
@@ -639,12 +650,14 @@ class _SkyStudioUI extends preact.Component {
         Engine.addListener("Show", this.onShow);
         Engine.addListener("Hide", this.onHide);
         Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
+        Engine.addListener("UpdateSettings", this.onUpdateSettings);
         focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
     }
     componentWillUnmount() {
         Engine.removeListener("Show", this.onShow);
         Engine.removeListener("Hide", this.onHide);
         Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
+        Engine.removeListener("UpdateSettings", this.onUpdateSettings);
         clearInterval(focusDebuginterval);
     }
     render() {
@@ -677,7 +690,11 @@ class _SkyStudioUI extends preact.Component {
         const showResetConfirmation = this.state.confirmResetAll ||
             this.state.confirmResetMoon ||
             this.state.confirmResetSun;
-        const presetListArr = Object.values(this.state.presetList);
+        // Get entries as [index, name] pairs for the preset list
+        const presetListEntries = Object.entries(this.state.presetList).map(([key, value]) => ({
+            index: Number(key),
+            name: value
+        }));
         const tabs = [
             preact.h(Tab, { key: "time", icon: "img/icons/clock.svg", label: Format.stringLiteral("Time"), outcome: "SkyStudio_Tab_Time" }),
             preact.h(Tab, { key: "suncolor", icon: "img/icons/sun.svg", label: Format.stringLiteral("Sun"), outcome: "SkyStudio_Tab_Sun_Color" }),
@@ -877,21 +894,21 @@ class _SkyStudioUI extends preact.Component {
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Delete"), onSelect: this.onDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelDeletePreset, rootClassName: "skystudio_reset_confirm_button" }))))),
-                this.state.presetModalState === 'confirmLoad' && (preact.h("div", { className: "skystudio_confirm_modal" },
+                this.state.presetModalState === 'confirmLoad' && this.state.presetModalTargetIndex !== undefined && (preact.h("div", { className: "skystudio_confirm_modal" },
                     preact.h("div", null,
                         preact.h("div", { className: "skystudio_reset_header" },
                             "Load preset \"",
-                            this.state.presetModalTarget,
+                            this.state.presetList[this.state.presetModalTargetIndex],
                             "\"?"),
                         preact.h("div", { style: { marginBottom: '12px', opacity: 0.7 } }, "Unsaved changes will be lost."),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Load"), onSelect: this.onLoadPreset, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelLoadPreset, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),
-                this.state.presetModalState === 'confirmDeleteFromList' && (preact.h("div", { className: "skystudio_confirm_modal" },
+                this.state.presetModalState === 'confirmDeleteFromList' && this.state.presetModalTargetIndex !== undefined && (preact.h("div", { className: "skystudio_confirm_modal" },
                     preact.h("div", null,
                         preact.h("div", { className: "skystudio_reset_header" },
                             "Delete preset \"",
-                            this.state.presetModalTarget,
+                            this.state.presetList[this.state.presetModalTargetIndex],
                             "\"?"),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Delete"), onSelect: this.onDeletePresetFromList, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }),
@@ -913,20 +930,20 @@ class _SkyStudioUI extends preact.Component {
                             preact.h(Button, { icon: "img/icons/save.svg", label: Format.stringLiteral("Save As New"), onSelect: this.beginSaveAsPreset, rootClassName: "skystudio_preset_button" }),
                             this.state.config.sCurrentPresetName && (preact.h(Button, { icon: "img/icons/delete.svg", label: Format.stringLiteral("Delete"), onSelect: this.beginDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_preset_button", disabled: !this.state.config.sCurrentPresetName }))),
                         preact.h("div", { style: { marginBottom: '8px', fontWeight: 'bold' } }, "Saved Presets"),
-                        presetListArr.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListArr.map((presetName) => (preact.h("div", { key: presetName, style: {
+                        presetListEntries.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListEntries.map(({ index, name }) => (preact.h("div", { key: index, style: {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 padding: '8px 12px',
-                                background: this.state.config.sCurrentPresetName === presetName
+                                background: this.state.config.sCurrentPresetName === name
                                     ? 'rgba(100, 200, 255, 0.2)'
                                     : 'rgba(255, 255, 255, 0.05)',
                                 borderRadius: '4px'
                             } },
-                            preact.h("span", { style: { flex: 1 } }, presetName),
+                            preact.h("span", { style: { flex: 1 } }, name),
                             preact.h("div", { style: { display: 'flex', gap: '4px' } },
-                                preact.h(Button, { icon: "img/icons/load.svg", onSelect: () => this.beginLoadPreset(presetName), rootClassName: "skystudio_preset_list_button" }),
-                                preact.h(Button, { icon: "img/icons/delete.svg", onSelect: () => this.beginDeletePresetFromList(presetName), modifiers: "negative", rootClassName: "skystudio_preset_list_button" })))))))))),
+                                preact.h(Button, { icon: "img/icons/load.svg", onSelect: () => this.beginLoadPreset(index), rootClassName: "skystudio_preset_list_button" }),
+                                preact.h(Button, { icon: "img/icons/delete.svg", onSelect: () => this.beginDeletePresetFromList(index), modifiers: "negative", rootClassName: "skystudio_preset_list_button" })))))))))),
         ];
         return (preact.h("div", { className: "skystudio_root" },
             DEBUG_MODE && (preact.h(Panel, { rootClassName: classNames("skystudio_focus_debug"), title: Format.stringLiteral("Current Focus") },
