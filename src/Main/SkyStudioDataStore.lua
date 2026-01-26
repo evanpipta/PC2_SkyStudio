@@ -1040,12 +1040,12 @@ function SkyStudioDataStore:LoadBlueprints()
  
   -- 1) Local blueprint saves (blpr2)
   local bLocalSuccess, tLocalTokens = ParkLoadSaveManager:EnumerateBlueprintSaves()
-  trace('tLocalTokens')
-  trace(tLocalTokens)
+  -- trace('tLocalTokens')
+  -- trace(tLocalTokens)
   if bLocalSuccess and type(tLocalTokens) == "table" then
     for i, cSaveToken in ipairs(tLocalTokens) do
       local tMetadata = api.save.GetSaveMetadata(cSaveToken)
-      trace('blueprint ' .. tostring(i) .. ': ' .. tMetadata.sName)
+      -- trace('blueprint ' .. tostring(i) .. ': ' .. tMetadata.sName)
       if type(tMetadata) == "table" and type(tMetadata.tBlueprint.tSkyStudioConfig) == "table" then
         local sName = tMetadata.tBlueprint.tSkyStudioConfig.sCurrentPresetName
         if not sName or sName == "" then
@@ -1061,7 +1061,7 @@ function SkyStudioDataStore:LoadBlueprints()
   else
     trace("Failed to enumerate local blueprint saves")
   end
-
+  
   -- 2) Installed workshop blueprints
   -- We can enumerate them, but in this decompiled manager there isn’t a guaranteed “get metadata” path
   -- for installed items here (unlike save tokens via api.save.GetSaveMetadata).

@@ -148,7 +148,7 @@ class _SkyStudioUI extends preact.Component {
             confirmResetAll: false,
             confirmResetAtmosphere: false,
             confirmResetClouds: false,
-            presetList: [],
+            presetList: {},
             presetModalState: 'none',
             presetModalTarget: undefined,
             saveAsInputValue: '',
@@ -515,7 +515,7 @@ class _SkyStudioUI extends preact.Component {
         };
         // ========== PRESET TAB METHODS ==========
         // Called when preset list is received from engine
-        this.onPresetListReceived = (presetList) => {
+        this.onUpdatePresetList = (presetList) => {
             this.setState({ presetList });
         };
         // Save current preset (overwrite)
@@ -541,7 +541,7 @@ class _SkyStudioUI extends preact.Component {
             const newName = e.text;
             let error = null;
             // Check if name already exists in preset list
-            if (this.state.presetList.includes(newName)) {
+            if (Object.values(this.state.presetList).includes(newName)) {
                 error = "A preset with this name already exists";
             }
             this.setState({
@@ -551,7 +551,7 @@ class _SkyStudioUI extends preact.Component {
         };
         this.onSaveAsConfirm = () => {
             const name = this.state.saveAsInputValue.trim();
-            if (name && !this.state.presetList.includes(name)) {
+            if (name && !Object.values(this.state.presetList).includes(name)) {
                 Engine.sendEvent("SkyStudioChangedValue_sCurrentPresetName", name);
                 Engine.sendEvent("SkyStudio_Preset_SaveAs");
                 this.setState({
@@ -573,7 +573,7 @@ class _SkyStudioUI extends preact.Component {
             this.setState({ presetModalState: 'confirmDelete' });
         };
         this.onDeleteCurrentPreset = () => {
-            const presetExists = this.state.presetList.includes(this.state.config.sCurrentPresetName);
+            const presetExists = (Object.values(this.state.presetList)).includes(this.state.config.sCurrentPresetName);
             if (presetExists) {
                 Engine.sendEvent("SkyStudio_Preset_Delete", this.state.config.sCurrentPresetName);
                 this.setState({
@@ -638,11 +638,13 @@ class _SkyStudioUI extends preact.Component {
     componentWillMount() {
         Engine.addListener("Show", this.onShow);
         Engine.addListener("Hide", this.onHide);
+        Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
         focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
     }
     componentWillUnmount() {
         Engine.removeListener("Show", this.onShow);
         Engine.removeListener("Hide", this.onHide);
+        Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
         clearInterval(focusDebuginterval);
     }
     render() {
@@ -675,6 +677,7 @@ class _SkyStudioUI extends preact.Component {
         const showResetConfirmation = this.state.confirmResetAll ||
             this.state.confirmResetMoon ||
             this.state.confirmResetSun;
+        const presetListArr = Object.values(this.state.presetList);
         const tabs = [
             preact.h(Tab, { key: "time", icon: "img/icons/clock.svg", label: Format.stringLiteral("Time"), outcome: "SkyStudio_Tab_Time" }),
             preact.h(Tab, { key: "suncolor", icon: "img/icons/sun.svg", label: Format.stringLiteral("Sun"), outcome: "SkyStudio_Tab_Sun_Color" }),
@@ -910,7 +913,7 @@ class _SkyStudioUI extends preact.Component {
                             preact.h(Button, { icon: "img/icons/save.svg", label: Format.stringLiteral("Save As New"), onSelect: this.beginSaveAsPreset, rootClassName: "skystudio_preset_button" }),
                             this.state.config.sCurrentPresetName && (preact.h(Button, { icon: "img/icons/delete.svg", label: Format.stringLiteral("Delete"), onSelect: this.beginDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_preset_button", disabled: !this.state.config.sCurrentPresetName }))),
                         preact.h("div", { style: { marginBottom: '8px', fontWeight: 'bold' } }, "Saved Presets"),
-                        this.state.presetList.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, this.state.presetList.map((presetName) => (preact.h("div", { key: presetName, style: {
+                        presetListArr.length === 0 ? (preact.h("div", { style: { opacity: 0.6, fontStyle: 'italic' } }, "No presets saved yet. Use \"Save As\" to create one.")) : (preact.h("div", { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, presetListArr.map((presetName) => (preact.h("div", { key: presetName, style: {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',

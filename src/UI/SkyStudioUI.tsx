@@ -152,7 +152,7 @@ type State = {
   confirmResetClouds?: boolean;
 
   // Preset tab state
-  presetList: string[];
+  presetList: Record<number, string>;
   presetModalState: 'none' | 'confirmSave' | 'confirmDelete' | 'confirmLoad' | 'saveAs' | 'confirmDeleteFromList';
   presetModalTarget?: string; // For load/delete from list - which preset is targeted
   saveAsInputValue: string;
@@ -332,7 +332,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetAtmosphere: false,
     confirmResetClouds: false,
 
-    presetList: [],
+    presetList: {},
     presetModalState: 'none',
     presetModalTarget: undefined,
     saveAsInputValue: '',
@@ -342,6 +342,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   componentWillMount() {
     Engine.addListener("Show", this.onShow);
     Engine.addListener("Hide", this.onHide);
+    Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
 
     focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
   }
@@ -349,6 +350,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   componentWillUnmount() {
     Engine.removeListener("Show", this.onShow);
     Engine.removeListener("Hide", this.onHide);
+    Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
 
     clearInterval(focusDebuginterval);
   }
@@ -785,7 +787,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   // ========== PRESET TAB METHODS ==========
   
   // Called when preset list is received from engine
-  onPresetListReceived = (presetList: string[]) => {
+  onUpdatePresetList = (presetList: Record<number, string>) => {
     this.setState({ presetList });
   };
 
@@ -817,7 +819,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     let error: string | null = null;
     
     // Check if name already exists in preset list
-    if (this.state.presetList.includes(newName)) {
+    if (Object.values(this.state.presetList).includes(newName)) {
       error = "A preset with this name already exists";
     }
     
@@ -830,7 +832,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
   onSaveAsConfirm = () => {
     const name = this.state.saveAsInputValue.trim();
-    if (name && !this.state.presetList.includes(name)) {
+    if (name && !Object.values(this.state.presetList).includes(name)) {
       Engine.sendEvent("SkyStudioChangedValue_sCurrentPresetName", name);
       Engine.sendEvent("SkyStudio_Preset_SaveAs");
       this.setState({ 
@@ -855,7 +857,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   onDeleteCurrentPreset = () => {
-    const presetExists = this.state.presetList.includes(this.state.config.sCurrentPresetName)
+    const presetExists = (Object.values(this.state.presetList)).includes(this.state.config.sCurrentPresetName)
     if (presetExists) {
       Engine.sendEvent("SkyStudio_Preset_Delete", this.state.config.sCurrentPresetName);
       this.setState({ 
@@ -1051,6 +1053,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       this.state.confirmResetAll ||
       this.state.confirmResetMoon ||
       this.state.confirmResetSun;
+
+    const presetListArr = Object.values(this.state.presetList)
 
     const tabs = [
       <Tab
@@ -2619,13 +2623,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   Saved Presets
                 </div>
                 
-                {this.state.presetList.length === 0 ? (
+                {presetListArr.length === 0 ? (
                   <div style={{ opacity: 0.6, fontStyle: 'italic' }}>
                     No presets saved yet. Use "Save As" to create one.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {this.state.presetList.map((presetName) => (
+                    {presetListArr.map((presetName) => (
                       <div 
                         key={presetName}
                         style={{ 
@@ -2711,3 +2715,4 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 export const SkyStudioUI = Focusable.decorateEx(_SkyStudioUI, {
   focusable: false,
 });
+

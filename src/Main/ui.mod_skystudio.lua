@@ -39,6 +39,11 @@ SkyStudioUI.Hide = function(self)
   self:TriggerEventAtNextAdvance("Hide")
 end
 
+SkyStudioUI.UpdatePresetList = function(self, presetList)
+  -- trace("SkyStudioUI.Hide()")
+  self:TriggerEventAtNextAdvance("UpdatePresetList", presetList)
+end
+
 SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUseVanillaLighting")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUseVanillaLighting", 1, _callback, _self)

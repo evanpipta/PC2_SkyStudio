@@ -782,6 +782,9 @@ function SkyStudioUIManager:Activate()
 
       sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
     })
+
+    -- Key = blueprint id, value = blueprint name set by the user
+    self.ui:UpdatePresetList({ [12] = "Example Preset", [13] = "Another Example" })
   end)
 end
 
