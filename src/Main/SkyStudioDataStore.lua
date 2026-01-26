@@ -16,10 +16,8 @@ local SkyStudioDataStore = {}
 SkyStudioDataStore.bIsSavingPreset = false
 -- Coroutine for async save operation
 SkyStudioDataStore.fnSavePresetCoroutine = nil
--- Callback function to be called when save completes successfully
+-- Callback function to be called when save completes successfully (updates UI)
 SkyStudioDataStore.fnOnSaveComplete = nil
--- Flag set by oncomplete to signal that we need to reload blueprints on next Advance
-SkyStudioDataStore.bNeedsBlueprintReload = false
 
 -- Deep copy helper function for tables
 local function deepCopy(original)
@@ -944,15 +942,42 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
       oncomplete = function(_tSaveInfo)
         trace('RequestSave oncomplete called!')
         if _tSaveInfo and _tSaveInfo.exception == nil and _tSaveInfo.save ~= nil then
-          self.cLoadedBlueprintSaveToken = _tSaveInfo.save
-          trace("Saved SkyStudio preset, token: " .. tostring(_tSaveInfo.save))
+          local newToken = _tSaveInfo.save
+          trace("Saved SkyStudio preset, token: " .. tostring(newToken))
           
           -- Update current preset name
           self.sCurrentPresetName = sName
           
-          -- Set flag to reload blueprints on next Advance (can't call APIs from oncomplete context)
-          self.bNeedsBlueprintReload = true
-          trace('Set bNeedsBlueprintReload = true')
+          -- Directly add/update the preset in our list (avoids EnumerateBlueprintSaves crash)
+          -- Check if we're overwriting an existing preset or adding a new one
+          local bFoundExisting = false
+          for i, entry in ipairs(self.tSkyStudioBlueprintSaves) do
+            if entry.cSaveToken == newToken then
+              -- Overwriting existing - update the name
+              entry.sPresetName = sName
+              bFoundExisting = true
+              trace('Updated existing preset at index ' .. tostring(i) .. ' with name: ' .. sName)
+              break
+            end
+          end
+          
+          if not bFoundExisting then
+            -- New preset - add to list
+            table.insert(self.tSkyStudioBlueprintSaves, {
+              sPresetName = sName,
+              cSaveToken = newToken
+            })
+            trace('Added new preset to list: ' .. sName .. ' (total: ' .. tostring(#self.tSkyStudioBlueprintSaves) .. ')')
+          end
+          
+          -- Update loaded token to point to this save
+          self.cLoadedBlueprintSaveToken = newToken
+          
+          -- Call completion callback to update UI (if set by manager)
+          if self.fnOnSaveComplete then
+            trace('Calling fnOnSaveComplete to update UI...')
+            self.fnOnSaveComplete()
+          end
         else
           trace("Save failed or had exception: " .. tostring(_tSaveInfo and _tSaveInfo.exception))
         end
@@ -999,29 +1024,6 @@ function SkyStudioDataStore:AdvanceSaveCoroutine()
     end
   end
   
-  -- Check if we need to reload blueprints (set by oncomplete callback)
-  -- Only process when the coroutine is done to ensure we're in a safe context
-  if self.bNeedsBlueprintReload and self.fnSavePresetCoroutine == nil then
-    trace('RELOAD: Starting deferred blueprint reload...')
-    self.bNeedsBlueprintReload = false
-    trace('RELOAD: Cleared bNeedsBlueprintReload flag')
-    
-    -- Now safe to call APIs - reload the blueprint list from disk
-    trace('RELOAD: About to call LoadBlueprints()...')
-    self:LoadBlueprints()
-    trace('RELOAD: LoadBlueprints() completed, count: ' .. tostring(#self.tSkyStudioBlueprintSaves))
-    
-    -- Call the completion callback if set (to update UI)
-    trace('RELOAD: Checking fnOnSaveComplete callback...')
-    if self.fnOnSaveComplete then
-      trace('RELOAD: About to call fnOnSaveComplete()...')
-      self.fnOnSaveComplete()
-      trace('RELOAD: fnOnSaveComplete() completed')
-    else
-      trace('RELOAD: No fnOnSaveComplete callback set')
-    end
-    trace('RELOAD: Deferred reload fully complete')
-  end
 end
 
 -- Legacy function for compatibility (now starts the async save)

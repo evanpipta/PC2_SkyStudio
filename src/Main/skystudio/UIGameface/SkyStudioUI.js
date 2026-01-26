@@ -532,7 +532,7 @@ class _SkyStudioUI extends preact.Component {
             Engine.sendEvent("SkyStudio_Preset_Save");
             this.setState({ presetModalState: 'none' });
         };
-        // Refresh preset list from disk
+        // Refresh preset list from disk (manual refresh button)
         this.onRefreshPresetList = () => {
             Engine.sendEvent("SkyStudio_Preset_RefreshList");
         };

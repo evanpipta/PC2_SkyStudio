@@ -1071,9 +1071,8 @@ end
 
 -- Advance is called every frame - use it to run the save coroutine
 function SkyStudioUIManager:Advance(_dt)
-  -- Advance the save coroutine if it's running OR if we need to reload blueprints
-  -- (the reload happens after save completes, when both flags are false but bNeedsBlueprintReload is true)
-  if SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine or SkyStudioDataStore.bNeedsBlueprintReload then
+  -- Advance the save coroutine if it's running
+  if SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine then
     SkyStudioDataStore:AdvanceSaveCoroutine()
   end
 end
