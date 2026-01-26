@@ -1071,7 +1071,44 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
     return false
   end
 
-  -- Debug: trace Fog and Haze Albedo values FROM the loaded config (before applying)
+  -- trace('full config')
+  -- trace(tConfig)
+  -- trace('full renderparameters')
+  -- trace(tConfig.tUserRenderParameters)
+
+  -- Helper to get color value handling both numeric and string keys (serialization can convert 1 to "1")
+  local function getColorValue(v, index)
+    return v[index] or v[tostring(index)]
+  end
+  
+  -- Helper to normalize color array keys from strings to numbers
+  local function normalizeColorArray(colorTable)
+    if not colorTable or not colorTable.value then return end
+    local v = colorTable.value
+    -- Check if keys are strings and convert to numeric
+    if v["1"] ~= nil or v["2"] ~= nil or v["3"] ~= nil then
+      local normalized = {
+        v["1"] or v[1],
+        v["2"] or v[2],
+        v["3"] or v[3]
+      }
+      colorTable.value = normalized
+      trace('Normalized color array from string keys to numeric keys')
+    end
+  end
+  
+  -- Normalize Fog and Haze Albedo arrays in the loaded config (fix string key issue from serialization)
+  if tConfig.tUserRenderParameters and tConfig.tUserRenderParameters.Atmospherics then
+    local atm = tConfig.tUserRenderParameters.Atmospherics
+    if atm.Fog and atm.Fog.Albedo then
+      normalizeColorArray(atm.Fog.Albedo)
+    end
+    if atm.Haze and atm.Haze.Albedo then
+      normalizeColorArray(atm.Haze.Albedo)
+    end
+  end
+
+  -- Debug: trace Fog and Haze Albedo values FROM the loaded config (after normalization)
   if tConfig.tUserRenderParameters and tConfig.tUserRenderParameters.Atmospherics then
     local atm = tConfig.tUserRenderParameters.Atmospherics
     if atm.Fog and atm.Fog.Albedo and atm.Fog.Albedo.value then

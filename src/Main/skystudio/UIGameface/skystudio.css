@@ -72,7 +72,7 @@
   /* min-height: 25rem; */
   height: 35vh;
   /* Width should be fixed or else we get a huge layout shift hiccup when changing tabs which causes the game to stutter */
-  width: 45rem;
+  width: 48rem;
   position: relative;
 }
 
@@ -87,7 +87,7 @@
 
 .skystudio_confirm_modal {
   position: absolute;
-  width: 45rem;
+  width: 48rem;
   height: 35vh;
   padding-bottom: 2rem;
   background: rgba(255,255,255,0.7);
