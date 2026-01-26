@@ -18,6 +18,8 @@ SkyStudioDataStore.bIsSavingPreset = false
 SkyStudioDataStore.fnSavePresetCoroutine = nil
 -- Callback function to be called when save completes successfully
 SkyStudioDataStore.fnOnSaveComplete = nil
+-- Flag set by oncomplete to signal that we need to reload blueprints on next Advance
+SkyStudioDataStore.bNeedsBlueprintReload = false
 
 -- Deep copy helper function for tables
 local function deepCopy(original)
@@ -804,11 +806,12 @@ end
 function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
   trace('StartSaveSettingsAsBlueprint called')
   
+  -- TODO: Re-enable this check once we figure out why oncomplete doesn't always fire
   -- Check if already saving
-  if self.bIsSavingPreset then
-    trace('Already saving a preset, ignoring request')
-    return false
-  end
+  -- if self.bIsSavingPreset then
+  --   trace('Already saving a preset, ignoring request')
+  --   return false
+  -- end
   
   -- Validate selection parameter
   if not selection then
@@ -823,7 +826,7 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
     return false
   end
   
-  -- Set flag
+  -- Set flag (still set it so Advance knows to run the coroutine)
   self.bIsSavingPreset = true
   trace('bIsSavingPreset = true')
   
@@ -947,15 +950,9 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
           -- Update current preset name
           self.sCurrentPresetName = sName
           
-          -- Reload blueprints to pick up the new save (must be done AFTER save completes)
-          trace('Reloading blueprints after save...')
-          self:LoadBlueprints()
-          
-          -- Call the completion callback if set (to update UI)
-          if self.fnOnSaveComplete then
-            trace('Calling save complete callback')
-            self.fnOnSaveComplete()
-          end
+          -- Set flag to reload blueprints on next Advance (can't call APIs from oncomplete context)
+          self.bNeedsBlueprintReload = true
+          trace('Set bNeedsBlueprintReload = true')
         else
           trace("Save failed or had exception: " .. tostring(_tSaveInfo and _tSaveInfo.exception))
         end
@@ -985,6 +982,24 @@ end
 
 -- Advance function to be called each frame to run the save coroutine
 function SkyStudioDataStore:AdvanceSaveCoroutine()
+  -- Check if we need to reload blueprints (set by oncomplete callback)
+  if self.bNeedsBlueprintReload then
+    -- Todo this is broken
+    
+    -- trace('Processing deferred blueprint reload...')
+    -- self.bNeedsBlueprintReload = false
+    
+    -- Now safe to call APIs
+    -- self:LoadBlueprints()
+    -- trace('Blueprints reloaded')
+    
+    -- -- Call the completion callback if set (to update UI)
+    -- if self.fnOnSaveComplete then
+    --   trace('Calling save complete callback')
+    --   self.fnOnSaveComplete()
+    -- end
+  end
+  
   if self.fnSavePresetCoroutine then
     local status = coroutine.status(self.fnSavePresetCoroutine)
     if status == "suspended" then

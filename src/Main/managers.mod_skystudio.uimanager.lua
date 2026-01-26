@@ -655,11 +655,12 @@ function SkyStudioUIManager:Activate()
         return false
       end
       
+      -- TODO: Re-enable once oncomplete reliability is fixed
       -- Check if already saving
-      if SkyStudioDataStore.bIsSavingPreset then
-        trace('Already saving a preset, please wait...')
-        return false
-      end
+      -- if SkyStudioDataStore.bIsSavingPreset then
+      --   trace('Already saving a preset, please wait...')
+      --   return false
+      -- end
       
       -- All checks passed, safe to save
       trace('All checks passed, calling SaveSettingsAsBlueprintWithSaveToken')
