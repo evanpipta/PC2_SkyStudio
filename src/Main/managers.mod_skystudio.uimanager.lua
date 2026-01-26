@@ -674,8 +674,8 @@ function SkyStudioUIManager:Activate()
       -- Load settings from the blueprint at the given index
       if SkyStudioDataStore:LoadSettingsFromBlueprintByIndex(nBlueprintIndex) then
         trace("Loaded preset successfully, updating UI")
-        -- Re-show UI with new settings
-        -- self:SendCurrentSettingsToUI()
+        -- Send updated settings to UI
+        self:SendCurrentSettingsToUI()
       else
         trace("Failed to load preset from index: " .. tostring(nBlueprintIndex))
       end
@@ -878,7 +878,25 @@ end
 
 -- Helper to send current settings to UI (after loading a preset)
 function SkyStudioUIManager:SendCurrentSettingsToUI()
-  self.ui:UpdateSettings({
+  trace("SendCurrentSettingsToUI called")
+  
+  -- Get render params with safe access
+  local rp = SkyStudioDataStore.tUserRenderParameters or {}
+  local atm = rp.Atmospherics or {}
+  local fog = atm.Fog or {}
+  local haze = atm.Haze or {}
+  local sun = atm.Sun or {}
+  local moon = atm.Moon or {}
+  local irr = atm.Irradiance or {}
+  local sky = atm.Sky or {}
+  local vol = atm.Volumetric or {}
+  local clouds = atm.Clouds or {}
+  local horizon = clouds.Horizon or {}
+  local gi = rp.GI or {}
+  local hdr = rp.HDR or {}
+  local shadows = rp.Shadows or {}
+  
+  local tSettings = {
     bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,
     nUserSunAzimuth = SkyStudioDataStore.nUserSunAzimuth,
     nUserSunLatitudeOffset = SkyStudioDataStore.nUserSunLatitudeOffset,
@@ -886,11 +904,6 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     nUserSunColorR = SkyStudioDataStore.nUserSunColorR,
     nUserSunColorG = SkyStudioDataStore.nUserSunColorG,
     nUserSunColorB = SkyStudioDataStore.nUserSunColorB,
-    -- nUserSunColor = rgbFloatsToInt(
-    --   SkyStudioDataStore.nUserSunColorR,
-    --   SkyStudioDataStore.nUserSunColorG,
-    --   SkyStudioDataStore.nUserSunColorB
-    -- ),
     nUserSunIntensity = SkyStudioDataStore.nUserSunIntensity,
     bUserSunUseLinearColors = SkyStudioDataStore.bUserSunUseLinearColors,
     nUserMoonAzimuth = SkyStudioDataStore.nUserMoonAzimuth,
@@ -899,11 +912,6 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     nUserMoonColorR = SkyStudioDataStore.nUserMoonColorR,
     nUserMoonColorG = SkyStudioDataStore.nUserMoonColorG,
     nUserMoonColorB = SkyStudioDataStore.nUserMoonColorB,
-    -- nUserMoonColor = rgbFloatsToInt(
-    --   SkyStudioDataStore.nUserMoonColorR,
-    --   SkyStudioDataStore.nUserMoonColorG,
-    --   SkyStudioDataStore.nUserMoonColorB
-    -- ),
     nUserMoonIntensity = SkyStudioDataStore.nUserMoonIntensity,
     bUserMoonUseLinearColors = SkyStudioDataStore.bUserMoonUseLinearColors,
     nUserSunGroundMultiplier = SkyStudioDataStore.nUserSunGroundMultiplier,
@@ -927,63 +935,61 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
     bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
     bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,
-    nUserFogDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Density,
-    nUserFogScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.ScaleHeight,
-    nUserHazeDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Density,
-    nUserHazeScaleHeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.ScaleHeight,
-    nUserFogColor = rgbFloatsToInt(
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.R,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.G,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Fog.Color.B
-    ),
-    nUserHazeColor = rgbFloatsToInt(
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.R,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.G,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Haze.Color.B
-    ),
-    nUserSunDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.DiskSize,
-    nUserSunDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.DiskIntensity,
-    nUserSunScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.ScatterIntensity,
-    nUserSunColor = rgbFloatsToInt(
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.R,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.G,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sun.Color.B
-    ),
-    nUserMoonDiskSize = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.DiskSize,
-    nUserMoonDiskIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.DiskIntensity,
-    nUserMoonScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.ScatterIntensity,
-    nUserMoonColor = rgbFloatsToInt(
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.R,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.G,
-      SkyStudioDataStore.tUserRenderParameters.Atmospherics.Moon.Color.B
-    ),
-    nUserIrradianceScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Irradiance.ScatterIntensity,
-    nUserSkyLightIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.LightIntensity,
-    nUserSkyScatterIntensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.ScatterIntensity,
-    nUserSkyDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Sky.Density,
-    nUserVolumetricScatterWeight = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.ScatterWeight,
-    nUserVolumetricDistanceStart = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Volumetric.DistanceStart,
-    nUserGISkyIntensity = SkyStudioDataStore.tUserRenderParameters.GI.SkyIntensity,
-    nUserGISunIntensity = SkyStudioDataStore.tUserRenderParameters.GI.SunIntensity,
-    nUserGIBounceBoost = SkyStudioDataStore.tUserRenderParameters.GI.BounceBoost,
-    nUserGIMultiBounceIntensity = SkyStudioDataStore.tUserRenderParameters.GI.MultiBounceIntensity,
-    nUserGIEmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.GI.EmissiveIntensity,
-    nUserGIAmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.GI.AmbientOcclusionWeight,
-    nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.HDR.AdaptionTime,
-    nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.HDR.AdaptionDarknessScale,
-    nUserShadowFilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.FilterSoftness,
-    nUserCloudsDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density,
-    nUserCloudsScale = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale,
-    nUserCloudsSpeed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed,
-    nUserCloudsAltitudeMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin,
-    nUserCloudsAltitudeMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax,
-    nUserCloudsCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin,
-    nUserCloudsCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMax,
-    nUserCloudsHorizonDensity = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.Density,
-    nUserCloudsHorizonCoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
-    nUserCloudsHorizonCoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax,
+    nUserFogDensity = fog.Density,
+    nUserFogScaleHeight = fog.ScaleHeight,
+    nUserHazeDensity = haze.Density,
+    nUserHazeScaleHeight = haze.ScaleHeight,
+    nUserSunDiskSize = sun.DiskSize,
+    nUserSunDiskIntensity = sun.DiskIntensity,
+    nUserSunScatterIntensity = sun.ScatterIntensity,
+    nUserMoonDiskSize = moon.DiskSize,
+    nUserMoonDiskIntensity = moon.DiskIntensity,
+    nUserMoonScatterIntensity = moon.ScatterIntensity,
+    nUserIrradianceScatterIntensity = irr.ScatterIntensity,
+    nUserSkyLightIntensity = sky.LightIntensity,
+    nUserSkyScatterIntensity = sky.ScatterIntensity,
+    nUserSkyDensity = sky.Density,
+    nUserVolumetricScatterWeight = vol.ScatterWeight,
+    nUserVolumetricDistanceStart = vol.DistanceStart,
+    nUserGISkyIntensity = gi.SkyIntensity,
+    nUserGISunIntensity = gi.SunIntensity,
+    nUserGIBounceBoost = gi.BounceBoost,
+    nUserGIMultiBounceIntensity = gi.MultiBounceIntensity,
+    nUserGIEmissiveIntensity = gi.EmissiveIntensity,
+    nUserGIAmbientOcclusionWeight = gi.AmbientOcclusionWeight,
+    nUserHDRAdaptionTime = hdr.AdaptionTime,
+    nUserHDRAdaptionDarknessScale = hdr.AdaptionDarknessScale,
+    nUserShadowFilterSoftness = shadows.FilterSoftness,
+    nUserCloudsDensity = clouds.Density,
+    nUserCloudsScale = clouds.Scale,
+    nUserCloudsSpeed = clouds.Speed,
+    nUserCloudsAltitudeMin = clouds.AltitudeMin,
+    nUserCloudsAltitudeMax = clouds.AltitudeMax,
+    nUserCloudsCoverageMin = clouds.CoverageMin,
+    nUserCloudsCoverageMax = clouds.CoverageMax,
+    nUserCloudsHorizonDensity = horizon.Density,
+    nUserCloudsHorizonCoverageMin = horizon.CoverageMin,
+    nUserCloudsHorizonCoverageMax = horizon.CoverageMax,
     sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
-  })
+  }
+  
+  -- Add color values if the color tables exist
+  if fog.Color then
+    tSettings.nUserFogColor = rgbFloatsToInt(fog.Color.R or 0, fog.Color.G or 0, fog.Color.B or 0)
+  end
+  if haze.Color then
+    tSettings.nUserHazeColor = rgbFloatsToInt(haze.Color.R or 0, haze.Color.G or 0, haze.Color.B or 0)
+  end
+  if sun.Color then
+    tSettings.nUserSunColor = rgbFloatsToInt(sun.Color.R or 0, sun.Color.G or 0, sun.Color.B or 0)
+  end
+  if moon.Color then
+    tSettings.nUserMoonColor = rgbFloatsToInt(moon.Color.R or 0, moon.Color.G or 0, moon.Color.B or 0)
+  end
+  
+  trace("Calling UpdateSettings with settings table")
+  self.ui:UpdateSettings(tSettings)
+  trace("UpdateSettings completed")
 end
 
 -- Advance is called every frame - use it to run the save coroutine
