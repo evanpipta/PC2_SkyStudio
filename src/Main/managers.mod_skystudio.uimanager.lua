@@ -975,21 +975,32 @@ end
 function SkyStudioUIManager:SendCurrentSettingsToUI()
   trace("SendCurrentSettingsToUI called")
   
-  -- Get render params with safe access
+  -- Get render params with safe access using CORRECT paths matching datastore structure
   local rp = SkyStudioDataStore.tUserRenderParameters or {}
   local atm = rp.Atmospherics or {}
   local fog = atm.Fog or {}
   local haze = atm.Haze or {}
-  local sun = atm.Sun or {}
-  local moon = atm.Moon or {}
-  local irr = atm.Irradiance or {}
+  local lights = atm.Lights or {}
+  local sun = lights.Sun or {}
+  local sunDisk = sun.Disk or {}
+  local sunScatter = sun.Scatter or {}
+  local moon = lights.Moon or {}
+  local moonDisk = moon.Disk or {}
+  local moonScatter = moon.Scatter or {}
+  local skyLight = lights.Sky or {}
+  local skyLightScatter = skyLight.Scatter or {}
   local sky = atm.Sky or {}
   local vol = atm.Volumetric or {}
+  local volScatter = vol.Scatter or {}
+  local volDistance = vol.Distance or {}
   local clouds = atm.Clouds or {}
   local horizon = clouds.Horizon or {}
-  local gi = rp.GI or {}
-  local hdr = rp.HDR or {}
+  local view = rp.View or {}
+  local gi = view.GlobalIllumination or {}
+  local lookAdjust = view.LookAdjust or {}
+  local luminance = lookAdjust.Luminance or {}
   local shadows = rp.Shadows or {}
+  local shadowsCollect = shadows.Collect or {}
   
   local tSettings = {
     bUseVanillaLighting = SkyStudioDataStore.bUseVanillaLighting,
@@ -1030,31 +1041,42 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
     bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
     bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,
+    -- Fog/Haze (correct path: Atmospherics.Fog, Atmospherics.Haze)
     nUserFogDensity = fog.Density,
     nUserFogScaleHeight = fog.ScaleHeight,
     nUserHazeDensity = haze.Density,
     nUserHazeScaleHeight = haze.ScaleHeight,
-    nUserSunDiskSize = sun.DiskSize,
-    nUserSunDiskIntensity = sun.DiskIntensity,
-    nUserSunScatterIntensity = sun.ScatterIntensity,
-    nUserMoonDiskSize = moon.DiskSize,
-    nUserMoonDiskIntensity = moon.DiskIntensity,
-    nUserMoonScatterIntensity = moon.ScatterIntensity,
-    nUserIrradianceScatterIntensity = irr.ScatterIntensity,
-    nUserSkyLightIntensity = sky.LightIntensity,
-    nUserSkyScatterIntensity = sky.ScatterIntensity,
+    -- Sun disk/scatter (correct path: Atmospherics.Lights.Sun.Disk, .Scatter)
+    nUserSunDiskSize = sunDisk.Size,
+    nUserSunDiskIntensity = sunDisk.Intensity,
+    nUserSunScatterIntensity = sunScatter.Intensity,
+    -- Moon disk/scatter (correct path: Atmospherics.Lights.Moon.Disk, .Scatter)
+    nUserMoonDiskSize = moonDisk.Size,
+    nUserMoonDiskIntensity = moonDisk.Intensity,
+    nUserMoonScatterIntensity = moonScatter.Intensity,
+    -- Irradiance (correct path: Atmospherics.Lights.IrradianceScatterIntensity)
+    nUserIrradianceScatterIntensity = lights.IrradianceScatterIntensity,
+    -- Sky light (correct path: Atmospherics.Lights.Sky)
+    nUserSkyLightIntensity = skyLight.Intensity,
+    nUserSkyScatterIntensity = skyLightScatter.Intensity,
+    -- Sky density (correct path: Atmospherics.Sky.Density)
     nUserSkyDensity = sky.Density,
-    nUserVolumetricScatterWeight = vol.ScatterWeight,
-    nUserVolumetricDistanceStart = vol.DistanceStart,
+    -- Volumetric (correct path: Atmospherics.Volumetric.Scatter.Weight, .Distance.Start)
+    nUserVolumetricScatterWeight = volScatter.Weight,
+    nUserVolumetricDistanceStart = volDistance.Start,
+    -- GI (correct path: View.GlobalIllumination)
     nUserGISkyIntensity = gi.SkyIntensity,
     nUserGISunIntensity = gi.SunIntensity,
     nUserGIBounceBoost = gi.BounceBoost,
     nUserGIMultiBounceIntensity = gi.MultiBounceIntensity,
     nUserGIEmissiveIntensity = gi.EmissiveIntensity,
     nUserGIAmbientOcclusionWeight = gi.AmbientOcclusionWeight,
-    nUserHDRAdaptionTime = hdr.AdaptionTime,
-    nUserHDRAdaptionDarknessScale = hdr.AdaptionDarknessScale,
-    nUserShadowFilterSoftness = shadows.FilterSoftness,
+    -- HDR/Luminance (correct path: View.LookAdjust.Luminance)
+    nUserHDRAdaptionTime = luminance.AdaptionTime,
+    nUserHDRAdaptionDarknessScale = luminance.AdaptionDarknessScale,
+    -- Shadows (correct path: Shadows.Collect.FilterSoftness)
+    nUserShadowFilterSoftness = shadowsCollect.FilterSoftness,
+    -- Clouds (correct path: Atmospherics.Clouds)
     nUserCloudsDensity = clouds.Density,
     nUserCloudsScale = clouds.Scale,
     nUserCloudsSpeed = clouds.Speed,
@@ -1068,18 +1090,14 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName
   }
   
-  -- Add color values if the color tables exist
-  if fog.Color then
-    tSettings.nUserFogColor = rgbFloatsToInt(fog.Color.R or 0, fog.Color.G or 0, fog.Color.B or 0)
+  -- Add Fog/Haze Albedo color values (correct path: Atmospherics.Fog.Albedo.value)
+  if fog.Albedo and fog.Albedo.value then
+    local v = fog.Albedo.value
+    tSettings.nUserFogColor = rgbFloatsToInt(v[1] or 0, v[2] or 0, v[3] or 0)
   end
-  if haze.Color then
-    tSettings.nUserHazeColor = rgbFloatsToInt(haze.Color.R or 0, haze.Color.G or 0, haze.Color.B or 0)
-  end
-  if sun.Color then
-    tSettings.nUserSunColor = rgbFloatsToInt(sun.Color.R or 0, sun.Color.G or 0, sun.Color.B or 0)
-  end
-  if moon.Color then
-    tSettings.nUserMoonColor = rgbFloatsToInt(moon.Color.R or 0, moon.Color.G or 0, moon.Color.B or 0)
+  if haze.Albedo and haze.Albedo.value then
+    local v = haze.Albedo.value
+    tSettings.nUserHazeColor = rgbFloatsToInt(v[1] or 0, v[2] or 0, v[3] or 0)
   end
   
   trace("Calling UpdateSettings with settings table")

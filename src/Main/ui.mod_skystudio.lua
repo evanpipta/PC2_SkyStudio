@@ -51,8 +51,8 @@ SkyStudioUI.UpdateCurrentPreset = function(self, currentPreset)
 end
 
 SkyStudioUI.UpdateSettings = function(self, settings)
-  trace("SkyStudioUI.UpdateSettings() to pass new settings to UI: ")
-  trace(settings)
+  -- trace("SkyStudioUI.UpdateSettings() to pass new settings to UI: ")
+  -- trace(settings)
   self:TriggerEventAtNextAdvance("UpdateSettings", settings)
 end
 

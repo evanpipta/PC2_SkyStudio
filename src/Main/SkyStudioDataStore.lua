@@ -1141,6 +1141,9 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
     trace('LOAD (from file): tUserRenderParameters.Atmospherics NOT FOUND in config')
   end
 
+  -- trace('Applying config snapshot: ')
+  -- trace(tConfig);
+
   -- Apply loaded config to datastore
   applySkyStudioConfigSnapshot(self, tConfig)
 
