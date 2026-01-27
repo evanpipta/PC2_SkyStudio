@@ -4,6 +4,7 @@ local debug = api.debug
 local pairs = global.pairs
 local require = global.require
 local module = global.module
+local coroutine = global.coroutine
 local Object = require("Common.object")
 local Mutators = require("Environment.ModuleMutators")
 local type = global.type
@@ -11,6 +12,8 @@ local tostring = global.tostring
 local tonumber = global.tonumber
 local math = global.math
 local trace = require("SkyStudioTrace")
+
+local Vector3 = require("Vector3")
 
 local SkyStudioDataStore = require("SkyStudioDataStore")
 
@@ -660,8 +663,9 @@ function SkyStudioUIManager:Activate()
       trace('Step 8: nPartCount = ' .. tostring(nPartCount))
       
       if nPartCount == 0 then
-        trace("Cannot save: Select scenery first to save as blueprint")
-        return false
+        trace("No selection found, using auto-place save flow")
+        self:StartAutoPlaceSave()
+        return
       end
       
       -- TODO: Re-enable once oncomplete reliability is fixed
@@ -826,11 +830,12 @@ function SkyStudioUIManager:Activate()
       
       local nPartCount = selection:CountParts()
       if nPartCount == 0 then
-        trace("Cannot save: Select scenery first to save as blueprint")
-        return false
+        trace("No selection found, using auto-place save flow")
+        self:StartAutoPlaceSave()
+        return
       end
       
-      -- All checks passed, safe to save
+      -- All checks passed, safe to save with existing selection
       trace('All checks passed (SaveAs), calling SaveSettingsAsBlueprintWithSaveToken')
       SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
     end, self)
@@ -1080,11 +1085,252 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
   trace("UpdateSettings completed")
 end
 
+-- Auto-placement state
+SkyStudioUIManager.fnAutoPlaceCoroutine = nil
+SkyStudioUIManager.bAutoPlaceInProgress = false
+SkyStudioUIManager.nAutoPlacedPartID = nil
+
+-- Auto-place a primitive sphere at world origin, run save, then undo
+-- This allows saving without requiring user selection
+function SkyStudioUIManager:StartAutoPlaceSave()
+  trace("StartAutoPlaceSave: Beginning auto-place save flow")
+  
+  if self.bAutoPlaceInProgress then
+    trace("StartAutoPlaceSave: Already in progress, ignoring")
+    return false
+  end
+  
+  local tWorldAPIs = self.tWorldAPIs
+  if not tWorldAPIs then
+    trace("StartAutoPlaceSave: tWorldAPIs not available")
+    return false
+  end
+  
+  local editorsAPI = tWorldAPIs.editors
+  local sceneryAPI = tWorldAPIs.scenery
+  
+  if not editorsAPI then
+    trace("StartAutoPlaceSave: editorsAPI not available")
+    return false
+  end
+  
+  if not sceneryAPI then
+    trace("StartAutoPlaceSave: sceneryAPI not available")
+    return false
+  end
+  
+  self.bAutoPlaceInProgress = true
+  self.nAutoPlacedPartID = nil
+  
+  -- Create the coroutine for the auto-placement flow
+  self.fnAutoPlaceCoroutine = coroutine.create(function()
+    trace("AutoPlace coroutine: Starting")
+    
+    -- Step 1: Create undo operations hierarchy
+    trace("AutoPlace: Creating UndoOperationsHierarchy")
+    local clh = editorsAPI:CreateUndoOperationsHierarchy()
+    if not clh then
+      trace("AutoPlace: Failed to create UndoOperationsHierarchy")
+      self.bAutoPlaceInProgress = false
+      return
+    end
+    
+    -- Step 2: Create a primitive sphere part
+    trace("AutoPlace: Creating primitive sphere part")
+    local completionToken = api.entity.CreateRequestCompletionToken()
+    local createObject = clh:CreateNewPart("PC_Primitive_Sphere", completionToken)
+    
+    if not createObject then
+      trace("AutoPlace: Failed to create part object")
+      self.bAutoPlaceInProgress = false
+      return
+    end
+    
+    -- Step 3: Wait for entity creation to complete
+    trace("AutoPlace: Waiting for entity creation")
+    while not api.entity.HaveRequestsCompleted(completionToken) do
+      coroutine.yield()
+    end
+    trace("AutoPlace: Entity creation completed")
+    
+    -- Step 4: Start editing the part
+    trace("AutoPlace: Starting to edit part")
+    local moveObject = clh:StartEditingPart_Scenery(createObject)
+    if not moveObject then
+      trace("AutoPlace: Failed to start editing part")
+      self.bAutoPlaceInProgress = false
+      return
+    end
+    
+    -- Step 5: Position at world origin (0,0,0)
+    trace("AutoPlace: Positioning at origin")
+    moveObject:SetPosition(Vector3:new(0, 0, 0))
+    
+    -- Step 6: Start preview
+    trace("AutoPlace: Starting preview")
+    local changelist = clh:GetFullUndoChangeList()
+    local previewBusyToken, previewToken = api.undo.PreviewChangeList(changelist)
+    
+    -- Wait for preview to be ready
+    trace("AutoPlace: Waiting for preview to be ready")
+    while not api.undo.IsOperationComplete(previewBusyToken) do
+      coroutine.yield()
+    end
+    trace("AutoPlace: Preview ready")
+    
+    -- Step 7: Check if we can commit
+    trace("AutoPlace: Checking if can commit")
+    local bCanCommit = api.undo.CanCommitPreview(previewToken)
+    while bCanCommit == nil do
+      coroutine.yield()
+      bCanCommit = api.undo.CanCommitPreview(previewToken)
+    end
+    
+    if not bCanCommit then
+      trace("AutoPlace: Cannot commit preview, canceling")
+      api.undo.CancelPreview(previewToken)
+      self.bAutoPlaceInProgress = false
+      return
+    end
+    
+    -- Step 8: Commit the preview
+    trace("AutoPlace: Committing preview")
+    local commitToken = api.undo.CommitPreview(previewToken)
+    while not api.undo.IsOperationComplete(commitToken) do
+      coroutine.yield()
+    end
+    trace("AutoPlace: Commit completed")
+    
+    -- Step 9: Checkpoint
+    api.undo.Checkpoint({})
+    trace("AutoPlace: Checkpoint created")
+    
+    -- Step 10: Get the selection (the part we just placed)
+    trace("AutoPlace: Creating selection from placed part")
+    local selection = sceneryAPI:CreateBuildingPartSet()
+    
+    -- Get the partID from the moveObject
+    -- The moveObject should have methods to get its part ID
+    local partID = nil
+    if moveObject.GetPartID then
+      partID = moveObject:GetPartID()
+      trace("AutoPlace: Got partID from moveObject:GetPartID(): " .. tostring(partID))
+    elseif moveObject.GetOnePartID then
+      partID = moveObject:GetOnePartID()
+      trace("AutoPlace: Got partID from moveObject:GetOnePartID(): " .. tostring(partID))
+    elseif moveObject.nPartID then
+      partID = moveObject.nPartID
+      trace("AutoPlace: Got partID from moveObject.nPartID: " .. tostring(partID))
+    else
+      -- Try to get it from the change list hierarchy
+      trace("AutoPlace: Trying to get partID from clh")
+      if clh.GetPlacedPartIDs then
+        local tPartIDs = clh:GetPlacedPartIDs()
+        if tPartIDs and #tPartIDs > 0 then
+          partID = tPartIDs[1]
+          trace("AutoPlace: Got partID from clh:GetPlacedPartIDs(): " .. tostring(partID))
+        end
+      end
+    end
+    
+    if not partID then
+      -- Last resort: try to find recently placed parts via placement API
+      trace("AutoPlace: Could not determine partID, attempting fallback")
+      local placementAPI = tWorldAPIs.placement
+      if placementAPI and placementAPI.GetLastPlacedPartID then
+        partID = placementAPI:GetLastPlacedPartID()
+        trace("AutoPlace: Got partID from GetLastPlacedPartID: " .. tostring(partID))
+      end
+    end
+    
+    if partID then
+      selection:Add(partID)
+      self.nAutoPlacedPartID = partID
+      trace("AutoPlace: Added partID " .. tostring(partID) .. " to selection")
+    else
+      trace("AutoPlace: WARNING - Could not get partID, selection may be empty")
+    end
+    
+    local nPartCount = selection:CountParts()
+    trace("AutoPlace: Selection has " .. tostring(nPartCount) .. " parts")
+    
+    if nPartCount == 0 then
+      trace("AutoPlace: Selection is empty, undoing and aborting")
+      api.undo.Undo()
+      self.bAutoPlaceInProgress = false
+      return
+    end
+    
+    -- Step 11: Clear the loaded blueprint token so we create a NEW blueprint
+    SkyStudioDataStore.cLoadedBlueprintSaveToken = nil
+    trace("AutoPlace: Cleared cLoadedBlueprintSaveToken for new blueprint")
+    
+    -- Step 12: Start the blueprint save with our selection
+    trace("AutoPlace: Starting blueprint save")
+    SkyStudioDataStore:SaveSettingsAsBlueprintWithSaveToken(selection, tWorldAPIs)
+    
+    -- Step 13: Wait for save to complete
+    trace("AutoPlace: Waiting for save to complete")
+    while SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine do
+      -- Advance the save coroutine
+      SkyStudioDataStore:AdvanceSaveCoroutine()
+      coroutine.yield()
+    end
+    trace("AutoPlace: Save completed")
+    
+    -- Step 14: Undo the placed sphere to clean up
+    trace("AutoPlace: Undoing the auto-placed sphere")
+    api.undo.Undo()
+    
+    -- Wait for undo to complete
+    while api.undo.IsBusy() do
+      coroutine.yield()
+    end
+    trace("AutoPlace: Undo completed")
+    
+    -- Done!
+    self.bAutoPlaceInProgress = false
+    self.nAutoPlacedPartID = nil
+    trace("AutoPlace: Auto-place save flow completed successfully!")
+  end)
+  
+  return true
+end
+
+-- Advance the auto-place coroutine
+function SkyStudioUIManager:AdvanceAutoPlaceCoroutine()
+  if not self.fnAutoPlaceCoroutine then
+    return
+  end
+  
+  local status = coroutine.status(self.fnAutoPlaceCoroutine)
+  if status == "dead" then
+    trace("AdvanceAutoPlaceCoroutine: Coroutine finished")
+    self.fnAutoPlaceCoroutine = nil
+    self.bAutoPlaceInProgress = false
+    return
+  end
+  
+  local success, errorMsg = coroutine.resume(self.fnAutoPlaceCoroutine)
+  if not success then
+    trace("AdvanceAutoPlaceCoroutine: Coroutine error: " .. tostring(errorMsg))
+    self.fnAutoPlaceCoroutine = nil
+    self.bAutoPlaceInProgress = false
+  end
+end
+
 -- Advance is called every frame - use it to run the save coroutine
 function SkyStudioUIManager:Advance(_dt)
-  -- Advance the save coroutine if it's running
-  if SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine then
-    SkyStudioDataStore:AdvanceSaveCoroutine()
+  -- Advance the auto-place coroutine if running
+  if self.bAutoPlaceInProgress or self.fnAutoPlaceCoroutine then
+    self:AdvanceAutoPlaceCoroutine()
+  end
+  
+  -- Advance the save coroutine if it's running (and not inside auto-place)
+  if not self.bAutoPlaceInProgress then
+    if SkyStudioDataStore.bIsSavingPreset or SkyStudioDataStore.fnSavePresetCoroutine then
+      SkyStudioDataStore:AdvanceSaveCoroutine()
+    end
   end
 end
 
