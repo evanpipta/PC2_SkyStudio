@@ -183,6 +183,14 @@ class _SkyStudioUI extends preact.Component {
                 },
             });
         };
+        this.onUpdateCurrentPreset = (data) => {
+            this.setState({
+                config: {
+                    ...this.state.config,
+                    sCurrentPresetName: data.sCurrentPresetName,
+                },
+            });
+        };
         this.onNumericalValueChanged = (key, newValue) => {
             this.setState({
                 config: {
@@ -655,6 +663,7 @@ class _SkyStudioUI extends preact.Component {
         Engine.addListener("Hide", this.onHide);
         Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
         Engine.addListener("UpdateSettings", this.onUpdateSettings);
+        Engine.addListener("UpdateCurrentPreset", this.onUpdateCurrentPreset);
         focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
     }
     componentWillUnmount() {
@@ -662,6 +671,7 @@ class _SkyStudioUI extends preact.Component {
         Engine.removeListener("Hide", this.onHide);
         Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
         Engine.removeListener("UpdateSettings", this.onUpdateSettings);
+        Engine.removeListener("UpdateCurrentPreset", this.onUpdateCurrentPreset);
         clearInterval(focusDebuginterval);
     }
     // Request preset list refresh
@@ -865,7 +875,7 @@ class _SkyStudioUI extends preact.Component {
             preact.h("div", { key: "other", className: "relative" },
                 this.state.confirmResetAll && (preact.h("div", { className: "skystudio_confirm_modal" },
                     preact.h("div", null,
-                        preact.h("div", { className: "skystudio_reset_header" }, "Reset All Slider Values to Default?"),
+                        preact.h("div", { className: "skystudio_reset_header" }, "Reset All Values to Default?"),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetAllToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetAll, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),

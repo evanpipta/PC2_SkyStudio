@@ -1181,6 +1181,13 @@ function SkyStudioDataStore:DeleteSettingsBlueprint(cSaveToken)
       end
     end
 
+    -- If we deleted the currently loaded preset, clear the current preset state
+    if self.cLoadedBlueprintSaveToken == cSaveToken then
+      trace('Deleted preset was the currently loaded preset, clearing current preset state')
+      self.cLoadedBlueprintSaveToken = nil
+      self.sCurrentPresetName = ""
+    end
+
     if self.fnOnDeleteComplete then
       self.fnOnDeleteComplete()
     end

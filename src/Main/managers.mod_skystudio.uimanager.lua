@@ -966,6 +966,8 @@ function SkyStudioUIManager:UpdatePresetListUI()
   trace("UpdatePresetListUI: Built table with " .. tostring(#SkyStudioDataStore.tSkyStudioBlueprintSaves) .. " presets")
   trace("UpdatePresetListUI: About to call self.ui:UpdatePresetList()...")
   self.ui:UpdatePresetList(tPresetTable)
+  trace("UpdatePresetListUI: About to call self.ui:UpdateCurrentPreset()...")
+  self.ui:UpdateCurrentPreset({ sCurrentPresetName = SkyStudioDataStore.sCurrentPresetName })
   trace("UpdatePresetListUI: DONE")
 end
 

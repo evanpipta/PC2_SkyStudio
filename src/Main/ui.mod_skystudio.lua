@@ -44,7 +44,15 @@ SkyStudioUI.UpdatePresetList = function(self, presetList)
   self:TriggerEventAtNextAdvance("UpdatePresetList", presetList)
 end
 
+-- Updates the current preset name for the UI without updating all settings. Used after saving a new preset
+SkyStudioUI.UpdateCurrentPreset = function(self, currentPreset)
+  -- trace("SkyStudioUI.UpdateCurrentPreset()")
+  self:TriggerEventAtNextAdvance("UpdateCurrentPreset", currentPreset)
+end
+
 SkyStudioUI.UpdateSettings = function(self, settings)
+  trace("SkyStudioUI.UpdateSettings() to pass new settings to UI: ")
+  trace(settings)
   self:TriggerEventAtNextAdvance("UpdateSettings", settings)
 end
 

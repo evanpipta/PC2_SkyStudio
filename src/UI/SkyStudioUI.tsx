@@ -344,6 +344,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     Engine.addListener("Hide", this.onHide);
     Engine.addListener("UpdatePresetList", this.onUpdatePresetList);
     Engine.addListener("UpdateSettings", this.onUpdateSettings);
+    Engine.addListener("UpdateCurrentPreset", this.onUpdateCurrentPreset);
 
     focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
   }
@@ -353,6 +354,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     Engine.removeListener("Hide", this.onHide);
     Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
     Engine.removeListener("UpdateSettings", this.onUpdateSettings);
+    Engine.removeListener("UpdateCurrentPreset", this.onUpdateCurrentPreset);
 
     clearInterval(focusDebuginterval);
   }
@@ -386,6 +388,15 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       config: {
         ...this.state.config,
         ...data,
+      },
+    });
+  };
+
+  onUpdateCurrentPreset = (data: { sCurrentPresetName: string }) => {
+    this.setState({
+      config: {
+        ...this.state.config,
+        sCurrentPresetName: data.sCurrentPresetName,
       },
     });
   };
@@ -2285,7 +2296,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <div className={"skystudio_confirm_modal"}>
             <div>
               <div className={"skystudio_reset_header"}>
-                Reset All Slider Values to Default?
+                Reset All Values to Default?
               </div>
               <div className={"skystudio_reset_confirm_buttons"}>
                 <Button
