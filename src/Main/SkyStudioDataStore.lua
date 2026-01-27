@@ -972,9 +972,11 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
           -- Compare by preset NAME since userdata tokens may not compare equal by reference
           -- If we're saving a preset with the same name as an existing one, update that entry
           local bFoundExisting = false
+          local oldTokenToDelete = nil
           for i, entry in ipairs(self.tSkyStudioBlueprintSaves) do
             if entry.sPresetName == sName then
-              -- Overwriting existing - update the token to the new one
+              -- Overwriting existing - save the old token for deletion, then update to new token
+              oldTokenToDelete = entry.cSaveToken
               entry.cSaveToken = newToken
               bFoundExisting = true
               trace('Updated existing preset at index ' .. tostring(i) .. ' with name: ' .. sName .. ' and new token')
@@ -989,6 +991,16 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
               cSaveToken = newToken
             })
             trace('Added new preset to list: ' .. sName .. ' (total: ' .. tostring(#self.tSkyStudioBlueprintSaves) .. ')')
+          end
+          
+          -- If we overwrote an existing preset, delete the old save file to prevent duplicates
+          if oldTokenToDelete and oldTokenToDelete ~= newToken then
+            trace('Deleting old save file to prevent duplicates...')
+            api.save.RequestDelete(oldTokenToDelete, {
+              oncomplete = function()
+                trace('Old save file deleted successfully')
+              end
+            })
           end
           
           -- Update loaded token to point to this save
