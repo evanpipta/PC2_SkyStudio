@@ -1205,50 +1205,69 @@ function SkyStudioUIManager:StartAutoPlaceSave()
     api.undo.Checkpoint({})
     trace("AutoPlace: Checkpoint created")
     
-    -- Step 10: Get the selection (the part we just placed)
-    trace("AutoPlace: Creating selection from placed part")
+    -- Step 10: Find a scenery part via raycast at origin
+    -- We placed a sphere at (0,0,0), so raycast from above to find it (or any nearby scenery)
+    trace("AutoPlace: Using raycast to find scenery at origin")
     local selection = sceneryAPI:CreateBuildingPartSet()
-    
-    -- Get the partID from the moveObject
-    -- The moveObject should have methods to get its part ID
+    local placementAPI = tWorldAPIs.placement
     local partID = nil
-    if moveObject.GetPartID then
-      partID = moveObject:GetPartID()
-      trace("AutoPlace: Got partID from moveObject:GetPartID(): " .. tostring(partID))
-    elseif moveObject.GetOnePartID then
-      partID = moveObject:GetOnePartID()
-      trace("AutoPlace: Got partID from moveObject:GetOnePartID(): " .. tostring(partID))
-    elseif moveObject.nPartID then
-      partID = moveObject.nPartID
-      trace("AutoPlace: Got partID from moveObject.nPartID: " .. tostring(partID))
-    else
-      -- Try to get it from the change list hierarchy
-      trace("AutoPlace: Trying to get partID from clh")
-      if clh.GetPlacedPartIDs then
-        local tPartIDs = clh:GetPlacedPartIDs()
-        if tPartIDs and #tPartIDs > 0 then
-          partID = tPartIDs[1]
-          trace("AutoPlace: Got partID from clh:GetPlacedPartIDs(): " .. tostring(partID))
+    
+    -- Raycast from above origin downward to find the placed sphere (or any scenery there)
+    local vRayStart = Vector3:new(0, 10, 0)
+    local vRayDir = Vector3:new(0, -1, 0)
+    
+    if api.spatial and api.spatial.RayQuery and api.spatial.Flag_Scenery then
+      trace("AutoPlace: Performing spatial raycast from (0,10,0) downward")
+      local tHits = api.spatial.RayQuery(vRayStart, vRayDir, api.spatial.Flag_Scenery)
+      if tHits then
+        for _, nEntityID in pairs(tHits) do
+          trace("AutoPlace: Raycast hit entityID: " .. tostring(nEntityID))
+          if placementAPI and placementAPI.EntityIDToPlacementID then
+            partID = placementAPI:EntityIDToPlacementID(nEntityID)
+            if partID then
+              trace("AutoPlace: Converted to partID: " .. tostring(partID))
+              selection:Add(partID)
+              self.nAutoPlacedPartID = partID
+              break
+            end
+          end
+        end
+      else
+        trace("AutoPlace: Raycast returned no hits (tHits is nil)")
+      end
+      
+      -- If no hits going down, try from different angles
+      if selection:CountParts() == 0 then
+        trace("AutoPlace: No hits from above, trying horizontal raycast")
+        vRayStart = Vector3:new(10, 0.5, 0)
+        vRayDir = Vector3:new(-1, 0, 0)
+        tHits = api.spatial.RayQuery(vRayStart, vRayDir, api.spatial.Flag_Scenery)
+        if tHits then
+          for _, nEntityID in pairs(tHits) do
+            trace("AutoPlace: Horizontal raycast hit entityID: " .. tostring(nEntityID))
+            if placementAPI and placementAPI.EntityIDToPlacementID then
+              partID = placementAPI:EntityIDToPlacementID(nEntityID)
+              if partID then
+                trace("AutoPlace: Converted to partID: " .. tostring(partID))
+                selection:Add(partID)
+                self.nAutoPlacedPartID = partID
+                break
+              end
+            end
+          end
         end
       end
-    end
-    
-    if not partID then
-      -- Last resort: try to find recently placed parts via placement API
-      trace("AutoPlace: Could not determine partID, attempting fallback")
-      local placementAPI = tWorldAPIs.placement
-      if placementAPI and placementAPI.GetLastPlacedPartID then
-        partID = placementAPI:GetLastPlacedPartID()
-        trace("AutoPlace: Got partID from GetLastPlacedPartID: " .. tostring(partID))
+    else
+      trace("AutoPlace: api.spatial.RayQuery not available, trying api.physics")
+      -- Fallback: try physics raycast if spatial isn't available
+      if api.physics and api.physics.Raycast then
+        trace("AutoPlace: Trying api.physics.Raycast")
+        -- Physics raycast may have different signature
       end
     end
     
-    if partID then
-      selection:Add(partID)
-      self.nAutoPlacedPartID = partID
-      trace("AutoPlace: Added partID " .. tostring(partID) .. " to selection")
-    else
-      trace("AutoPlace: WARNING - Could not get partID, selection may be empty")
+    if selection:CountParts() == 0 then
+      trace("AutoPlace: WARNING - Raycast found no scenery, selection is empty")
     end
     
     local nPartCount = selection:CountParts()
