@@ -969,13 +969,15 @@ function SkyStudioDataStore:StartSaveSettingsAsBlueprint(selection, tWorldAPIs)
           
           -- Directly add/update the preset in our list (avoids EnumerateBlueprintSaves crash)
           -- Check if we're overwriting an existing preset or adding a new one
+          -- Compare by preset NAME since userdata tokens may not compare equal by reference
+          -- If we're saving a preset with the same name as an existing one, update that entry
           local bFoundExisting = false
           for i, entry in ipairs(self.tSkyStudioBlueprintSaves) do
-            if entry.cSaveToken == newToken then
-              -- Overwriting existing - update the name
-              entry.sPresetName = sName
+            if entry.sPresetName == sName then
+              -- Overwriting existing - update the token to the new one
+              entry.cSaveToken = newToken
               bFoundExisting = true
-              trace('Updated existing preset at index ' .. tostring(i) .. ' with name: ' .. sName)
+              trace('Updated existing preset at index ' .. tostring(i) .. ' with name: ' .. sName .. ' and new token')
               break
             end
           end
