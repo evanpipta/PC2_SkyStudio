@@ -1100,6 +1100,18 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     tSettings.nUserHazeColor = rgbFloatsToInt(v[1] or 0, v[2] or 0, v[3] or 0)
   end
   
+  -- Add Sun/Moon color integers for the color picker (convert from R/G/B floats on datastore)
+  tSettings.nUserSunColor = rgbFloatsToInt(
+    SkyStudioDataStore.nUserSunColorR or 1,
+    SkyStudioDataStore.nUserSunColorG or 1,
+    SkyStudioDataStore.nUserSunColorB or 1
+  )
+  tSettings.nUserMoonColor = rgbFloatsToInt(
+    SkyStudioDataStore.nUserMoonColorR or 0.341,
+    SkyStudioDataStore.nUserMoonColorG or 0.588,
+    SkyStudioDataStore.nUserMoonColorB or 1
+  )
+  
   trace("Calling UpdateSettings with settings table")
   self.ui:UpdateSettings(tSettings)
   trace("UpdateSettings completed")
