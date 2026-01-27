@@ -2653,11 +2653,11 @@ class _SkyStudioUI extends preact.Component<{}, State> {
                   this.state.presetModalState !== 'none' && "skystudio_blur"
                 )}
               >
-                <PanelHeader text={Format.stringLiteral("Loadable Presets:")} />
+                <PanelHeader text={Format.stringLiteral("Loadable Presets")} />
 
                 <PanelRowContainer>
                   {presetListEntries.length === 0 ? (
-                    <div style={{ opacity: 0.7, fontStyle: 'italic', marginTop: '1remrem', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <div style={{ marginLeft: '0.5rem' }}>
                       No presets saved yet. Use "Save As New" to create one.
                     </div>
                   ) : (

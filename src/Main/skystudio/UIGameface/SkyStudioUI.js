@@ -943,8 +943,8 @@ class _SkyStudioUI extends preact.Component {
                                     // label={Format.stringLiteral("Delete")}
                                     onSelect: this.beginDeleteCurrentPreset, modifiers: "negative", rootClassName: "skystudio_preset_button", disabled: !this.state.config.sCurrentPresetName }))))),
                     preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.presetModalState !== 'none' && "skystudio_blur") },
-                        preact.h(PanelHeader, { text: Format.stringLiteral("Loadable Presets:") }),
-                        preact.h(PanelRowContainer, null, presetListEntries.length === 0 ? (preact.h("div", { style: { opacity: 0.7, fontStyle: 'italic', marginTop: '1remrem', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' } }, "No presets saved yet. Use \"Save As New\" to create one.")) : (preact.h(preact.Fragment, null, presetListEntries.sort((a, b) => a.name.localeCompare(b.name)).map(({ index, name }) => (preact.h(FocusableDataRow, { key: index, classNames: "rowControlChildren", leftSideChildren: preact.h("span", { style: { fontWeight: this.state.config.sCurrentPresetName === name ? "bold" : "" } },
+                        preact.h(PanelHeader, { text: Format.stringLiteral("Loadable Presets") }),
+                        preact.h(PanelRowContainer, null, presetListEntries.length === 0 ? (preact.h("div", { style: { marginLeft: '0.5rem' } }, "No presets saved yet. Use \"Save As New\" to create one.")) : (preact.h(preact.Fragment, null, presetListEntries.sort((a, b) => a.name.localeCompare(b.name)).map(({ index, name }) => (preact.h(FocusableDataRow, { key: index, classNames: "rowControlChildren", leftSideChildren: preact.h("span", { style: { fontWeight: this.state.config.sCurrentPresetName === name ? "bold" : "" } },
                                 name,
                                 " ",
                                 this.state.config.sCurrentPresetName === name ? "(Current)" : "") },

@@ -743,7 +743,6 @@ end
 --   local editorContext = editMode:GetEditorContext()
 -- end
 
-
 -- Internal function to capture a screenshot (called from within coroutine)
 local function _PerformCameraCapture()
   trace('_PerformCameraCapture: Starting...')
