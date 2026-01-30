@@ -431,6 +431,8 @@ function SkyStudioUIManager:Activate()
     self.ui:SkyStudio_ResetAll(function()
       trace("SkyStudioUIManager:SkyStudio_ResetAll()")
       SkyStudioDataStore:ResetAllToDefaults()
+      -- Update UI to reflect the reset values (including all overrides turned off)
+      self:SendCurrentSettingsToUI()
     end, self)
 
     self.ui:SkyStudio_ResetAtmosphere(function()

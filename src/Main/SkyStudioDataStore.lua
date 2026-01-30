@@ -540,14 +540,35 @@ function SkyStudioDataStore:ResetCloudsToDefaults()
   current.Horizon.CoverageMax = defaults.Horizon.CoverageMax
 end
 
--- Reset all user settings
+-- Reset all user settings (including turning off all overrides)
 function SkyStudioDataStore:ResetAllToDefaults()
   -- Reset simple nUser* values
   for key, value in pairs(SkyStudioDataStore.defaultValues) do
-    if string.sub(key, 1, 5) == "nUser" then -- or string.sub(key, 1, 5) == "bUser" then
+    if string.sub(key, 1, 5) == "nUser" then
       SkyStudioDataStore[key] = value
     end
   end
+  
+  -- Turn off all bUserOverride* flags
+  SkyStudioDataStore.bUserOverrideSunTimeOfDay = false
+  SkyStudioDataStore.bUserOverrideSunOrientation = false
+  SkyStudioDataStore.bUserOverrideSunColorAndIntensity = false
+  SkyStudioDataStore.bUserOverrideMoonOrientation = false
+  SkyStudioDataStore.bUserOverrideMoonPhase = false
+  SkyStudioDataStore.bUserOverrideMoonColorAndIntensity = false
+  SkyStudioDataStore.bUserOverrideSunFade = false
+  SkyStudioDataStore.bUserOverrideMoonFade = false
+  SkyStudioDataStore.bUserOverrideDayNightTransition = false
+  SkyStudioDataStore.bUserOverrideAtmosphere = false
+  SkyStudioDataStore.bUserOverrideSunDisk = false
+  SkyStudioDataStore.bUserOverrideMoonDisk = false
+  SkyStudioDataStore.bUserOverrideGI = false
+  SkyStudioDataStore.bUserOverrideHDR = false
+  SkyStudioDataStore.bUserOverrideClouds = false
+  SkyStudioDataStore.bUserOverrideShadows = false
+  
+  -- Also reset the master switch to use vanilla lighting
+  SkyStudioDataStore.bUseVanillaLighting = false
   
   -- Reset all render parameter sections
   SkyStudioDataStore:ResetSunToDefaults()
@@ -1494,8 +1515,10 @@ function SkyStudioDataStore:TryLoadConfigFromPark()
     trace('TryLoadConfigFromPark: Successfully applied SkyStudio config from park')
     return true
   else
-    trace('TryLoadConfigFromPark: No tSkyStudioConfig in park metadata')
+    trace('TryLoadConfigFromPark: No tSkyStudioConfig in park metadata - resetting to defaults')
     self.bParkHasSkyStudioConfig = false
+    -- Reset all settings to defaults when loading a park without SkyStudio config
+    self:ResetAllToDefaults()
     return false
   end
 end
