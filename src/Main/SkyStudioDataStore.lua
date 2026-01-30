@@ -4,9 +4,44 @@ local coroutine = global.coroutine
 local math = global.math
 local pairs = global.pairs
 local tostring = global.tostring
+local ipairs = global.ipairs
+local type = global.type
 local ParkLoadSaveManager = require("managers.parkloadsavemanager")
 
 local trace = require('SkyStudioTrace')
+
+----------------------------------------------------------------
+-- Park Save Hook: Inject SkyStudio config into park metadata
+-- This hooks GenerateCurrentParkMetaData so that whenever a park
+-- is saved (manual or autosave), the SkyStudio config is included.
+----------------------------------------------------------------
+
+-- Store reference to original function before we replace it
+local originalGenerateCurrentParkMetaData = ParkLoadSaveManager.GenerateCurrentParkMetaData
+
+-- Forward declaration - will be set after SkyStudioDataStore is created
+local fnGetSkyStudioConfigSnapshot = nil
+
+-- Replace with hooked version that injects SkyStudio config
+ParkLoadSaveManager.GenerateCurrentParkMetaData = function(self)
+  trace('HOOK: GenerateCurrentParkMetaData called - injecting SkyStudio config')
+  
+  -- Call original function to get base metadata
+  local tMetadata = originalGenerateCurrentParkMetaData(self)
+  
+  -- Inject SkyStudio config if we have the snapshot function
+  if tMetadata and fnGetSkyStudioConfigSnapshot then
+    local tSkyStudioConfig = fnGetSkyStudioConfigSnapshot()
+    if tSkyStudioConfig then
+      tMetadata.tSkyStudioConfig = tSkyStudioConfig
+      trace('HOOK: Injected tSkyStudioConfig into park metadata')
+    end
+  end
+  
+  return tMetadata
+end
+
+trace('Park save hook installed on ParkLoadSaveManager.GenerateCurrentParkMetaData')
 
 local BaseEditMode = require("Editors.Shared.BaseEditMode")
 
@@ -30,6 +65,22 @@ local function deepCopy(original)
     copy[key] = deepCopy(value)
   end
   return copy
+end
+
+-- Helper to normalize color array keys from strings to numbers (fixes serialization issue)
+local function normalizeColorArray(colorTable)
+  if not colorTable or not colorTable.value then return end
+  local v = colorTable.value
+  -- Check if keys are strings and convert to numeric
+  if v["1"] ~= nil or v["2"] ~= nil or v["3"] ~= nil then
+    local normalized = {
+      v["1"] or v[1],
+      v["2"] or v[2],
+      v["3"] or v[3]
+    }
+    colorTable.value = normalized
+    trace('Normalized color array from string keys to numeric keys')
+  end
 end
 
 SkyStudioDataStore.bUseVanillaLighting = false
@@ -699,11 +750,26 @@ SkyStudioDataStore.cLoadedBlueprintSaveToken = SkyStudioDataStore.cLoadedBluepri
 local function buildSkyStudioConfigSnapshot(self)
   local t = {}
 
+  -- Fields to exclude from serialization:
+  -- - defaultValues: reference data, not user config
+  -- - tSkyStudioBlueprintSaves: runtime blueprint cache
+  -- - cLoadedBlueprintSaveToken: runtime state (userdata)
+  -- - tGlobalMessageReceivers: contains function callbacks (breaks serialization!)
+  -- - cCurrentParkSaveToken: runtime state (userdata)
+  -- - bParkHasSkyStudioConfig: runtime state
+  -- - bIsSavingPreset: runtime state
+  local tExcludedKeys = {
+    defaultValues = true,
+    tSkyStudioBlueprintSaves = true,
+    cLoadedBlueprintSaveToken = true,
+    tGlobalMessageReceivers = true,
+    cCurrentParkSaveToken = true,
+    bParkHasSkyStudioConfig = true,
+    bIsSavingPreset = true,
+  }
+
   for k, v in pairs(self) do
-    if k ~= "defaultValues"
-      and k ~= "tSkyStudioBlueprintSaves"
-      and k ~= "cLoadedBlueprintSaveToken"
-    then
+    if not tExcludedKeys[k] then
       local tv = type(v)
       if tv ~= "function" and tv ~= "userdata" and tv ~= "thread" then
         t[k] = deepCopy(v)
@@ -713,6 +779,13 @@ local function buildSkyStudioConfigSnapshot(self)
 
   return t
 end
+
+-- Connect the park save hook to the config snapshot function
+-- This allows the hook (defined at module load time) to access the snapshot function
+fnGetSkyStudioConfigSnapshot = function()
+  return buildSkyStudioConfigSnapshot(SkyStudioDataStore)
+end
+trace('Park save hook connected to SkyStudioDataStore config snapshot')
 
 -- Apply a loaded config snapshot onto the datastore (overwrite keys).
 local function applySkyStudioConfigSnapshot(self, tConfig)
@@ -1095,22 +1168,6 @@ function SkyStudioDataStore:LoadSettingsFromBlueprintWithSaveToken(cSaveToken)
     return v[index] or v[tostring(index)]
   end
   
-  -- Helper to normalize color array keys from strings to numbers
-  local function normalizeColorArray(colorTable)
-    if not colorTable or not colorTable.value then return end
-    local v = colorTable.value
-    -- Check if keys are strings and convert to numeric
-    if v["1"] ~= nil or v["2"] ~= nil or v["3"] ~= nil then
-      local normalized = {
-        v["1"] or v[1],
-        v["2"] or v[2],
-        v["3"] or v[3]
-      }
-      colorTable.value = normalized
-      trace('Normalized color array from string keys to numeric keys')
-    end
-  end
-  
   -- Normalize Fog and Haze Albedo arrays in the loaded config (fix string key issue from serialization)
   if tConfig.tUserRenderParameters and tConfig.tUserRenderParameters.Atmospherics then
     local atm = tConfig.tUserRenderParameters.Atmospherics
@@ -1315,6 +1372,132 @@ function SkyStudioDataStore:LoadBlueprints()
   trace(self.tSkyStudioBlueprintSaves)
 
   return self.tSkyStudioBlueprintSaves
+end
+
+----------------------------------------------------------------
+-- Park Save/Load Integration
+-- Automatically save/load SkyStudio config with park saves
+----------------------------------------------------------------
+
+-- Track the currently active park save token
+SkyStudioDataStore.cCurrentParkSaveToken = nil
+SkyStudioDataStore.bParkHasSkyStudioConfig = false
+
+-- Global message receiver for park save/load events
+SkyStudioDataStore.tGlobalMessageReceivers = {}
+
+-- Initialize park save/load hooks
+function SkyStudioDataStore:InitParkSaveLoadHooks()
+  trace('InitParkSaveLoadHooks: Registering global message receivers...')
+  
+  -- Listen for park saved/deleted messages
+  if api.messaging and api.messaging.MsgType_PlayerParkSavedDeletedMessage then
+    self.tGlobalMessageReceivers[api.messaging.MsgType_PlayerParkSavedDeletedMessage] = function(tMessages)
+      trace('Park save/delete message received')
+      self:OnParkSavedOrDeleted(tMessages)
+    end
+    api.messaging.RegisterGlobalReceiver(
+      api.messaging.MsgType_PlayerParkSavedDeletedMessage,
+      self.tGlobalMessageReceivers[api.messaging.MsgType_PlayerParkSavedDeletedMessage]
+    )
+    trace('InitParkSaveLoadHooks: Registered MsgType_PlayerParkSavedDeletedMessage receiver')
+  else
+    trace('InitParkSaveLoadHooks: WARNING - api.messaging or MsgType_PlayerParkSavedDeletedMessage not available')
+  end
+end
+
+-- Cleanup park save/load hooks
+function SkyStudioDataStore:CleanupParkSaveLoadHooks()
+  trace('CleanupParkSaveLoadHooks: Unregistering global message receivers...')
+  
+  for nMessageType, fnReceiver in pairs(self.tGlobalMessageReceivers) do
+    if api.messaging and api.messaging.UnregisterGlobalReceiver then
+      api.messaging.UnregisterGlobalReceiver(nMessageType, fnReceiver)
+    end
+  end
+  self.tGlobalMessageReceivers = {}
+end
+
+-- Called when a park is saved or deleted
+function SkyStudioDataStore:OnParkSavedOrDeleted(tMessages)
+  trace('OnParkSavedOrDeleted called')
+  -- The message contains the save token
+  -- We can use this to track the current park
+  if tMessages and #tMessages > 0 then
+    for _, msg in ipairs(tMessages) do
+      if msg.save then
+        trace('Park save token detected: ' .. tostring(msg.save))
+        self.cCurrentParkSaveToken = msg.save
+      end
+    end
+  end
+end
+
+-- Try to load SkyStudio config from the currently loaded park's metadata
+function SkyStudioDataStore:TryLoadConfigFromPark()
+  trace('TryLoadConfigFromPark called')
+  
+  -- Get the ParkLoadSaveManager to find the active park save token
+  local parkManager = nil
+  if api.game and api.game.GetEnvironment then
+    local env = api.game.GetEnvironment()
+    if env and env.RequireInterface then
+      parkManager = env:RequireInterface("Interfaces.IParkLoadSaveManager")
+    end
+  end
+  
+  if not parkManager then
+    trace('TryLoadConfigFromPark: Could not get ParkLoadSaveManager')
+    return false
+  end
+  
+  -- Get the last active park save token
+  local cSaveToken = parkManager.cLastActiveParkSaveToken
+  if not cSaveToken then
+    trace('TryLoadConfigFromPark: No active park save token')
+    return false
+  end
+  
+  trace('TryLoadConfigFromPark: Found active park save token')
+  self.cCurrentParkSaveToken = cSaveToken
+  
+  -- Get the park's metadata
+  local tMetadata = api.save.GetSaveMetadata(cSaveToken)
+  if not tMetadata then
+    trace('TryLoadConfigFromPark: Could not get park metadata')
+    return false
+  end
+  
+  -- Check if the metadata contains SkyStudio config
+  if tMetadata.tSkyStudioConfig then
+    trace('TryLoadConfigFromPark: Found tSkyStudioConfig in park metadata!')
+    
+    local tConfig = tMetadata.tSkyStudioConfig
+    
+    -- Normalize color arrays if needed (same as blueprint loading)
+    if tConfig.tUserRenderParameters then
+      local atm = tConfig.tUserRenderParameters.Atmospherics
+      if atm then
+        if atm.Fog and atm.Fog.Albedo then
+          normalizeColorArray(atm.Fog.Albedo)
+        end
+        if atm.Haze and atm.Haze.Albedo then
+          normalizeColorArray(atm.Haze.Albedo)
+        end
+      end
+    end
+    
+    -- Apply the config
+    applySkyStudioConfigSnapshot(self, tConfig)
+    self.bParkHasSkyStudioConfig = true
+    
+    trace('TryLoadConfigFromPark: Successfully applied SkyStudio config from park')
+    return true
+  else
+    trace('TryLoadConfigFromPark: No tSkyStudioConfig in park metadata')
+    self.bParkHasSkyStudioConfig = false
+    return false
+  end
 end
 
 return SkyStudioDataStore

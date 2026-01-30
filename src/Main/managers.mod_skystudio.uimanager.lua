@@ -50,6 +50,15 @@ function SkyStudioUIManager:Activate()
 
   SkyStudioDataStore:LoadBlueprints()
   
+  -- Initialize park save/load hooks
+  SkyStudioDataStore:InitParkSaveLoadHooks()
+  
+  -- Try to load SkyStudio config from the currently loaded park (if any)
+  local bLoadedFromPark = SkyStudioDataStore:TryLoadConfigFromPark()
+  if bLoadedFromPark then
+    trace("Loaded SkyStudio config from park save")
+  end
+  
   -- Set callback to update UI when save completes
   SkyStudioDataStore.fnOnSaveComplete = function()
     trace("CALLBACK: fnOnSaveComplete called")
