@@ -16,6 +16,7 @@ local trace = require("SkyStudioTrace")
 local Vector3 = require("Vector3")
 
 local SkyStudioDataStore = require("SkyStudioDataStore")
+local loadConfig = require("SkyStudioConfigLoader")
 
 -- Helper function to convert RGB floats (0-1) to integer color (0xRRGGBB)
 local function rgbFloatsToInt(r, g, b)
@@ -50,13 +51,19 @@ function SkyStudioUIManager:Activate()
 
   SkyStudioDataStore:LoadBlueprints()
   
-  -- Initialize park save/load hooks
-  SkyStudioDataStore:InitParkSaveLoadHooks()
-  
-  -- Try to load SkyStudio config from the currently loaded park (if any)
-  local bLoadedFromPark = SkyStudioDataStore:TryLoadConfigFromPark()
-  if bLoadedFromPark then
-    trace("Loaded SkyStudio config from park save")
+  -- Read bSaveSettingsToPark from Config.lua (default false). When true: hook save and load from park; when false: skip entirely.
+  local config = loadConfig()
+  if config and config.bSaveSettingsToPark ~= nil then
+    SkyStudioDataStore.bSaveSettingsToPark = (config.bSaveSettingsToPark == true)
+  end
+
+  if SkyStudioDataStore.bSaveSettingsToPark then
+    SkyStudioDataStore:InstallParkSaveHookIfEnabled()
+    SkyStudioDataStore:InitParkSaveLoadHooks()
+    local bLoadedFromPark = SkyStudioDataStore:TryLoadConfigFromPark()
+    if bLoadedFromPark then
+      trace("Loaded SkyStudio config from park save")
+    end
   end
   
   -- Set callback to update UI when save completes

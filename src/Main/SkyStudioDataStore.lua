@@ -11,25 +11,16 @@ local ParkLoadSaveManager = require("managers.parkloadsavemanager")
 local trace = require('SkyStudioTrace')
 
 ----------------------------------------------------------------
--- Park Save Hook: Inject SkyStudio config into park metadata
--- This hooks GenerateCurrentParkMetaData so that whenever a park
--- is saved (manual or autosave), the SkyStudio config is included.
+-- Park Save Hook: Only installed when bSaveSettingsToPark is true (Config.lua).
+-- When false, we never replace GenerateCurrentParkMetaData so saves are not modified.
 ----------------------------------------------------------------
 
--- Store reference to original function before we replace it
 local originalGenerateCurrentParkMetaData = ParkLoadSaveManager.GenerateCurrentParkMetaData
-
--- Forward declaration - will be set after SkyStudioDataStore is created
 local fnGetSkyStudioConfigSnapshot = nil
 
--- Replace with hooked version that injects SkyStudio config
-ParkLoadSaveManager.GenerateCurrentParkMetaData = function(self)
+local function hookedGenerateCurrentParkMetaData(self)
   trace('HOOK: GenerateCurrentParkMetaData called - injecting SkyStudio config')
-  
-  -- Call original function to get base metadata
   local tMetadata = originalGenerateCurrentParkMetaData(self)
-  
-  -- Inject SkyStudio config if we have the snapshot function
   if tMetadata and fnGetSkyStudioConfigSnapshot then
     local tSkyStudioConfig = fnGetSkyStudioConfigSnapshot()
     if tSkyStudioConfig then
@@ -37,15 +28,16 @@ ParkLoadSaveManager.GenerateCurrentParkMetaData = function(self)
       trace('HOOK: Injected tSkyStudioConfig into park metadata')
     end
   end
-  
   return tMetadata
 end
-
-trace('Park save hook installed on ParkLoadSaveManager.GenerateCurrentParkMetaData')
 
 local BaseEditMode = require("Editors.Shared.BaseEditMode")
 
 local SkyStudioDataStore = {}
+
+-- When true: save/load SkyStudio settings with the park. When false (default): do not hook or load; saves unchanged.
+-- Set in Config.lua: bSaveSettingsToPark = true
+SkyStudioDataStore.bSaveSettingsToPark = false
 
 -- Flag to prevent multiple concurrent saves
 SkyStudioDataStore.bIsSavingPreset = false
@@ -779,6 +771,7 @@ local function buildSkyStudioConfigSnapshot(self)
   -- - cCurrentParkSaveToken: runtime state (userdata)
   -- - bParkHasSkyStudioConfig: runtime state
   -- - bIsSavingPreset: runtime state
+  -- - bSaveSettingsToPark: config preference, not per-park data
   local tExcludedKeys = {
     defaultValues = true,
     tSkyStudioBlueprintSaves = true,
@@ -787,6 +780,7 @@ local function buildSkyStudioConfigSnapshot(self)
     cCurrentParkSaveToken = true,
     bParkHasSkyStudioConfig = true,
     bIsSavingPreset = true,
+    bSaveSettingsToPark = true,
   }
 
   for k, v in pairs(self) do
@@ -1407,7 +1401,19 @@ SkyStudioDataStore.bParkHasSkyStudioConfig = false
 -- Global message receiver for park save/load events
 SkyStudioDataStore.tGlobalMessageReceivers = {}
 
--- Initialize park save/load hooks
+-- Install the park save hook only when bSaveSettingsToPark is true. Call after config is loaded.
+-- When false, original GenerateCurrentParkMetaData is left in place (saves not modified).
+function SkyStudioDataStore:InstallParkSaveHookIfEnabled()
+  if self.bSaveSettingsToPark then
+    ParkLoadSaveManager.GenerateCurrentParkMetaData = hookedGenerateCurrentParkMetaData
+    trace('Park save hook installed (bSaveSettingsToPark = true)')
+  else
+    ParkLoadSaveManager.GenerateCurrentParkMetaData = originalGenerateCurrentParkMetaData
+    trace('Park save hook not installed (bSaveSettingsToPark = false)')
+  end
+end
+
+-- Initialize park save/load hooks (message receivers). Only call when bSaveSettingsToPark is true.
 function SkyStudioDataStore:InitParkSaveLoadHooks()
   trace('InitParkSaveLoadHooks: Registering global message receivers...')
   
