@@ -344,9 +344,8 @@ SkyStudioUI.SkyStudioChangedValue_bUserOverrideGI = function(self, _callback, _s
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideGI", 1, _callback, _self)
 end
 
-SkyStudioUI.SkyStudioChangedValue_bUserOverrideHDR = function(self, _callback, _self)
-  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideHDR")
-  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideHDR", 1, _callback, _self)
+SkyStudioUI.SkyStudioChangedValue_bUserOverrideColorBalance = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideColorBalance", 1, _callback, _self)
 end
 
 -- Rendering tab: GI parameters
@@ -380,15 +379,42 @@ SkyStudioUI.SkyStudioChangedValue_nUserGIAmbientOcclusionWeight = function(self,
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserGIAmbientOcclusionWeight", 1, _callback, _self)
 end
 
--- Rendering tab: HDR parameters
+-- Misc tab: Color grading parameters
 SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionTime = function(self, _callback, _self)
-  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionTime")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHDRAdaptionTime", 1, _callback, _self)
 end
-
-SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionDarknessScale = function(self, _callback, _self)
-  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserHDRAdaptionDarknessScale")
-  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHDRAdaptionDarknessScale", 1, _callback, _self)
+SkyStudioUI.SkyStudioChangedValue_nUserSaturation = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserSaturation", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserWhiteBalanceDIlluminant = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserWhiteBalanceDIlluminant", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserContrastPower = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserContrastPower", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserContrastMidPoint = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserContrastMidPoint", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureMin = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureMin", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureMax = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureMax", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureMinAdjust = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureMinAdjust", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureMaxAdjust = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureMaxAdjust", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureLoPercentile = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureLoPercentile", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserHistogramExposureHiPercentile = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserHistogramExposureHiPercentile", 1, _callback, _self)
+end
+SkyStudioUI.SkyStudioChangedValue_nUserExposureCompensationKeyValue = function(self, _callback, _self)
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserExposureCompensationKeyValue", 1, _callback, _self)
 end
 
 SkyStudioUI.SkyStudio_ResetRendering = function(self, _callback, _self)

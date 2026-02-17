@@ -100,17 +100,29 @@ type Config = {
   nUserSunColor: number;
   nUserMoonColor: number;
 
-  // Rendering tab: GI and HDR
+  // Rendering tab: GI
   bUserOverrideGI: boolean;
-  bUserOverrideHDR: boolean;
   nUserGISkyIntensity: number;
   nUserGISunIntensity: number;
   nUserGIBounceBoost: number;
   nUserGIMultiBounceIntensity: number;
   nUserGIEmissiveIntensity: number;
   nUserGIAmbientOcclusionWeight: number;
+
+  // Misc tab: Color grading (HDR adaptation, saturation, white balance, contrast, histogram exposure)
+  bUserOverrideColorBalance: boolean;
   nUserHDRAdaptionTime: number;
-  nUserHDRAdaptionDarknessScale: number;
+  nUserSaturation: number;
+  nUserWhiteBalanceDIlluminant: number;
+  nUserContrastPower: number;
+  nUserContrastMidPoint: number;
+  nUserHistogramExposureMin: number;
+  nUserHistogramExposureMax: number;
+  nUserHistogramExposureMinAdjust: number;
+  nUserHistogramExposureMaxAdjust: number;
+  nUserHistogramExposureLoPercentile: number;
+  nUserHistogramExposureHiPercentile: number;
+  nUserExposureCompensationKeyValue: number;
 
   // Shadows
   bUserOverrideShadows: boolean;
@@ -230,17 +242,29 @@ const baseConfig = {
   nUserSunColor: 0xFFFFFF, // Default sun color (white)
   nUserMoonColor: 0x5796FF, // Default moon color (blueish)
 
-  // Rendering tab: GI and HDR
+  // Rendering tab: GI
   bUserOverrideGI: false,
-  bUserOverrideHDR: false,
   nUserGISkyIntensity: 1.0,
   nUserGISunIntensity: 1.0,
   nUserGIBounceBoost: 0.39,
   nUserGIMultiBounceIntensity: 1.0,
   nUserGIEmissiveIntensity: 1.0,
   nUserGIAmbientOcclusionWeight: 0.0,
+
+  // Misc tab: Color grading
+  bUserOverrideColorBalance: false,
   nUserHDRAdaptionTime: 1.35,
-  nUserHDRAdaptionDarknessScale: 0.9,
+  nUserSaturation: 1.05,
+  nUserWhiteBalanceDIlluminant: 82.0,
+  nUserContrastPower: 1.03,
+  nUserContrastMidPoint: 1.0,
+  nUserHistogramExposureMin: -10.0,
+  nUserHistogramExposureMax: 1.0,
+  nUserHistogramExposureMinAdjust: 3.35,
+  nUserHistogramExposureMaxAdjust: -2.6,
+  nUserHistogramExposureLoPercentile: 0.3,
+  nUserHistogramExposureHiPercentile: 0.35,
+  nUserExposureCompensationKeyValue: 0.16,
 
   // Shadows
   bUserOverrideShadows: false,
@@ -686,7 +710,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   private resetRenderingToDefault = () => {
     const defaultConfig = this.state.defaultConfig;
 
-    // All rendering-related values (GI + HDR)
+    // All rendering-related values (GI + Color grading)
     const renderingKeys = [
       "nUserGISkyIntensity",
       "nUserGISunIntensity",
@@ -695,7 +719,17 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserGIEmissiveIntensity",
       "nUserGIAmbientOcclusionWeight",
       "nUserHDRAdaptionTime",
-      "nUserHDRAdaptionDarknessScale",
+      "nUserSaturation",
+      "nUserWhiteBalanceDIlluminant",
+      "nUserContrastPower",
+      "nUserContrastMidPoint",
+      "nUserHistogramExposureMin",
+      "nUserHistogramExposureMax",
+      "nUserHistogramExposureMinAdjust",
+      "nUserHistogramExposureMaxAdjust",
+      "nUserHistogramExposureLoPercentile",
+      "nUserHistogramExposureHiPercentile",
+      "nUserExposureCompensationKeyValue",
     ];
 
     const newConfig: Config = { ...this.state.config };
@@ -761,15 +795,26 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserVolumetricScatterWeight",
       "nUserVolumetricDistanceStart",
 
-      // Rendering settings (GI + HDR)
+      // Rendering settings (GI + Color Balance)
       "nUserGISkyIntensity",
       "nUserGISunIntensity",
       "nUserGIBounceBoost",
       "nUserGIMultiBounceIntensity",
       "nUserGIEmissiveIntensity",
       "nUserGIAmbientOcclusionWeight",
+      "bUserOverrideColorBalance",
       "nUserHDRAdaptionTime",
-      "nUserHDRAdaptionDarknessScale",
+      "nUserSaturation",
+      "nUserWhiteBalanceDIlluminant",
+      "nUserContrastPower",
+      "nUserContrastMidPoint",
+      "nUserHistogramExposureMin",
+      "nUserHistogramExposureMax",
+      "nUserHistogramExposureMinAdjust",
+      "nUserHistogramExposureMaxAdjust",
+      "nUserHistogramExposureLoPercentile",
+      "nUserHistogramExposureHiPercentile",
+      "nUserExposureCompensationKeyValue",
 
       // Shadow settings
       "bUserOverrideShadows",
@@ -1029,15 +1074,27 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
       // Rendering tab
       bUserOverrideGI,
-      bUserOverrideHDR,
       nUserGISkyIntensity,
       nUserGISunIntensity,
       nUserGIBounceBoost,
       nUserGIMultiBounceIntensity,
       nUserGIEmissiveIntensity,
       nUserGIAmbientOcclusionWeight,
+
+      // Misc tab: Color grading
+      bUserOverrideColorBalance,
       nUserHDRAdaptionTime,
-      nUserHDRAdaptionDarknessScale,
+      nUserSaturation,
+      nUserWhiteBalanceDIlluminant,
+      nUserContrastPower,
+      nUserContrastMidPoint,
+      nUserHistogramExposureMin,
+      nUserHistogramExposureMax,
+      nUserHistogramExposureMinAdjust,
+      nUserHistogramExposureMaxAdjust,
+      nUserHistogramExposureLoPercentile,
+      nUserHistogramExposureHiPercentile,
+      nUserExposureCompensationKeyValue,
 
       // Shadows
       bUserOverrideShadows,
@@ -1079,7 +1136,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     const moonDiskOverrideOn = bUserOverrideMoonDisk;
 
     const giOverrideOn = bUserOverrideGI;
-    const hdrOverrideOn = bUserOverrideHDR;
+    const colorBalanceOverrideOn = bUserOverrideColorBalance;
     const shadowsOverrideOn = bUserOverrideShadows;
     const cloudsOverrideOn = bUserOverrideClouds;
 
@@ -2353,55 +2410,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <PanelArea
             modifiers={classNames(
               "skystudio_section",
-              this.state.confirmResetRendering && "skystudio_blur"
-            )}
-          >
-            <ToggleRow
-              label={Format.stringLiteral("Override HDR Adaptation")}
-              toggled={hdrOverrideOn}
-              onToggle={this.onToggleValueChanged("bUserOverrideHDR")}
-              inputName={InputName.Select}
-              disabled={!customLightingEnabled}
-            />
-
-            <SliderRow
-              label={Format.stringLiteral("Adaptation Time")}
-              min={0.1}
-              max={2}
-              step={0.01}
-              value={nUserHDRAdaptionTime}
-              onChange={(newValue: number) =>
-                this.onNumericalValueChanged(
-                  "nUserHDRAdaptionTime",
-                  newValue as number
-                )
-              }
-              editable={true}
-              disabled={!customLightingEnabled || !hdrOverrideOn}
-              focusable={true}
-            />
-
-            {/* <SliderRow
-              label={Format.stringLiteral("Darkness Adaptation Scale")}
-              min={0}
-              max={2}
-              step={0.01}
-              value={nUserHDRAdaptionDarknessScale}
-              onChange={(newValue: number) =>
-                this.onNumericalValueChanged(
-                  "nUserHDRAdaptionDarknessScale",
-                  newValue as number
-                )
-              }
-              editable={true}
-              disabled={!customLightingEnabled || !hdrOverrideOn}
-              focusable={true}
-            /> */}
-          </PanelArea>
-
-          <PanelArea
-            modifiers={classNames(
-              "skystudio_section",
               this.state.confirmResetAll && "skystudio_blur"
             )}
           >
@@ -2427,6 +2435,154 @@ class _SkyStudioUI extends preact.Component<{}, State> {
               }
               editable={true}
               disabled={!customLightingEnabled || !shadowsOverrideOn}
+              focusable={true}
+            />
+          </PanelArea>
+
+          <PanelArea
+            modifiers={classNames(
+              "skystudio_section",
+              this.state.confirmResetRendering && "skystudio_blur"
+            )}
+          >
+            <ToggleRow
+              label={Format.stringLiteral("Override color grading")}
+              toggled={colorBalanceOverrideOn}
+              onToggle={this.onToggleValueChanged("bUserOverrideColorBalance")}
+              inputName={InputName.Select}
+              disabled={!customLightingEnabled}
+            />
+
+            <SliderRow
+              label={Format.stringLiteral("Saturation")}
+              min={0}
+              max={2}
+              step={0.01}
+              value={nUserSaturation}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserSaturation", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("White Balance")}
+              min={50}
+              max={150}
+              step={1}
+              value={nUserWhiteBalanceDIlluminant}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserWhiteBalanceDIlluminant", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("Contrast Power")}
+              min={0.1}
+              max={2}
+              step={0.01}
+              value={nUserContrastPower}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserContrastPower", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("Contrast Midpoint")}
+              min={0.1}
+              max={2}
+              step={0.01}
+              value={nUserContrastMidPoint}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserContrastMidPoint", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Adaptation Time")}
+              min={0.1}
+              max={2}
+              step={0.01}
+              value={nUserHDRAdaptionTime}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHDRAdaptionTime", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Exposure (Global)")}
+              min={0.01}
+              max={1}
+              step={0.01}
+              value={nUserExposureCompensationKeyValue}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserExposureCompensationKeyValue", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Exposure Min")}
+              min={-12}
+              max={0}
+              step={0.1}
+              value={nUserHistogramExposureMin}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureMin", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Exposure Max")}
+              min={0}
+              max={2}
+              step={0.1}
+              value={nUserHistogramExposureMax}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureMax", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Min Adjust")}
+              min={1.35}
+              max={5.35}
+              step={0.01}
+              value={nUserHistogramExposureMinAdjust}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureMinAdjust", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Max Adjust")}
+              min={-4.6}
+              max={-0.6}
+              step={0.01}
+              value={nUserHistogramExposureMaxAdjust}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureMaxAdjust", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Lo Percentile")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={nUserHistogramExposureLoPercentile}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureLoPercentile", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
+              focusable={true}
+            />
+            <SliderRow
+              label={Format.stringLiteral("HDR Hi Percentile")}
+              min={0}
+              max={1}
+              step={0.01}
+              value={nUserHistogramExposureHiPercentile}
+              onChange={(v: number) => this.onNumericalValueChanged("nUserHistogramExposureHiPercentile", v)}
+              editable={true}
+              disabled={!customLightingEnabled || !colorBalanceOverrideOn}
               focusable={true}
             />
           </PanelArea>

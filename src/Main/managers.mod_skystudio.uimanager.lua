@@ -373,9 +373,8 @@ function SkyStudioUIManager:Activate()
       SkyStudioDataStore.bUserOverrideGI = value
     end, self)
 
-    self.ui:SkyStudioChangedValue_bUserOverrideHDR(function(_, value)
-      -- trace("SkyStudioChangedValue_bUserOverrideHDR: " .. tostring(value))
-      SkyStudioDataStore.bUserOverrideHDR = value
+    self.ui:SkyStudioChangedValue_bUserOverrideColorBalance(function(_, value)
+      SkyStudioDataStore.bUserOverrideColorBalance = value
     end, self)
 
     -- Rendering tab: GI parameters
@@ -409,15 +408,44 @@ function SkyStudioUIManager:Activate()
       SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight = value
     end, self)
 
-    -- Rendering tab: HDR parameters
+    -- Misc tab: Color grading (HDR adaptation, saturation, white balance, contrast, histogram exposure)
     self.ui:SkyStudioChangedValue_nUserHDRAdaptionTime(function(_, value)
-      -- trace("SkyStudioChangedValue_nUserHDRAdaptionTime: " .. tostring(value))
       SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime = value
     end, self)
-
-    self.ui:SkyStudioChangedValue_nUserHDRAdaptionDarknessScale(function(_, value)
-      -- trace("SkyStudioChangedValue_nUserHDRAdaptionDarknessScale: " .. tostring(value))
-      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale = value
+    self.ui:SkyStudioChangedValue_nUserSaturation(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Saturation = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserWhiteBalanceDIlluminant(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.WhiteBalance.DIlluminant = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserContrastPower(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.Power = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserContrastMidPoint(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.MidPoint = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureMin(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMin = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureMax(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMax = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureMinAdjust(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMinAdjust = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureMaxAdjust(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMaxAdjust = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureLoPercentile(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureLoPercentile = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserHistogramExposureHiPercentile(function(_, value)
+      SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureHiPercentile = value
+    end, self)
+    self.ui:SkyStudioChangedValue_nUserExposureCompensationKeyValue(function(_, value)
+      local ec = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ExposureCompensation
+      if not ec then ec = {}; SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ExposureCompensation = ec end
+      ec.KeyValue = value
     end, self)
 
     self.ui:SkyStudio_ResetRendering(function()
@@ -937,7 +965,7 @@ function SkyStudioUIManager:Activate()
       ),
       -- Rendering tab: toggles
       bUserOverrideGI = SkyStudioDataStore.bUserOverrideGI,
-      bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
+      bUserOverrideColorBalance = SkyStudioDataStore.bUserOverrideColorBalance,
       -- Rendering tab: GI parameters
       nUserGISkyIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SkyIntensity,
       nUserGISunIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.SunIntensity,
@@ -945,9 +973,19 @@ function SkyStudioUIManager:Activate()
       nUserGIMultiBounceIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.MultiBounceIntensity,
       nUserGIEmissiveIntensity = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.EmissiveIntensity,
       nUserGIAmbientOcclusionWeight = SkyStudioDataStore.tUserRenderParameters.View.GlobalIllumination.AmbientOcclusionWeight,
-      -- Rendering tab: HDR parameters
+      -- Misc tab: Color grading parameters
       nUserHDRAdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
-      nUserHDRAdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale,
+      nUserSaturation = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Saturation,
+      nUserWhiteBalanceDIlluminant = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.WhiteBalance.DIlluminant,
+      nUserContrastPower = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.Power,
+      nUserContrastMidPoint = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.MidPoint,
+      nUserHistogramExposureMin = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMin,
+      nUserHistogramExposureMax = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMax,
+      nUserHistogramExposureMinAdjust = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMinAdjust,
+      nUserHistogramExposureMaxAdjust = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureMaxAdjust,
+      nUserHistogramExposureLoPercentile = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureLoPercentile,
+      nUserHistogramExposureHiPercentile = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.HistogramExposureHiPercentile,
+      nUserExposureCompensationKeyValue = (SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ExposureCompensation and SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ExposureCompensation.KeyValue) or 0.16,
       -- Shadow parameters
       bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
       nUserShadowFilterSoftness = SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness,
@@ -1056,7 +1094,7 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     bUserOverrideSunDisk = SkyStudioDataStore.bUserOverrideSunDisk,
     bUserOverrideMoonDisk = SkyStudioDataStore.bUserOverrideMoonDisk,
     bUserOverrideGI = SkyStudioDataStore.bUserOverrideGI,
-    bUserOverrideHDR = SkyStudioDataStore.bUserOverrideHDR,
+    bUserOverrideColorBalance = SkyStudioDataStore.bUserOverrideColorBalance,
     bUserOverrideShadows = SkyStudioDataStore.bUserOverrideShadows,
     bUserOverrideClouds = SkyStudioDataStore.bUserOverrideClouds,
     -- Fog/Haze (correct path: Atmospherics.Fog, Atmospherics.Haze)
@@ -1089,9 +1127,19 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     nUserGIMultiBounceIntensity = gi.MultiBounceIntensity,
     nUserGIEmissiveIntensity = gi.EmissiveIntensity,
     nUserGIAmbientOcclusionWeight = gi.AmbientOcclusionWeight,
-    -- HDR/Luminance (correct path: View.LookAdjust.Luminance)
+    -- Color grading (View.LookAdjust.Luminance, WhiteBalance, ColourAdjust)
     nUserHDRAdaptionTime = luminance.AdaptionTime,
-    nUserHDRAdaptionDarknessScale = luminance.AdaptionDarknessScale,
+    nUserHistogramExposureMin = luminance.HistogramExposureMin,
+    nUserHistogramExposureMax = luminance.HistogramExposureMax,
+    nUserHistogramExposureMinAdjust = luminance.HistogramExposureMinAdjust,
+    nUserHistogramExposureMaxAdjust = luminance.HistogramExposureMaxAdjust,
+    nUserHistogramExposureLoPercentile = luminance.HistogramExposureLoPercentile,
+    nUserHistogramExposureHiPercentile = luminance.HistogramExposureHiPercentile,
+    nUserExposureCompensationKeyValue = (lookAdjust.ExposureCompensation and lookAdjust.ExposureCompensation.KeyValue) or 0.16,
+    nUserSaturation = (lookAdjust.ColourAdjust or {}).Saturation,
+    nUserWhiteBalanceDIlluminant = (lookAdjust.WhiteBalance or {}).DIlluminant,
+    nUserContrastPower = (lookAdjust.ColourAdjust and lookAdjust.ColourAdjust.Contrast and lookAdjust.ColourAdjust.Contrast.Power) or 1.03,
+    nUserContrastMidPoint = (lookAdjust.ColourAdjust and lookAdjust.ColourAdjust.Contrast and lookAdjust.ColourAdjust.Contrast.MidPoint) or 1.0,
     -- Shadows (correct path: Shadows.Collect.FilterSoftness)
     nUserShadowFilterSoftness = shadowsCollect.FilterSoftness,
     -- Clouds (correct path: Atmospherics.Clouds)
