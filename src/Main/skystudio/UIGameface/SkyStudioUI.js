@@ -1,4 +1,4 @@
-import * as preact from "/js/common/lib/preact.js";
+import * as preact from "/SkyStudioPreact.js";
 import * as Engine from "/js/common/core/Engine.js";
 import * as Focus from "/js/common/core/Focus.js";
 import * as Format from "/js/common/util/LocalisationUtil.js";

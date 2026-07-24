@@ -1,4 +1,4 @@
-import * as preact from "/js/common/lib/preact.js";
+import * as preact from "/SkyStudioPreact.js";
 import * as DataStore from "/js/common/core/DataStore.js";
 import * as Engine from "/js/common/core/Engine.js";
 import * as Input from "/js/common/core/Input.js";

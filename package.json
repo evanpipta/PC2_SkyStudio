@@ -16,8 +16,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-ui": "tsc -p tsconfig.json && cd src/Main && python PPUIPkgFile.py -i skystudio.ppuipkg && cd ../../",
-    "pack": "python ../cobra-tools-master/pack_tool_cmd.py \"Planet Coaster 2\" PACK ./src \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Planet Coaster 2\\Win64\\ovldata\\Mod_SkyStudio\"",
+    "build-ui": "tsc -p tsconfig.json && cd src/Main && py PPUIPkgFile.py -i skystudio.ppuipkg && cd ../../",
+    "pack": "py ../cobra-tools-master/pack_tool_cmd.py \"Planet Coaster 2\" PACK ./src \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Planet Coaster 2\\Win64\\ovldata\\Mod_SkyStudio\"",
     "build-mod": "npm run build-ui && npm run pack"
   },
   "devDependencies": {
