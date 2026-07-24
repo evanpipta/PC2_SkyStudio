@@ -159,6 +159,7 @@ type State = {
   confirmResetSun?: boolean;
   confirmResetMoon?: boolean;
   confirmResetAll?: boolean;
+  confirmResetMisc?: boolean;
   confirmResetAtmosphere?: boolean;
   confirmResetRendering?: boolean;
   confirmResetClouds?: boolean;
@@ -353,6 +354,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     confirmResetSun: false,
     confirmResetMoon: false,
     confirmResetAll: false,
+    confirmResetMisc: false,
     confirmResetAtmosphere: false,
     confirmResetClouds: false,
 
@@ -554,6 +556,14 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 
   cancelResetAll = () => {
     this.setState({ confirmResetAll: false });
+  };
+
+  beginResetMisc = () => {
+    this.setState({ confirmResetMisc: true });
+  };
+
+  cancelResetMisc = () => {
+    this.setState({ confirmResetMisc: false });
   };
 
   beginResetAtmosphere = () => {
@@ -833,13 +843,38 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserCloudsHorizonCoverageMax",
     ];
 
+    // Every override toggle in SkyStudio - "Reset all settings" turns them all off.
+    const overrideKeys = [
+      "bUserOverrideSunTimeOfDay",
+      "bUserOverrideSunOrientation",
+      "bUserOverrideSunColorAndIntensity",
+      "bUserOverrideMoonOrientation",
+      "bUserOverrideMoonPhase",
+      "bUserOverrideMoonColorAndIntensity",
+      "bUserOverrideSunFade",
+      "bUserOverrideMoonFade",
+      "bUserOverrideDayNightTransition",
+      "bUserOverrideAtmosphere",
+      "bUserOverrideSunDisk",
+      "bUserOverrideMoonDisk",
+      "bUserOverrideGI",
+      "bUserOverrideColorBalance",
+      "bUserOverrideClouds",
+      "bUserOverrideShadows",
+    ];
+
     const defaultConfig = this.state.defaultConfig;
 
     const newConfig = { ...this.state.config };
 
-    // Send an engine event for every config key
+    // Reset every slider value back to its default
     keysToReset.forEach((key) => {
       newConfig[key] = defaultConfig[key];
+    });
+
+    // Turn every override off (back to vanilla)
+    overrideKeys.forEach((key) => {
+      newConfig[key] = false;
     });
 
     this.setState({
@@ -850,6 +885,52 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     });
 
     Engine.sendEvent("SkyStudio_ResetAll");
+  };
+
+  // Reset only the values shown on the Misc tab (day/night transition,
+  // shadow softness, and color grading), including turning their overrides off.
+  private resetMiscToDefault = () => {
+    const defaultConfig = this.state.defaultConfig;
+
+    const miscValueKeys = [
+      "nUserDayNightTransition",
+      "nUserShadowFilterSoftness",
+      "nUserSaturation",
+      "nUserWhiteBalanceDIlluminant",
+      "nUserContrastPower",
+      "nUserContrastMidPoint",
+      "nUserHDRAdaptionTime",
+      "nUserExposureCompensationKeyValue",
+      "nUserHistogramExposureMin",
+      "nUserHistogramExposureMax",
+      "nUserHistogramExposureMinAdjust",
+      "nUserHistogramExposureMaxAdjust",
+      "nUserHistogramExposureLoPercentile",
+      "nUserHistogramExposureHiPercentile",
+    ];
+
+    const miscOverrideKeys = [
+      "bUserOverrideDayNightTransition",
+      "bUserOverrideShadows",
+      "bUserOverrideColorBalance",
+    ];
+
+    const newConfig: Config = { ...this.state.config };
+
+    miscValueKeys.forEach((key) => {
+      newConfig[key] = defaultConfig[key];
+    });
+
+    miscOverrideKeys.forEach((key) => {
+      newConfig[key] = false;
+    });
+
+    this.setState({
+      config: newConfig,
+      confirmResetMisc: false,
+    });
+
+    Engine.sendEvent("SkyStudio_ResetMisc");
   };
 
   // ========== PRESET TAB METHODS ==========
@@ -2353,7 +2434,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <div className={"skystudio_confirm_modal"}>
             <div>
               <div className={"skystudio_reset_header"}>
-                Reset All Values to Default?
+                Reset all settings to default? This resets every slider to
+                vanilla and turns all overrides off.
               </div>
               <div className={"skystudio_reset_confirm_buttons"}>
                 <Button
@@ -2372,11 +2454,35 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             </div>
           </div>
         )}
+        {this.state.confirmResetMisc && (
+          <div className={"skystudio_confirm_modal"}>
+            <div>
+              <div className={"skystudio_reset_header"}>
+                Reset the Misc tab values to default?
+              </div>
+              <div className={"skystudio_reset_confirm_buttons"}>
+                <Button
+                  label={Format.stringLiteral("Confirm")}
+                  onSelect={this.resetMiscToDefault}
+                  modifiers={"positive"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+                <Button
+                  label={Format.stringLiteral("Cancel")}
+                  onSelect={this.cancelResetMisc}
+                  modifiers={"negative"}
+                  rootClassName={"skystudio_reset_confirm_button"}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         <ScrollPane rootClassName="skystudio_scrollPane">
           <PanelArea
             modifiers={classNames(
               "skystudio_section",
-              this.state.confirmResetAll && "skystudio_blur"
+              (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                "skystudio_blur"
             )}
           >
             <ToggleRow
@@ -2410,7 +2516,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <PanelArea
             modifiers={classNames(
               "skystudio_section",
-              this.state.confirmResetAll && "skystudio_blur"
+              (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                "skystudio_blur"
             )}
           >
             <ToggleRow
@@ -2442,7 +2549,10 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <PanelArea
             modifiers={classNames(
               "skystudio_section",
-              this.state.confirmResetRendering && "skystudio_blur"
+              (this.state.confirmResetRendering ||
+                this.state.confirmResetAll ||
+                this.state.confirmResetMisc) &&
+                "skystudio_blur"
             )}
           >
             <ToggleRow
@@ -2608,13 +2718,22 @@ class _SkyStudioUI extends preact.Component<{}, State> {
           <PanelArea
             modifiers={classNames(
               "skystudio_section",
-              this.state.confirmResetAll && "skystudio_blur"
+              (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                "skystudio_blur"
             )}
           >
-            <FocusableDataRow label={Format.stringLiteral("Reset All Slider Values")}>
+            <FocusableDataRow label={Format.stringLiteral("Reset Misc Values")}>
               <Button
                 icon={"img/icons/restart.svg"}
-                label={Format.stringLiteral("Reset All")}
+                label={Format.stringLiteral("Reset Misc Values")}
+                onSelect={this.beginResetMisc}
+                rootClassName={"skystudio_reset_confirm_button"}
+              />
+            </FocusableDataRow>
+            <FocusableDataRow label={Format.stringLiteral("Reset all settings")}>
+              <Button
+                icon={"img/icons/restart.svg"}
+                label={Format.stringLiteral("Reset all settings")}
                 onSelect={this.beginResetAll}
                 rootClassName={"skystudio_reset_confirm_button"}
               />
@@ -2908,4 +3027,5 @@ class _SkyStudioUI extends preact.Component<{}, State> {
 export const SkyStudioUI = Focusable.decorateEx(_SkyStudioUI, {
   focusable: false,
 });
+
 

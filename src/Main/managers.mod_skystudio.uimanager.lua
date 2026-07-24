@@ -470,6 +470,11 @@ function SkyStudioUIManager:Activate()
       self:SendCurrentSettingsToUI()
     end, self)
 
+    self.ui:SkyStudio_ResetMisc(function()
+      trace("SkyStudioUIManager:SkyStudio_ResetMisc()")
+      SkyStudioDataStore:ResetMiscToDefaults()
+    end, self)
+
     self.ui:SkyStudio_ResetAtmosphere(function()
       trace("SkyStudioUIManager:SkyStudio_ResetAtmosphere()")
       SkyStudioDataStore:ResetAtmosphereToDefaults()

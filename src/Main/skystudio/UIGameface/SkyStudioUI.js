@@ -157,6 +157,7 @@ class _SkyStudioUI extends preact.Component {
             confirmResetSun: false,
             confirmResetMoon: false,
             confirmResetAll: false,
+            confirmResetMisc: false,
             confirmResetAtmosphere: false,
             confirmResetClouds: false,
             presetList: {},
@@ -313,6 +314,12 @@ class _SkyStudioUI extends preact.Component {
         };
         this.cancelResetAll = () => {
             this.setState({ confirmResetAll: false });
+        };
+        this.beginResetMisc = () => {
+            this.setState({ confirmResetMisc: true });
+        };
+        this.cancelResetMisc = () => {
+            this.setState({ confirmResetMisc: false });
         };
         this.beginResetAtmosphere = () => {
             this.setState({ confirmResetAtmosphere: true });
@@ -548,11 +555,34 @@ class _SkyStudioUI extends preact.Component {
                 "nUserCloudsHorizonCoverageMin",
                 "nUserCloudsHorizonCoverageMax",
             ];
+            // Every override toggle in SkyStudio - "Reset all settings" turns them all off.
+            const overrideKeys = [
+                "bUserOverrideSunTimeOfDay",
+                "bUserOverrideSunOrientation",
+                "bUserOverrideSunColorAndIntensity",
+                "bUserOverrideMoonOrientation",
+                "bUserOverrideMoonPhase",
+                "bUserOverrideMoonColorAndIntensity",
+                "bUserOverrideSunFade",
+                "bUserOverrideMoonFade",
+                "bUserOverrideDayNightTransition",
+                "bUserOverrideAtmosphere",
+                "bUserOverrideSunDisk",
+                "bUserOverrideMoonDisk",
+                "bUserOverrideGI",
+                "bUserOverrideColorBalance",
+                "bUserOverrideClouds",
+                "bUserOverrideShadows",
+            ];
             const defaultConfig = this.state.defaultConfig;
             const newConfig = { ...this.state.config };
-            // Send an engine event for every config key
+            // Reset every slider value back to its default
             keysToReset.forEach((key) => {
                 newConfig[key] = defaultConfig[key];
+            });
+            // Turn every override off (back to vanilla)
+            overrideKeys.forEach((key) => {
+                newConfig[key] = false;
             });
             this.setState({
                 config: newConfig,
@@ -561,6 +591,44 @@ class _SkyStudioUI extends preact.Component {
                 confirmResetAll: false,
             });
             Engine.sendEvent("SkyStudio_ResetAll");
+        };
+        // Reset only the values shown on the Misc tab (day/night transition,
+        // shadow softness, and color grading), including turning their overrides off.
+        this.resetMiscToDefault = () => {
+            const defaultConfig = this.state.defaultConfig;
+            const miscValueKeys = [
+                "nUserDayNightTransition",
+                "nUserShadowFilterSoftness",
+                "nUserSaturation",
+                "nUserWhiteBalanceDIlluminant",
+                "nUserContrastPower",
+                "nUserContrastMidPoint",
+                "nUserHDRAdaptionTime",
+                "nUserExposureCompensationKeyValue",
+                "nUserHistogramExposureMin",
+                "nUserHistogramExposureMax",
+                "nUserHistogramExposureMinAdjust",
+                "nUserHistogramExposureMaxAdjust",
+                "nUserHistogramExposureLoPercentile",
+                "nUserHistogramExposureHiPercentile",
+            ];
+            const miscOverrideKeys = [
+                "bUserOverrideDayNightTransition",
+                "bUserOverrideShadows",
+                "bUserOverrideColorBalance",
+            ];
+            const newConfig = { ...this.state.config };
+            miscValueKeys.forEach((key) => {
+                newConfig[key] = defaultConfig[key];
+            });
+            miscOverrideKeys.forEach((key) => {
+                newConfig[key] = false;
+            });
+            this.setState({
+                config: newConfig,
+                confirmResetMisc: false,
+            });
+            Engine.sendEvent("SkyStudio_ResetMisc");
         };
         // ========== PRESET TAB METHODS ==========
         // Called when preset list is received from engine
@@ -909,18 +977,29 @@ class _SkyStudioUI extends preact.Component {
             preact.h("div", { key: "other", className: "relative" },
                 this.state.confirmResetAll && (preact.h("div", { className: "skystudio_confirm_modal" },
                     preact.h("div", null,
-                        preact.h("div", { className: "skystudio_reset_header" }, "Reset All Values to Default?"),
+                        preact.h("div", { className: "skystudio_reset_header" }, "Reset all settings to default? This resets every slider to vanilla and turns all overrides off."),
                         preact.h("div", { className: "skystudio_reset_confirm_buttons" },
                             preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetAllToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
                             preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetAll, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),
+                this.state.confirmResetMisc && (preact.h("div", { className: "skystudio_confirm_modal" },
+                    preact.h("div", null,
+                        preact.h("div", { className: "skystudio_reset_header" }, "Reset the Misc tab values to default?"),
+                        preact.h("div", { className: "skystudio_reset_confirm_buttons" },
+                            preact.h(Button, { label: Format.stringLiteral("Confirm"), onSelect: this.resetMiscToDefault, modifiers: "positive", rootClassName: "skystudio_reset_confirm_button" }),
+                            preact.h(Button, { label: Format.stringLiteral("Cancel"), onSelect: this.cancelResetMisc, modifiers: "negative", rootClassName: "skystudio_reset_confirm_button" }))))),
                 preact.h(ScrollPane, { rootClassName: "skystudio_scrollPane" },
-                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAll && "skystudio_blur") },
+                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                            "skystudio_blur") },
                         preact.h(ToggleRow, { label: Format.stringLiteral("Override RenderParameters Transition"), toggled: dayNightOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideDayNightTransition"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                         preact.h(SliderRow, { label: Format.stringLiteral("RenderParameters Day/Night Fade"), min: 0, max: 100, step: 0.01, value: nUserDayNightTransition, onChange: (newValue) => this.onNumericalValueChanged("nUserDayNightTransition", newValue), editable: true, disabled: !customLightingEnabled || !dayNightOverrideOn, focusable: true })),
-                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAll && "skystudio_blur") },
+                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                            "skystudio_blur") },
                         preact.h(ToggleRow, { label: Format.stringLiteral("Override Shadow Softness"), toggled: shadowsOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideShadows"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                         preact.h(SliderRow, { label: Format.stringLiteral("Shadow Softness"), min: 0, max: 100, step: 0.1, value: nUserShadowFilterSoftness, onChange: (newValue) => this.onNumericalValueChanged("nUserShadowFilterSoftness", newValue), editable: true, disabled: !customLightingEnabled || !shadowsOverrideOn, focusable: true })),
-                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetRendering && "skystudio_blur") },
+                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", (this.state.confirmResetRendering ||
+                            this.state.confirmResetAll ||
+                            this.state.confirmResetMisc) &&
+                            "skystudio_blur") },
                         preact.h(ToggleRow, { label: Format.stringLiteral("Override color grading"), toggled: colorBalanceOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideColorBalance"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                         preact.h(SliderRow, { label: Format.stringLiteral("Saturation"), min: 0, max: 2, step: 0.01, value: nUserSaturation, onChange: (v) => this.onNumericalValueChanged("nUserSaturation", v), editable: true, disabled: !customLightingEnabled || !colorBalanceOverrideOn, focusable: true }),
                         preact.h(SliderRow, { label: Format.stringLiteral("White Balance"), min: 50, max: 150, step: 1, value: nUserWhiteBalanceDIlluminant, onChange: (v) => this.onNumericalValueChanged("nUserWhiteBalanceDIlluminant", v), editable: true, disabled: !customLightingEnabled || !colorBalanceOverrideOn, focusable: true }),
@@ -934,9 +1013,12 @@ class _SkyStudioUI extends preact.Component {
                         preact.h(SliderRow, { label: Format.stringLiteral("HDR Max Adjust"), min: -4.6, max: -0.6, step: 0.01, value: nUserHistogramExposureMaxAdjust, onChange: (v) => this.onNumericalValueChanged("nUserHistogramExposureMaxAdjust", v), editable: true, disabled: !customLightingEnabled || !colorBalanceOverrideOn, focusable: true }),
                         preact.h(SliderRow, { label: Format.stringLiteral("HDR Lo Percentile"), min: 0, max: 1, step: 0.01, value: nUserHistogramExposureLoPercentile, onChange: (v) => this.onNumericalValueChanged("nUserHistogramExposureLoPercentile", v), editable: true, disabled: !customLightingEnabled || !colorBalanceOverrideOn, focusable: true }),
                         preact.h(SliderRow, { label: Format.stringLiteral("HDR Hi Percentile"), min: 0, max: 1, step: 0.01, value: nUserHistogramExposureHiPercentile, onChange: (v) => this.onNumericalValueChanged("nUserHistogramExposureHiPercentile", v), editable: true, disabled: !customLightingEnabled || !colorBalanceOverrideOn, focusable: true })),
-                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", this.state.confirmResetAll && "skystudio_blur") },
-                        preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset All Slider Values") },
-                            preact.h(Button, { icon: "img/icons/restart.svg", label: Format.stringLiteral("Reset All"), onSelect: this.beginResetAll, rootClassName: "skystudio_reset_confirm_button" }))))),
+                    preact.h(PanelArea, { modifiers: classNames("skystudio_section", (this.state.confirmResetAll || this.state.confirmResetMisc) &&
+                            "skystudio_blur") },
+                        preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset Misc Values") },
+                            preact.h(Button, { icon: "img/icons/restart.svg", label: Format.stringLiteral("Reset Misc Values"), onSelect: this.beginResetMisc, rootClassName: "skystudio_reset_confirm_button" })),
+                        preact.h(FocusableDataRow, { label: Format.stringLiteral("Reset all settings") },
+                            preact.h(Button, { icon: "img/icons/restart.svg", label: Format.stringLiteral("Reset all settings"), onSelect: this.beginResetAll, rootClassName: "skystudio_reset_confirm_button" }))))),
             // TAB 7: Presets
             preact.h("div", { key: "presets", className: "relative" },
                 this.state.presetModalState === 'confirmSave' && (preact.h("div", { className: "skystudio_confirm_modal" },

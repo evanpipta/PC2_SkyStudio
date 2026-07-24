@@ -609,6 +609,45 @@ function SkyStudioDataStore:ResetAllToDefaults()
   SkyStudioDataStore:ResetCloudsToDefaults()
 end
 
+-- Reset only the values shown on the Misc tab: day/night transition,
+-- shadow softness, and color grading (and turn their overrides off)
+function SkyStudioDataStore:ResetMiscToDefaults()
+  -- RenderParameters day/night transition
+  SkyStudioDataStore.nUserDayNightTransition = SkyStudioDataStore.defaultValues.nUserDayNightTransition
+  SkyStudioDataStore.bUserOverrideDayNightTransition = false
+
+  -- Shadow softness
+  if SkyStudioDataStore.tUserRenderParameters.Shadows
+    and SkyStudioDataStore.tUserRenderParameters.Shadows.Collect
+    and SkyStudioDataStore.defaultValues.tUserRenderParameters.Shadows then
+    SkyStudioDataStore.tUserRenderParameters.Shadows.Collect.FilterSoftness =
+      SkyStudioDataStore.defaultValues.tUserRenderParameters.Shadows.Collect.FilterSoftness
+  end
+  SkyStudioDataStore.bUserOverrideShadows = false
+
+  -- Color grading (Luminance adaptation + histogram, WhiteBalance, ExposureCompensation, ColourAdjust)
+  local defaults = SkyStudioDataStore.defaultValues.tUserRenderParameters.View
+  local current = SkyStudioDataStore.tUserRenderParameters.View
+  local lumCur = current.LookAdjust.Luminance
+  local lumDef = defaults.LookAdjust.Luminance
+  lumCur.AdaptionTime = lumDef.AdaptionTime
+  lumCur.HistogramExposureMin = lumDef.HistogramExposureMin
+  lumCur.HistogramExposureMax = lumDef.HistogramExposureMax
+  lumCur.HistogramExposureMinAdjust = lumDef.HistogramExposureMinAdjust
+  lumCur.HistogramExposureMaxAdjust = lumDef.HistogramExposureMaxAdjust
+  lumCur.HistogramExposureLoPercentile = lumDef.HistogramExposureLoPercentile
+  lumCur.HistogramExposureHiPercentile = lumDef.HistogramExposureHiPercentile
+  current.LookAdjust.WhiteBalance.DIlluminant = defaults.LookAdjust.WhiteBalance.DIlluminant
+  if current.LookAdjust.ExposureCompensation and defaults.LookAdjust.ExposureCompensation then
+    current.LookAdjust.ExposureCompensation.KeyValue = defaults.LookAdjust.ExposureCompensation.KeyValue or 0.16
+  end
+  current.LookAdjust.ColourAdjust.Saturation = defaults.LookAdjust.ColourAdjust.Saturation
+  current.LookAdjust.ColourAdjust.Contrast.Power = defaults.LookAdjust.ColourAdjust.Contrast.Power
+  current.LookAdjust.ColourAdjust.Contrast.MidPoint = defaults.LookAdjust.ColourAdjust.Contrast.MidPoint
+
+  SkyStudioDataStore.bUserOverrideColorBalance = false
+end
+
 -- Build a render parameters table containing only values for enabled overrides
 -- This is called by the RenderParametersComponentManager before CreateParameterFromTable
 function SkyStudioDataStore:GetActiveRenderParameters()
