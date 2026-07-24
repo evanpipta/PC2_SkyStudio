@@ -162,7 +162,7 @@ SkyStudioDataStore.bUserOverrideMoonDisk = false
 
 -- Rendering tab overrides
 SkyStudioDataStore.bUserOverrideGI = false
-SkyStudioDataStore.bUserOverrideHDR = false
+SkyStudioDataStore.bUserOverrideColorBalance = false  -- Luminance (min/max/key/darkness/adaptation), saturation, white balance, contrast, histogram exposure
 
 -- Clouds tab override
 SkyStudioDataStore.bUserOverrideClouds = false
@@ -299,7 +299,26 @@ SkyStudioDataStore.tUserRenderParameters = {
     LookAdjust = {
       Luminance = {
         AdaptionTime = 1.35,
-        AdaptionDarknessScale = 0.9
+        HistogramExposureMin = -10.0,
+        HistogramExposureMax = 1.0,
+        HistogramExposureMinAdjust = 3.35,
+        HistogramExposureMaxAdjust = -2.6,
+        HistogramExposureLoPercentile = 0.3,
+        HistogramExposureHiPercentile = 0.35
+      },
+      WhiteBalance = {
+        DIlluminant = 82.0
+      },
+      ColourAdjust = {
+        Saturation = 1.05,
+        Contrast = {
+          Power = 1.03,
+          MidPoint = 1.0
+        }
+      },
+      ExposureCompensation = {
+        Curve = { -0.5, 0.0, 3.5 },
+        KeyValue = 0.16
       }
     }
   }
@@ -510,9 +529,29 @@ function SkyStudioDataStore:ResetRenderingToDefaults()
   current.GlobalIllumination.EmissiveIntensity = defaults.GlobalIllumination.EmissiveIntensity
   current.GlobalIllumination.AmbientOcclusionWeight = defaults.GlobalIllumination.AmbientOcclusionWeight
   
-  -- HDR / Luminance
-  current.LookAdjust.Luminance.AdaptionTime = defaults.LookAdjust.Luminance.AdaptionTime
-  current.LookAdjust.Luminance.AdaptionDarknessScale = defaults.LookAdjust.Luminance.AdaptionDarknessScale
+  -- Color grading (Luminance adaptation + histogram, WhiteBalance, ColourAdjust)
+  local lumCur = current.LookAdjust.Luminance
+  local lumDef = defaults.LookAdjust.Luminance
+  lumCur.AdaptionTime = lumDef.AdaptionTime
+  lumCur.HistogramExposureMin = lumDef.HistogramExposureMin
+  lumCur.HistogramExposureMax = lumDef.HistogramExposureMax
+  lumCur.HistogramExposureMinAdjust = lumDef.HistogramExposureMinAdjust
+  lumCur.HistogramExposureMaxAdjust = lumDef.HistogramExposureMaxAdjust
+  lumCur.HistogramExposureLoPercentile = lumDef.HistogramExposureLoPercentile
+  lumCur.HistogramExposureHiPercentile = lumDef.HistogramExposureHiPercentile
+  current.LookAdjust.WhiteBalance.DIlluminant = defaults.LookAdjust.WhiteBalance.DIlluminant
+  if current.LookAdjust.ExposureCompensation and defaults.LookAdjust.ExposureCompensation then
+    local ecCur = current.LookAdjust.ExposureCompensation
+    local ecDef = defaults.LookAdjust.ExposureCompensation
+    ecCur.Curve = ecCur.Curve or {}
+    ecCur.Curve[1] = ecDef.Curve and ecDef.Curve[1] or -0.5
+    ecCur.Curve[2] = ecDef.Curve and ecDef.Curve[2] or 0.0
+    ecCur.Curve[3] = ecDef.Curve and ecDef.Curve[3] or 3.5
+    ecCur.KeyValue = ecDef.KeyValue or 0.16
+  end
+  current.LookAdjust.ColourAdjust.Saturation = defaults.LookAdjust.ColourAdjust.Saturation
+  current.LookAdjust.ColourAdjust.Contrast.Power = defaults.LookAdjust.ColourAdjust.Contrast.Power
+  current.LookAdjust.ColourAdjust.Contrast.MidPoint = defaults.LookAdjust.ColourAdjust.Contrast.MidPoint
 end
 
 -- Reset all cloud values
@@ -555,7 +594,7 @@ function SkyStudioDataStore:ResetAllToDefaults()
   SkyStudioDataStore.bUserOverrideSunDisk = false
   SkyStudioDataStore.bUserOverrideMoonDisk = false
   SkyStudioDataStore.bUserOverrideGI = false
-  SkyStudioDataStore.bUserOverrideHDR = false
+  SkyStudioDataStore.bUserOverrideColorBalance = false
   SkyStudioDataStore.bUserOverrideClouds = false
   SkyStudioDataStore.bUserOverrideShadows = false
   
@@ -700,20 +739,65 @@ function SkyStudioDataStore:GetActiveRenderParameters()
     }
   end
 
-  -- HDR / Luminance overrides - ALWAYS include to reset to defaults when toggle is off
+  -- Color Balance overrides (Luminance min/max/key/adaptation, saturation, white balance, contrast, histogram exposure) - ALWAYS include
   tActive.View.LookAdjust = tActive.View.LookAdjust or {}
   
-  if SkyStudioDataStore.bUserOverrideHDR then
+  if SkyStudioDataStore.bUserOverrideColorBalance then
+    local lum = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance
+    local ec = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ExposureCompensation
     tActive.View.LookAdjust.Luminance = {
-      AdaptionTime = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionTime,
-      AdaptionDarknessScale = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.Luminance.AdaptionDarknessScale
+      AdaptionTime = lum.AdaptionTime,
+      HistogramExposureMin = lum.HistogramExposureMin,
+      HistogramExposureMax = lum.HistogramExposureMax,
+      HistogramExposureMinAdjust = lum.HistogramExposureMinAdjust,
+      HistogramExposureMaxAdjust = lum.HistogramExposureMaxAdjust,
+      HistogramExposureLoPercentile = lum.HistogramExposureLoPercentile,
+      HistogramExposureHiPercentile = lum.HistogramExposureHiPercentile
     }
+    tActive.View.LookAdjust.WhiteBalance = {
+      DIlluminant = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.WhiteBalance.DIlluminant
+    }
+    tActive.View.LookAdjust.ColourAdjust = {
+      Saturation = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Saturation,
+      Contrast = {
+        Power = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.Power,
+        MidPoint = SkyStudioDataStore.tUserRenderParameters.View.LookAdjust.ColourAdjust.Contrast.MidPoint
+      }
+    }
+    if ec and ec.Curve and ec.KeyValue ~= nil then
+      tActive.View.LookAdjust.ExposureCompensation = {
+        Curve = { ec.Curve[1] or -0.5, ec.Curve[2] or 0.0, ec.Curve[3] or 3.5 },
+        KeyValue = ec.KeyValue
+      }
+    end
   else
-    -- Use defaults when toggle is off
+    local lumDef = defaults.View.LookAdjust.Luminance
+    local ecDef = defaults.View.LookAdjust.ExposureCompensation
     tActive.View.LookAdjust.Luminance = {
-      AdaptionTime = defaults.View.LookAdjust.Luminance.AdaptionTime,
-      AdaptionDarknessScale = defaults.View.LookAdjust.Luminance.AdaptionDarknessScale
+      AdaptionTime = lumDef.AdaptionTime,
+      HistogramExposureMin = lumDef.HistogramExposureMin,
+      HistogramExposureMax = lumDef.HistogramExposureMax,
+      HistogramExposureMinAdjust = lumDef.HistogramExposureMinAdjust,
+      HistogramExposureMaxAdjust = lumDef.HistogramExposureMaxAdjust,
+      HistogramExposureLoPercentile = lumDef.HistogramExposureLoPercentile,
+      HistogramExposureHiPercentile = lumDef.HistogramExposureHiPercentile
     }
+    tActive.View.LookAdjust.WhiteBalance = {
+      DIlluminant = defaults.View.LookAdjust.WhiteBalance.DIlluminant
+    }
+    tActive.View.LookAdjust.ColourAdjust = {
+      Saturation = defaults.View.LookAdjust.ColourAdjust.Saturation,
+      Contrast = {
+        Power = defaults.View.LookAdjust.ColourAdjust.Contrast.Power,
+        MidPoint = defaults.View.LookAdjust.ColourAdjust.Contrast.MidPoint
+      }
+    }
+    if ecDef and ecDef.Curve and ecDef.KeyValue ~= nil then
+      tActive.View.LookAdjust.ExposureCompensation = {
+        Curve = { ecDef.Curve[1] or -0.5, ecDef.Curve[2] or 0.0, ecDef.Curve[3] or 3.5 },
+        KeyValue = ecDef.KeyValue
+      }
+    end
   end
 
   -- Shadows - only include when toggle is on
@@ -802,20 +886,85 @@ fnGetSkyStudioConfigSnapshot = function()
 end
 trace('Park save hook connected to SkyStudioDataStore config snapshot')
 
--- Apply a loaded config snapshot onto the datastore (overwrite keys).
+-- Deep-merge source into target (target keeps existing value where source has no key). Tables are merged recursively.
+local function deepMergeInto(target, source)
+  if type(source) ~= "table" or type(target) ~= "table" then
+    return
+  end
+  for k, v in pairs(source) do
+    local tv = type(v)
+    if tv == "table" and type(target[k]) == "table" and not (v.type == "colour" or v.value) then
+      deepMergeInto(target[k], v)
+    elseif tv ~= "function" and tv ~= "userdata" and tv ~= "thread" then
+      target[k] = deepCopy(v)
+    end
+  end
+end
+
+-- Ensure View.LookAdjust has full structure so old saves (missing new keys) don't cause nil access. Fill missing from defaults.
+local function ensureLookAdjustStructure(self)
+  local rp = self.tUserRenderParameters
+  if not rp then return end
+  rp.View = rp.View or {}
+  local view = rp.View
+  view.LookAdjust = view.LookAdjust or {}
+  local la = view.LookAdjust
+  local def = self.defaultValues and self.defaultValues.tUserRenderParameters
+  local defLA = def and def.View and def.View.LookAdjust
+  if not defLA then return end
+  la.Luminance = la.Luminance or {}
+  local lum = la.Luminance
+  local defLum = defLA.Luminance
+  if defLum then
+    if lum.AdaptionTime == nil then lum.AdaptionTime = defLum.AdaptionTime or 1.35 end
+    if lum.HistogramExposureMin == nil then lum.HistogramExposureMin = defLum.HistogramExposureMin or -10.0 end
+    if lum.HistogramExposureMax == nil then lum.HistogramExposureMax = defLum.HistogramExposureMax or 1.0 end
+    if lum.HistogramExposureMinAdjust == nil then lum.HistogramExposureMinAdjust = defLum.HistogramExposureMinAdjust or 3.35 end
+    if lum.HistogramExposureMaxAdjust == nil then lum.HistogramExposureMaxAdjust = defLum.HistogramExposureMaxAdjust or -2.6 end
+    if lum.HistogramExposureLoPercentile == nil then lum.HistogramExposureLoPercentile = defLum.HistogramExposureLoPercentile or 0.3 end
+    if lum.HistogramExposureHiPercentile == nil then lum.HistogramExposureHiPercentile = defLum.HistogramExposureHiPercentile or 0.35 end
+  end
+  la.ExposureCompensation = la.ExposureCompensation or {}
+  local ec = la.ExposureCompensation
+  local defEC = defLA.ExposureCompensation
+  if defEC then
+    ec.Curve = ec.Curve or {}
+    if ec.Curve[1] == nil then ec.Curve[1] = (defEC.Curve and defEC.Curve[1]) or -0.5 end
+    if ec.Curve[2] == nil then ec.Curve[2] = (defEC.Curve and defEC.Curve[2]) or 0.0 end
+    if ec.Curve[3] == nil then ec.Curve[3] = (defEC.Curve and defEC.Curve[3]) or 3.5 end
+    if ec.KeyValue == nil then ec.KeyValue = defEC.KeyValue or 0.16 end
+  end
+  la.WhiteBalance = la.WhiteBalance or {}
+  if la.WhiteBalance.DIlluminant == nil then la.WhiteBalance.DIlluminant = (defLA.WhiteBalance and defLA.WhiteBalance.DIlluminant) or 82.0 end
+  la.ColourAdjust = la.ColourAdjust or {}
+  if la.ColourAdjust.Saturation == nil then la.ColourAdjust.Saturation = (defLA.ColourAdjust and defLA.ColourAdjust.Saturation) or 1.05 end
+  la.ColourAdjust.Contrast = la.ColourAdjust.Contrast or {}
+  if la.ColourAdjust.Contrast.Power == nil then la.ColourAdjust.Contrast.Power = (defLA.ColourAdjust and defLA.ColourAdjust.Contrast and defLA.ColourAdjust.Contrast.Power) or 1.03 end
+  if la.ColourAdjust.Contrast.MidPoint == nil then la.ColourAdjust.Contrast.MidPoint = (defLA.ColourAdjust and defLA.ColourAdjust.Contrast and defLA.ColourAdjust.Contrast.MidPoint) or 1.0 end
+end
+
+-- Apply a loaded config snapshot onto the datastore. Merges tUserRenderParameters so old saves don't wipe new keys.
 local function applySkyStudioConfigSnapshot(self, tConfig)
   if type(tConfig) ~= "table" then
     return
   end
-
+  -- Legacy: old saves had bUserOverrideHDR
+  if tConfig.bUserOverrideHDR ~= nil then
+    self.bUserOverrideColorBalance = (tConfig.bUserOverrideHDR == true)
+  end
   for k, v in pairs(tConfig) do
     if k ~= "defaultValues" then
       local tv = type(v)
       if tv ~= "function" and tv ~= "userdata" and tv ~= "thread" then
-        self[k] = deepCopy(v)
+        if k == "tUserRenderParameters" and type(self.tUserRenderParameters) == "table" and type(v) == "table" then
+          deepMergeInto(self.tUserRenderParameters, v)
+        else
+          self[k] = deepCopy(v)
+        end
       end
     end
   end
+  ensureLookAdjustStructure(self)
 end
 
 -- local SelectAndEditComponent = api.world.GetWorldAPIs().SelectAndEditComponent

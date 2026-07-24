@@ -7,7 +7,7 @@ import * as Focus from "/js/common/core/Focus.js";
 import { currentInputMethodIs } from "/js/common/core/Input.js";
 import { InputMethod } from "/js/common/core/InputTypes.js";
 import { classNames } from "/js/common/lib/classnames.js";
-import * as preact from "/js/common/lib/preact.js";
+import * as preact from "/SkyStudioPreact.js";
 import { loadCSS } from "/js/common/util/CSSUtil.js";
 import { TooltipAutoHideShort, TooltipContainer, } from "/js/project/components/Tooltip.js";
 loadCSS("project/modules/managementMenu/ManagementMenuButton");

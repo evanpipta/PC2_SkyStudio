@@ -23,6 +23,9 @@
       // Paths for unpacked game files adjacent to this repo
       "/js/*": ["../GameMain/Content/UIGameface/userinterfaceessentials/UIGameface/js/*"],
       "/js/common/lib/preact.js": ["src/UI/types/preact-proxy"],
+      // SkyStudio ships its own private preact copy (see SkyStudioPreact.js) to avoid
+      // other mods overriding the shared /js/common/lib/preact.js. Type-check it as preact.
+      "/SkyStudioPreact.js": ["src/UI/types/preact-proxy"],
 
       // Map our source folder to an absolute path and .js extensions so ts doesn't complain about our source module imports
       "/*.js": ["./src/UI/*"]
