@@ -6,6 +6,8 @@ local pairs = global.pairs
 local tostring = global.tostring
 local ipairs = global.ipairs
 local type = global.type
+local pcall = global.pcall
+local require = global.require
 local ParkLoadSaveManager = require("managers.parkloadsavemanager")
 
 local trace = require('SkyStudioTrace')
@@ -13,14 +15,37 @@ local trace = require('SkyStudioTrace')
 ----------------------------------------------------------------
 -- Park Save Hook: Only installed when bSaveSettingsToPark is true (Config.lua).
 -- When false, we never replace GenerateCurrentParkMetaData so saves are not modified.
+--
+-- Preferred path: ForgeUtils HookManager (shared registry, composes with other
+-- mods that also hook park metadata). Fallback when ForgeUtils is absent: the
+-- original reliable clobbering wrap (captures the true original at module load
+-- and replaces GenerateCurrentParkMetaData). That fallback works alone but is
+-- not cooperative with other mods' hand-rolled hooks -- install ForgeUtils for
+-- cross-mod save/load compatibility.
 ----------------------------------------------------------------
 
 local originalGenerateCurrentParkMetaData = ParkLoadSaveManager.GenerateCurrentParkMetaData
 local fnGetSkyStudioConfigSnapshot = nil
+local bFURegistered = false
 
-local function hookedGenerateCurrentParkMetaData(self)
+-- Returns the ForgeUtils HookManager, or nil if FU is absent / unusable.
+local function detectForgeUtilsHookManager()
+  if not (api and api.forgeutils) then
+    return nil
+  end
+  local ok, hm = pcall(require, "forgeutils.hookmanager")
+  if ok and type(hm) == "table" and type(hm.AddHook) == "function" then
+    return hm
+  end
+  return nil
+end
+
+-- Shared inject body used by both the ForgeUtils hook and the clobbering fallback.
+-- ForgeUtils calls this as hookFn(originalMethod, self); the fallback closes over
+-- originalGenerateCurrentParkMetaData and calls this the same way.
+local function injectSkyStudioMetadata(originalMethod, self)
   trace('HOOK: GenerateCurrentParkMetaData called - injecting SkyStudio config')
-  local tMetadata = originalGenerateCurrentParkMetaData(self)
+  local tMetadata = originalMethod(self)
   if tMetadata and fnGetSkyStudioConfigSnapshot then
     local tSkyStudioConfig = fnGetSkyStudioConfigSnapshot()
     if tSkyStudioConfig then
@@ -29,6 +54,11 @@ local function hookedGenerateCurrentParkMetaData(self)
     end
   end
   return tMetadata
+end
+
+-- Non-ForgeUtils fallback: wrap the module-load-time original (legacy behaviour).
+local function hookedGenerateCurrentParkMetaData(self)
+  return injectSkyStudioMetadata(originalGenerateCurrentParkMetaData, self)
 end
 
 local BaseEditMode = require("Editors.Shared.BaseEditMode")
@@ -918,8 +948,8 @@ local function buildSkyStudioConfigSnapshot(self)
   return t
 end
 
--- Connect the park save hook to the config snapshot function
--- This allows the hook (defined at module load time) to access the snapshot function
+-- Connect the park save hook to the config snapshot function.
+-- The inject callback closes over this upvalue.
 fnGetSkyStudioConfigSnapshot = function()
   return buildSkyStudioConfigSnapshot(SkyStudioDataStore)
 end
@@ -1590,15 +1620,40 @@ SkyStudioDataStore.bParkHasSkyStudioConfig = false
 SkyStudioDataStore.tGlobalMessageReceivers = {}
 
 -- Install the park save hook only when bSaveSettingsToPark is true. Call after config is loaded.
--- When false, original GenerateCurrentParkMetaData is left in place (saves not modified).
+-- Prefers ForgeUtils HookManager; falls back to the legacy clobbering wrap.
 function SkyStudioDataStore:InstallParkSaveHookIfEnabled()
-  if self.bSaveSettingsToPark then
-    ParkLoadSaveManager.GenerateCurrentParkMetaData = hookedGenerateCurrentParkMetaData
-    trace('Park save hook installed (bSaveSettingsToPark = true)')
-  else
+  if not self.bSaveSettingsToPark then
+    -- Restore the true original when persistence is disabled (legacy behaviour).
     ParkLoadSaveManager.GenerateCurrentParkMetaData = originalGenerateCurrentParkMetaData
     trace('Park save hook not installed (bSaveSettingsToPark = false)')
+    return
   end
+
+  local hm = detectForgeUtilsHookManager()
+  if hm then
+    if bFURegistered then
+      trace('Park save hook already registered with ForgeUtils; skipping re-add')
+      return
+    end
+    local ok, err = pcall(function()
+      hm:AddHook(
+        "managers.parkloadsavemanager",
+        "GenerateCurrentParkMetaData",
+        injectSkyStudioMetadata
+      )
+    end)
+    if ok then
+      bFURegistered = true
+      trace('Park save hook installed via ForgeUtils HookManager (bSaveSettingsToPark = true)')
+      return
+    end
+    trace('ForgeUtils AddHook FAILED (' .. tostring(err) .. '); using legacy clobber fallback')
+  else
+    trace('ForgeUtils not found; using legacy clobber park-save hook')
+  end
+
+  ParkLoadSaveManager.GenerateCurrentParkMetaData = hookedGenerateCurrentParkMetaData
+  trace('Park save hook installed (legacy clobber; bSaveSettingsToPark = true)')
 end
 
 -- Initialize park save/load hooks (message receivers). Only call when bSaveSettingsToPark is true.
