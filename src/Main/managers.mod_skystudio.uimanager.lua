@@ -57,14 +57,28 @@ function SkyStudioUIManager:Activate()
     SkyStudioDataStore.bSaveSettingsToPark = (config.bSaveSettingsToPark == true)
   end
 
+  local bLoadedFromPark = false
   if SkyStudioDataStore.bSaveSettingsToPark then
     SkyStudioDataStore:InstallParkSaveHookIfEnabled()
     SkyStudioDataStore:InitParkSaveLoadHooks()
-    local bLoadedFromPark = SkyStudioDataStore:TryLoadConfigFromPark()
+    bLoadedFromPark = SkyStudioDataStore:TryLoadConfigFromPark()
     if bLoadedFromPark then
       trace("Loaded SkyStudio config from park save")
     end
   end
+
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H2_H3] UIManager.Activate.ConfigState" ..
+    " saveSettingsToPark=" .. tostring(SkyStudioDataStore.bSaveSettingsToPark) ..
+    " loadedFromPark=" .. tostring(bLoadedFromPark) ..
+    " preset='" .. tostring(SkyStudioDataStore.sCurrentPresetName) .. "'" ..
+    " useVanillaLighting=" .. tostring(SkyStudioDataStore.bUseVanillaLighting) ..
+    " atmosphereOverride=" .. tostring(SkyStudioDataStore.bUserOverrideAtmosphere) ..
+    " sunDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunDisk) ..
+    " moonDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideMoonDisk)
+  )
+  -- #endregion
   
   -- Set callback to update UI when save completes
   SkyStudioDataStore.fnOnSaveComplete = function()
@@ -215,6 +229,14 @@ function SkyStudioUIManager:Activate()
     self.ui:SkyStudioChangedValue_bUserOverrideSunTimeOfDay(function(_, value)
       -- trace("SkyStudioChangedValue_bUserOverrideSunTimeOfDay: " .. tostring(value))
       SkyStudioDataStore.bUserOverrideSunTimeOfDay = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_bUserEnableTimeLapse(function(_, value)
+      SkyStudioDataStore.bUserEnableTimeLapse = value
+    end, self)
+
+    self.ui:SkyStudioChangedValue_nUserTimeLapseSpeed(function(_, value)
+      SkyStudioDataStore.nUserTimeLapseSpeed = value
     end, self)
 
     self.ui:SkyStudioChangedValue_bUserOverrideSunOrientation(function(_, value)
@@ -929,6 +951,8 @@ function SkyStudioUIManager:Activate()
       nUserSunFade = SkyStudioDataStore.nUserSunFade,
       nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
       bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
+      bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse,
+      nUserTimeLapseSpeed = SkyStudioDataStore.nUserTimeLapseSpeed,
       bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
       bUserOverrideSunColorAndIntensity = SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
       bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
@@ -1087,6 +1111,8 @@ function SkyStudioUIManager:SendCurrentSettingsToUI()
     nUserSunFade = SkyStudioDataStore.nUserSunFade,
     nUserMoonFade = SkyStudioDataStore.nUserMoonFade,
     bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
+    bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse,
+    nUserTimeLapseSpeed = SkyStudioDataStore.nUserTimeLapseSpeed,
     bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
     bUserOverrideSunColorAndIntensity = SkyStudioDataStore.bUserOverrideSunColorAndIntensity,
     bUserOverrideMoonOrientation = SkyStudioDataStore.bUserOverrideMoonOrientation,
@@ -1443,6 +1469,19 @@ end
 
 -- Advance is called every frame - use it to run the save coroutine
 function SkyStudioUIManager:Advance(_dt)
+  -- Keep the Time of Day slider in sync while time lapse is running (throttled)
+  if SkyStudioDataStore:IsTimeLapseActive() and self.ui then
+    self.nTimeLapseUiSyncAccum = (self.nTimeLapseUiSyncAccum or 0) + (_dt or 0)
+    if self.nTimeLapseUiSyncAccum >= 0.1 then
+      self.nTimeLapseUiSyncAccum = 0
+      self.ui:UpdateSettings({
+        nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay
+      })
+    end
+  else
+    self.nTimeLapseUiSyncAccum = 0
+  end
+
   -- Advance the auto-place coroutine if running
   if self.bAutoPlaceInProgress or self.fnAutoPlaceCoroutine then
     self:AdvanceAutoPlaceCoroutine()

@@ -1,5 +1,6 @@
 local global = _G
 local api = global.api
+local debug = api.debug
 local require = require
 
 local DayNightCycle = require("lighting.daynightcycle")
@@ -254,6 +255,18 @@ local Patched = {}
 --  Init
 ----------------------------------------------------------------------
 function Patched.Init(self, useParkTimeOfDay, sunH, sunZ, moonH, moonZ, sTimeOfDay, env)
+  self.bSkyStudioDebugPatchedInitRan = true
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H1_H2_H5] Patched.DayNight.Init" ..
+    " useParkTimeOfDay=" .. tostring(useParkTimeOfDay) ..
+    " useVanillaLighting=" .. tostring(SkyStudioDataStore.bUseVanillaLighting) ..
+    " timeOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunTimeOfDay) ..
+    " atmosphereOverride=" .. tostring(SkyStudioDataStore.bUserOverrideAtmosphere) ..
+    " preset='" .. tostring(SkyStudioDataStore.sCurrentPresetName) .. "'"
+  )
+  -- #endregion
+
   trace("DayNightCycle: Init " .. 'useParkTimeOfDay=' .. tostring(useParkTimeOfDay) ..
     ', sunH=' .. tostring(sunH) ..
     ', sunZ=' .. tostring(sunZ) ..
@@ -323,6 +336,9 @@ function Patched.Init(self, useParkTimeOfDay, sunH, sunZ, moonH, moonZ, sTimeOfD
   api.lighting.SetDirectionalFade(self.tLights.Secondary, 0)
   api.lighting.SetDirectionalUsage(self.tLights.Primary,   api.lighting.Sun)
   api.lighting.SetDirectionalUsage(self.tLights.Secondary, api.lighting.Moon)
+  -- Keep the role flag consistent with the usages assigned above. Without
+  -- this, a park that starts at night skips the first sun-to-moon swap.
+  self.primaryLightIsSun = true
 
   self.currentCycleDirection = 1
 end
@@ -355,6 +371,35 @@ function Patched.AdvanceTimeOfDay(self, dt)
   local nHour, nMinute, nDayProp, nDawnDuskProp, isApparentTimeofDayOverriden = self.ParkAPI:GetTimeOfDayLighting()
   self.nDawnDuskProp = nDawnDuskProp
 
+  if not self.bSkyStudioDebugFirstAdvanceLogged then
+    self.bSkyStudioDebugFirstAdvanceLogged = true
+    -- #region agent log
+    debug.Trace(
+      "[SkyStudio][DBG:e61100][H1_H2_H5] Patched.DayNight.FirstAdvance" ..
+      " patchedInitRan=" .. tostring(self.bSkyStudioDebugPatchedInitRan == true) ..
+      " commonSetter=" .. tostring(self.tCommonParameterSetter ~= nil) ..
+      " primaryLight=" .. tostring(self.tLights ~= nil and self.tLights.Primary ~= nil) ..
+      " secondaryLight=" .. tostring(self.tLights ~= nil and self.tLights.Secondary ~= nil) ..
+      " hour=" .. tostring(nHour) ..
+      " minute=" .. tostring(nMinute) ..
+      " dayProp=" .. tostring(nDayProp) ..
+      " dawnDuskProp=" .. tostring(nDawnDuskProp)
+    )
+    -- #endregion
+  end
+
+  -- Keep the full park time for custom lighting. Calling GetTimeOfDayLighting()
+  -- as a single expression returns only nHour, which made the sun snap hourly.
+  self.nParkTimeOfDayHours = (nHour or 0) + ((nMinute or 0) / 60)
+  if type(nDayProp) == "number" and nDayProp >= 0 and nDayProp <= 1 then
+    -- nDayProp is the continuous proportion through the day, so prefer it
+    -- when available to retain sub-minute interpolation.
+    self.nParkTimeOfDayHours = nDayProp * 24
+  end
+
+  -- Time lapse advances user TOD from real time (not park TOD)
+  SkyStudioDataStore:AdvanceTimeLapse(dt)
+
   self:UpdateLighting(self.nDawnDuskProp)
 end
 
@@ -363,6 +408,27 @@ end
 --  Preserved Vanilla function
 ----------------------------------------------------------------------
 function Patched.UpdateLighting(self, prop)
+  local sDebugMode =
+    tostring(SkyStudioDataStore.bUseVanillaLighting) .. ":" ..
+    tostring(SkyStudioDataStore.bUserOverrideSunTimeOfDay) .. ":" ..
+    tostring(SkyStudioDataStore.bUserOverrideDayNightTransition)
+  if self.sSkyStudioDebugMode ~= sDebugMode then
+    self.sSkyStudioDebugMode = sDebugMode
+    -- #region agent log
+    debug.Trace(
+      "[SkyStudio][DBG:e61100][H2_H4_H5] Patched.DayNight.UpdateLighting" ..
+      " useVanillaLighting=" .. tostring(SkyStudioDataStore.bUseVanillaLighting) ..
+      " timeOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunTimeOfDay) ..
+      " transitionOverride=" .. tostring(SkyStudioDataStore.bUserOverrideDayNightTransition) ..
+      " transitionValue=" .. tostring(SkyStudioDataStore.nUserDayNightTransition) ..
+      " prop=" .. tostring(prop) ..
+      " commonSetter=" .. tostring(self.tCommonParameterSetter ~= nil) ..
+      " lightsReady=" .. tostring(self.tLights ~= nil) ..
+      " primaryLightIsSunBefore=" .. tostring(self.primaryLightIsSun)
+    )
+    -- #endregion
+  end
+
   if SkyStudioDataStore.bUseVanillaLighting then
     local frac = prop % 1
     frac = frac * frac * (3 - 2 * frac)
@@ -438,7 +504,15 @@ function Patched.UpdateLightingFromUserParams(self)
   local nSunTimeOfDayDegrees = HoursToDegrees(SkyStudioDataStore.nUserSunTimeOfDay)
 
   if not SkyStudioDataStore.bUserOverrideSunTimeOfDay then
-    nSunTimeOfDayDegrees = HoursToDegrees(self.ParkAPI:GetTimeOfDayLighting())
+    local nParkTimeOfDayHours = self.nParkTimeOfDayHours
+    if nParkTimeOfDayHours == nil then
+      local nHour, nMinute, nDayProp = self.ParkAPI:GetTimeOfDayLighting()
+      nParkTimeOfDayHours = (nHour or 0) + ((nMinute or 0) / 60)
+      if type(nDayProp) == "number" and nDayProp >= 0 and nDayProp <= 1 then
+        nParkTimeOfDayHours = nDayProp * 24
+      end
+    end
+    nSunTimeOfDayDegrees = HoursToDegrees(nParkTimeOfDayHours)
   end
 
   local nMoonPhaseDegrees = SkyStudioDataStore.nParkTodCycleMoonPhase
@@ -652,6 +726,14 @@ end
 function SkyStudioDayNightCycleManager:Setup()
   trace("Patching DayNightCycle")
 
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H1_H5] DayNightManager.Setup" ..
+    " originalInit=" .. tostring(DayNightCycle.Init) ..
+    " originalAdvance=" .. tostring(DayNightCycle.Advance)
+  )
+  -- #endregion
+
   DayNightCycle.Init = Patched.Init
   DayNightCycle.Shutdown = Patched.Shutdown
   DayNightCycle.Advance = Patched.Advance
@@ -669,6 +751,17 @@ function SkyStudioDayNightCycleManager:Init()
     SkyStudioDataStore[k] = v
     SkyStudioDataStore.defaultValues[k] = v
   end
+
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H1_H2] DayNightManager.Init.ConfigApplied" ..
+    " useVanillaLighting=" .. tostring(SkyStudioDataStore.bUseVanillaLighting) ..
+    " timeOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunTimeOfDay) ..
+    " atmosphereOverride=" .. tostring(SkyStudioDataStore.bUserOverrideAtmosphere) ..
+    " sunDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunDisk) ..
+    " moonDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideMoonDisk)
+  )
+  -- #endregion
 end
 
 return SkyStudioDayNightCycleManager

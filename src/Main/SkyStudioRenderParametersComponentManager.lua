@@ -1,5 +1,6 @@
 local global = _G
 local api = global.api
+local debug = api.debug
 local require = require
 
 local RenderParametersComponent = require("components.render.renderparameterscomponent")
@@ -21,6 +22,27 @@ function Patched.Advance(self, _nDeltaTime)
   end
 
   local bHasOverrideParameters = self.tEditorOverrideRenderParametersCollection ~= nil or tMotionBlurParameters ~= nil
+
+  local sDebugLifecycle =
+    tostring(self.tGlobalParameters ~= nil) .. ":" ..
+    tostring(self.tCommittedParameters ~= nil) .. ":" ..
+    tostring(self.tTransitionEntity ~= nil) .. ":" ..
+    tostring(self.tOverrideParameters ~= nil)
+  if self.sSkyStudioDebugLifecycle ~= sDebugLifecycle then
+    self.sSkyStudioDebugLifecycle = sDebugLifecycle
+    -- #region agent log
+    debug.Trace(
+      "[SkyStudio][DBG:e61100][H1_H3_H4_H5] Render.Advance.Lifecycle" ..
+      " global=" .. tostring(self.tGlobalParameters ~= nil) ..
+      " committed=" .. tostring(self.tCommittedParameters ~= nil) ..
+      " transition=" .. tostring(self.tTransitionEntity ~= nil) ..
+      " transitionId=" .. tostring(self.tTransitionEntity and self.tTransitionEntity.nEntityID) ..
+      " transitionTimeLeft=" .. tostring(self.tTransitionEntity and self.tTransitionEntity.nTimeLeft) ..
+      " overrideCollection=" .. tostring(self.tOverrideParameters ~= nil) ..
+      " motionBlur=" .. tostring(tMotionBlurParameters ~= nil)
+    )
+    -- #endregion
+  end
 
   local bHasDebugApply = false
   if not bHasDebugApply and self.tTransitionEntity ~= nil then
@@ -49,6 +71,32 @@ function Patched.Advance(self, _nDeltaTime)
       -- Get only the active render parameters based on enabled overrides
       local tActiveRenderParameters = SkyStudioDataStore:GetActiveRenderParameters()
       local tUserParameters = self.RenderParametersAPI:CreateParameterFromTable("SkyStudioUserParameters", tActiveRenderParameters)
+      local tSunDisk = tActiveRenderParameters.Atmospherics.Lights.Sun.Disk
+      local tMoonDisk = tActiveRenderParameters.Atmospherics.Lights.Moon.Disk
+      local sDebugActive =
+        tostring(SkyStudioDataStore.bUserOverrideAtmosphere) .. ":" ..
+        tostring(SkyStudioDataStore.bUserOverrideSunDisk) .. ":" ..
+        tostring(SkyStudioDataStore.bUserOverrideMoonDisk) .. ":" ..
+        tostring(tSunDisk and tSunDisk.Size) .. ":" ..
+        tostring(tSunDisk and tSunDisk.Intensity) .. ":" ..
+        tostring(tMoonDisk and tMoonDisk.Size) .. ":" ..
+        tostring(tMoonDisk and tMoonDisk.Intensity)
+      if self.sSkyStudioDebugActive ~= sDebugActive then
+        self.sSkyStudioDebugActive = sDebugActive
+        -- #region agent log
+        debug.Trace(
+          "[SkyStudio][DBG:e61100][H2_H3_H4] Render.ActiveCollection" ..
+          " created=" .. tostring(tUserParameters ~= nil) ..
+          " atmosphereOverride=" .. tostring(SkyStudioDataStore.bUserOverrideAtmosphere) ..
+          " sunDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunDisk) ..
+          " moonDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideMoonDisk) ..
+          " sunDiskSize=" .. tostring(tSunDisk and tSunDisk.Size) ..
+          " sunDiskIntensity=" .. tostring(tSunDisk and tSunDisk.Intensity) ..
+          " moonDiskSize=" .. tostring(tMoonDisk and tMoonDisk.Size) ..
+          " moonDiskIntensity=" .. tostring(tMoonDisk and tMoonDisk.Intensity)
+        )
+        -- #endregion
+      end
       if tUserParameters ~= nil then
         self.RenderParametersAPI:ApplyParametersTo(tUserParameters, self.tGlobalParameters)
       end
@@ -93,6 +141,13 @@ end
 
 function RenderParametersComponentManager:Setup()
   trace("Patching RenderParametersComponent")
+
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H1_H5] RenderManager.Setup" ..
+    " originalAdvance=" .. tostring(RenderParametersComponent.Advance)
+  )
+  -- #endregion
 
   RenderParametersComponent.Advance = Patched.Advance
   RenderParametersComponent.SetEditorOverrideRenderParametersCollection = Patched.SetEditorOverrideRenderParametersCollection

@@ -1,5 +1,6 @@
 local global = _G
 local api = global.api
+local debug = api.debug
 local coroutine = global.coroutine
 local math = global.math
 local pairs = global.pairs
@@ -150,6 +151,10 @@ SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd = 180.5
 -- Sun time of day
 SkyStudioDataStore.bUserOverrideSunTimeOfDay = false     -- Override time of day, effectively the same as "fixed time of day" in vanilla
 SkyStudioDataStore.nUserSunTimeOfDay = 9                 -- Time of day in hours (24 hour clock)
+
+-- Time lapse (only active when TOD override is on): cycle TOD at a multiple of real time
+SkyStudioDataStore.bUserEnableTimeLapse = false
+SkyStudioDataStore.nUserTimeLapseSpeed = 500             -- Multiple of real time (100..5000)
 
 -- Sun orientation in the sky
 SkyStudioDataStore.bUserOverrideSunOrientation = false
@@ -387,6 +392,8 @@ SkyStudioDataStore.defaultValues = {
   nParkTodCycleMoonDuskFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd,
   bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
   nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay,
+  bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse,
+  nUserTimeLapseSpeed = SkyStudioDataStore.nUserTimeLapseSpeed,
   bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation,
   nUserSunAzimuth = SkyStudioDataStore.nUserSunAzimuth,
   nUserSunLatitudeOffset = SkyStudioDataStore.nUserSunLatitudeOffset,
@@ -450,6 +457,8 @@ function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()
   SkyStudioDataStore.defaultValues.nParkTodCycleMoonDuskFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd
   SkyStudioDataStore.defaultValues.bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay
   SkyStudioDataStore.defaultValues.nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay
+  SkyStudioDataStore.defaultValues.bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse
+  SkyStudioDataStore.defaultValues.nUserTimeLapseSpeed = SkyStudioDataStore.nUserTimeLapseSpeed
   SkyStudioDataStore.defaultValues.bUserOverrideSunOrientation = SkyStudioDataStore.bUserOverrideSunOrientation
   SkyStudioDataStore.defaultValues.nUserSunAzimuth = SkyStudioDataStore.nUserSunAzimuth
   SkyStudioDataStore.defaultValues.nUserSunLatitudeOffset = SkyStudioDataStore.nUserSunLatitudeOffset
@@ -627,6 +636,8 @@ function SkyStudioDataStore:ResetAllToDefaults()
   SkyStudioDataStore.bUserOverrideColorBalance = false
   SkyStudioDataStore.bUserOverrideClouds = false
   SkyStudioDataStore.bUserOverrideShadows = false
+  SkyStudioDataStore.bUserEnableTimeLapse = false
+  SkyStudioDataStore.nUserTimeLapseSpeed = SkyStudioDataStore.defaultValues.nUserTimeLapseSpeed or 500
   
   -- Also reset the master switch to use vanilla lighting
   SkyStudioDataStore.bUseVanillaLighting = false
@@ -676,6 +687,26 @@ function SkyStudioDataStore:ResetMiscToDefaults()
   current.LookAdjust.ColourAdjust.Contrast.MidPoint = defaults.LookAdjust.ColourAdjust.Contrast.MidPoint
 
   SkyStudioDataStore.bUserOverrideColorBalance = false
+end
+
+-- Whether time lapse should currently advance TOD / boost cloud speed
+function SkyStudioDataStore:IsTimeLapseActive()
+  return SkyStudioDataStore.bUserEnableTimeLapse
+    and SkyStudioDataStore.bUserOverrideSunTimeOfDay
+    and not SkyStudioDataStore.bUseVanillaLighting
+end
+
+-- Advance user TOD by real-time delta when time lapse is active.
+-- Speed is a multiple of real time (100 = 100x), so hours/sec = speed / 3600.
+function SkyStudioDataStore:AdvanceTimeLapse(dt)
+  if not SkyStudioDataStore:IsTimeLapseActive() then
+    return false
+  end
+  local nSpeed = SkyStudioDataStore.nUserTimeLapseSpeed or 100
+  if nSpeed < 100 then nSpeed = 100 end
+  local nNewTod = (SkyStudioDataStore.nUserSunTimeOfDay or 0) + dt * (nSpeed / 3600)
+  SkyStudioDataStore.nUserSunTimeOfDay = nNewTod % 24
+  return true
 end
 
 -- Build a render parameters table containing only values for enabled overrides
@@ -880,12 +911,20 @@ function SkyStudioDataStore:GetActiveRenderParameters()
 
   -- Clouds overrides - ALWAYS include to reset to defaults when toggle is off
   tActive.Atmospherics = tActive.Atmospherics or {}
+
+  local bTimeLapseActive = SkyStudioDataStore:IsTimeLapseActive()
+  local nTimeLapseCloudMul = 1
+  if bTimeLapseActive then
+    -- Cloud motion uses a gentler scale than TOD (speed / 10)
+    nTimeLapseCloudMul = (SkyStudioDataStore.nUserTimeLapseSpeed or 100) / 10
+  end
   
   if SkyStudioDataStore.bUserOverrideClouds then
+    local nCloudSpeed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed * nTimeLapseCloudMul
     tActive.Atmospherics.Clouds = {
       Density = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Density,
       Scale = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Scale,
-      Speed = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Speed,
+      Speed = nCloudSpeed,
       AltitudeMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMin,
       AltitudeMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.AltitudeMax,
       CoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.CoverageMin,
@@ -895,6 +934,12 @@ function SkyStudioDataStore:GetActiveRenderParameters()
         CoverageMin = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMin,
         CoverageMax = SkyStudioDataStore.tUserRenderParameters.Atmospherics.Clouds.Horizon.CoverageMax
       }
+    }
+  elseif bTimeLapseActive then
+    -- Even without cloud override, boost default cloud speed during time lapse
+    local nDefaultSpeed = defaults.Atmospherics.Clouds.Speed or 70
+    tActive.Atmospherics.Clouds = {
+      Speed = nDefaultSpeed * nTimeLapseCloudMul
     }
   end
 
@@ -1017,6 +1062,27 @@ local function applySkyStudioConfigSnapshot(self, tConfig)
   if type(tConfig) ~= "table" then
     return
   end
+
+  local tConfigRenderParameters = tConfig.tUserRenderParameters or {}
+  local tConfigAtmospherics = tConfigRenderParameters.Atmospherics or {}
+  local tConfigLights = tConfigAtmospherics.Lights or {}
+  local tConfigSunDisk = (tConfigLights.Sun or {}).Disk or {}
+  local tConfigMoonDisk = (tConfigLights.Moon or {}).Disk or {}
+  -- #region agent log
+  debug.Trace(
+    "[SkyStudio][DBG:e61100][H2_H3] DataStore.ApplyConfigSnapshot" ..
+    " preset='" .. tostring(tConfig.sCurrentPresetName) .. "'" ..
+    " useVanillaLighting=" .. tostring(tConfig.bUseVanillaLighting) ..
+    " atmosphereOverride=" .. tostring(tConfig.bUserOverrideAtmosphere) ..
+    " sunDiskOverride=" .. tostring(tConfig.bUserOverrideSunDisk) ..
+    " moonDiskOverride=" .. tostring(tConfig.bUserOverrideMoonDisk) ..
+    " sunDiskSize=" .. tostring(tConfigSunDisk.Size) ..
+    " sunDiskIntensity=" .. tostring(tConfigSunDisk.Intensity) ..
+    " moonDiskSize=" .. tostring(tConfigMoonDisk.Size) ..
+    " moonDiskIntensity=" .. tostring(tConfigMoonDisk.Intensity)
+  )
+  -- #endregion
+
   -- Legacy: old saves had bUserOverrideHDR
   if tConfig.bUserOverrideHDR ~= nil then
     self.bUserOverrideColorBalance = (tConfig.bUserOverrideHDR == true)

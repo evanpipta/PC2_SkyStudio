@@ -163,6 +163,16 @@ SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunTimeOfDay = function(self, _ca
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunTimeOfDay", 1, _callback, _self)
 end
 
+SkyStudioUI.SkyStudioChangedValue_bUserEnableTimeLapse = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserEnableTimeLapse")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserEnableTimeLapse", 1, _callback, _self)
+end
+
+SkyStudioUI.SkyStudioChangedValue_nUserTimeLapseSpeed = function(self, _callback, _self)
+  -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_nUserTimeLapseSpeed")
+  return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_nUserTimeLapseSpeed", 1, _callback, _self)
+end
+
 SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunOrientation = function(self, _callback, _self)
   -- trace("Adding Listener SkyStudioUI.SkyStudioChangedValue_bUserOverrideSunOrientation")
   return self:AddGlobalEnvironmentEventListener("SkyStudioChangedValue_bUserOverrideSunOrientation", 1, _callback, _self)

@@ -34,6 +34,8 @@ type Config = {
   nUserSunAzimuth: number;
   nUserSunLatitudeOffset: number;
   nUserSunTimeOfDay: number;
+  bUserEnableTimeLapse: boolean;
+  nUserTimeLapseSpeed: number;
   nUserSunColorR: number;
   nUserSunColorG: number;
   nUserSunColorB: number;
@@ -178,6 +180,8 @@ const baseConfig = {
   nUserSunAzimuth: 0,
   nUserSunLatitudeOffset: 0,
   nUserSunTimeOfDay: 0,
+  bUserEnableTimeLapse: false,
+  nUserTimeLapseSpeed: 500,
   nUserSunColorR: 0,
   nUserSunColorG: 0,
   nUserSunColorB: 0,
@@ -762,6 +766,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       "nUserSunAzimuth",
       "nUserSunLatitudeOffset",
       "nUserSunTimeOfDay",
+      "nUserTimeLapseSpeed",
       "nUserSunColorR",
       "nUserSunColorG",
       "nUserSunColorB",
@@ -846,6 +851,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     // Every override toggle in SkyStudio - "Reset all settings" turns them all off.
     const overrideKeys = [
       "bUserOverrideSunTimeOfDay",
+      "bUserEnableTimeLapse",
       "bUserOverrideSunOrientation",
       "bUserOverrideSunColorAndIntensity",
       "bUserOverrideMoonOrientation",
@@ -1092,6 +1098,8 @@ class _SkyStudioUI extends preact.Component<{}, State> {
       bUseVanillaLighting,
 
       nUserSunTimeOfDay,
+      bUserEnableTimeLapse,
+      nUserTimeLapseSpeed,
       nUserSunAzimuth,
       nUserSunLatitudeOffset,
       nUserSunColorR,
@@ -1309,6 +1317,33 @@ class _SkyStudioUI extends preact.Component<{}, State> {
             }
             editable={true}
             disabled={!customLightingEnabled || !sunTimeOverrideOn}
+            focusable={true}
+          />
+
+          <ToggleRow
+            label={Format.stringLiteral("Enable Time Lapse")}
+            toggled={bUserEnableTimeLapse}
+            onToggle={this.onToggleValueChanged("bUserEnableTimeLapse")}
+            inputName={InputName.Select}
+            disabled={!customLightingEnabled || !sunTimeOverrideOn}
+          />
+
+          <SliderRow
+            label={Format.stringLiteral("Time Lapse Speed (x Real Time)")}
+            min={100}
+            max={5000}
+            step={10}
+            value={nUserTimeLapseSpeed}
+            onChange={(newValue: number) =>
+              this.onNumericalValueChanged(
+                "nUserTimeLapseSpeed",
+                newValue as number
+              )
+            }
+            editable={true}
+            disabled={
+              !customLightingEnabled || !sunTimeOverrideOn || !bUserEnableTimeLapse
+            }
             focusable={true}
           />
 

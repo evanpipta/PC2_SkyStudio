@@ -24,6 +24,8 @@ const baseConfig = {
     nUserSunAzimuth: 0,
     nUserSunLatitudeOffset: 0,
     nUserSunTimeOfDay: 0,
+    bUserEnableTimeLapse: false,
+    nUserTimeLapseSpeed: 500,
     nUserSunColorR: 0,
     nUserSunColorG: 0,
     nUserSunColorB: 0,
@@ -481,6 +483,7 @@ class _SkyStudioUI extends preact.Component {
                 "nUserSunAzimuth",
                 "nUserSunLatitudeOffset",
                 "nUserSunTimeOfDay",
+                "nUserTimeLapseSpeed",
                 "nUserSunColorR",
                 "nUserSunColorG",
                 "nUserSunColorB",
@@ -558,6 +561,7 @@ class _SkyStudioUI extends preact.Component {
             // Every override toggle in SkyStudio - "Reset all settings" turns them all off.
             const overrideKeys = [
                 "bUserOverrideSunTimeOfDay",
+                "bUserEnableTimeLapse",
                 "bUserOverrideSunOrientation",
                 "bUserOverrideSunColorAndIntensity",
                 "bUserOverrideMoonOrientation",
@@ -779,7 +783,7 @@ class _SkyStudioUI extends preact.Component {
     //   Engine.sendEvent("SkyStudio_Preset_RefreshList");
     // };
     render() {
-        const { bUseVanillaLighting, nUserSunTimeOfDay, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, bUserOverrideAtmosphere, bUserOverrideSunDisk, bUserOverrideMoonDisk, nUserFogDensity, nUserFogScaleHeight, nUserHazeDensity, nUserHazeScaleHeight, nUserSunDiskSize, nUserSunDiskIntensity, nUserSunScatterIntensity, nUserMoonDiskSize, nUserMoonDiskIntensity, nUserMoonScatterIntensity, nUserIrradianceScatterIntensity, nUserSkyLightIntensity, nUserSkyScatterIntensity, nUserSkyDensity, nUserVolumetricScatterWeight, nUserVolumetricDistanceStart, nUserFogColor, nUserHazeColor, nUserSunColor, nUserMoonColor, 
+        const { bUseVanillaLighting, nUserSunTimeOfDay, bUserEnableTimeLapse, nUserTimeLapseSpeed, nUserSunAzimuth, nUserSunLatitudeOffset, nUserSunColorR, nUserSunColorG, nUserSunColorB, nUserSunIntensity, nUserSunGroundMultiplier, nUserMoonAzimuth, nUserMoonLatitudeOffset, nUserMoonPhase, nUserMoonColorR, nUserMoonColorG, nUserMoonColorB, nUserMoonIntensity, nUserMoonGroundMultiplier, nUserDayNightTransition, nUserSunFade, nUserMoonFade, bUserOverrideSunTimeOfDay, bUserOverrideSunOrientation, bUserOverrideSunColorAndIntensity, bUserOverrideMoonOrientation, bUserOverrideMoonPhase, bUserOverrideMoonColorAndIntensity, bUserOverrideSunFade, bUserOverrideMoonFade, bUserOverrideDayNightTransition, bUserOverrideAtmosphere, bUserOverrideSunDisk, bUserOverrideMoonDisk, nUserFogDensity, nUserFogScaleHeight, nUserHazeDensity, nUserHazeScaleHeight, nUserSunDiskSize, nUserSunDiskIntensity, nUserSunScatterIntensity, nUserMoonDiskSize, nUserMoonDiskIntensity, nUserMoonScatterIntensity, nUserIrradianceScatterIntensity, nUserSkyLightIntensity, nUserSkyScatterIntensity, nUserSkyDensity, nUserVolumetricScatterWeight, nUserVolumetricDistanceStart, nUserFogColor, nUserHazeColor, nUserSunColor, nUserMoonColor, 
         // Rendering tab
         bUserOverrideGI, nUserGISkyIntensity, nUserGISunIntensity, nUserGIBounceBoost, nUserGIMultiBounceIntensity, nUserGIEmissiveIntensity, nUserGIAmbientOcclusionWeight, 
         // Misc tab: Color grading
@@ -831,6 +835,8 @@ class _SkyStudioUI extends preact.Component {
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Time of Day"), toggled: sunTimeOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideSunTimeOfDay"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Time of Day"), min: 0, max: 24, step: 0.01, value: nUserSunTimeOfDay, onChange: (newValue) => this.onNumericalValueChanged("nUserSunTimeOfDay", newValue), editable: true, disabled: !customLightingEnabled || !sunTimeOverrideOn, focusable: true }),
+                    preact.h(ToggleRow, { label: Format.stringLiteral("Enable Time Lapse"), toggled: bUserEnableTimeLapse, onToggle: this.onToggleValueChanged("bUserEnableTimeLapse"), inputName: InputName.Select, disabled: !customLightingEnabled || !sunTimeOverrideOn }),
+                    preact.h(SliderRow, { label: Format.stringLiteral("Time Lapse Speed (x Real Time)"), min: 100, max: 5000, step: 10, value: nUserTimeLapseSpeed, onChange: (newValue) => this.onNumericalValueChanged("nUserTimeLapseSpeed", newValue), editable: true, disabled: !customLightingEnabled || !sunTimeOverrideOn || !bUserEnableTimeLapse, focusable: true }),
                     preact.h(ToggleRow, { label: Format.stringLiteral("Override Moon Phase"), toggled: moonPhaseOverrideOn, onToggle: this.onToggleValueChanged("bUserOverrideMoonPhase"), inputName: InputName.Select, disabled: !customLightingEnabled }),
                     preact.h(SliderRow, { label: Format.stringLiteral("Moon Phase"), min: 0, max: 360, step: 0.01, value: nUserMoonPhase, onChange: (newValue) => this.onNumericalValueChanged("nUserMoonPhase", newValue), editable: true, disabled: !customLightingEnabled || !moonPhaseOverrideOn, focusable: true })),
                 preact.h(PanelArea, { modifiers: "skystudio_section" },
