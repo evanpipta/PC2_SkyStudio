@@ -1,6 +1,5 @@
 local global = _G
 local api = global.api
-local debug = api.debug
 local coroutine = global.coroutine
 local math = global.math
 local pairs = global.pairs
@@ -1062,26 +1061,6 @@ local function applySkyStudioConfigSnapshot(self, tConfig)
   if type(tConfig) ~= "table" then
     return
   end
-
-  local tConfigRenderParameters = tConfig.tUserRenderParameters or {}
-  local tConfigAtmospherics = tConfigRenderParameters.Atmospherics or {}
-  local tConfigLights = tConfigAtmospherics.Lights or {}
-  local tConfigSunDisk = (tConfigLights.Sun or {}).Disk or {}
-  local tConfigMoonDisk = (tConfigLights.Moon or {}).Disk or {}
-  -- #region agent log
-  debug.Trace(
-    "[SkyStudio][DBG:e61100][H2_H3] DataStore.ApplyConfigSnapshot" ..
-    " preset='" .. tostring(tConfig.sCurrentPresetName) .. "'" ..
-    " useVanillaLighting=" .. tostring(tConfig.bUseVanillaLighting) ..
-    " atmosphereOverride=" .. tostring(tConfig.bUserOverrideAtmosphere) ..
-    " sunDiskOverride=" .. tostring(tConfig.bUserOverrideSunDisk) ..
-    " moonDiskOverride=" .. tostring(tConfig.bUserOverrideMoonDisk) ..
-    " sunDiskSize=" .. tostring(tConfigSunDisk.Size) ..
-    " sunDiskIntensity=" .. tostring(tConfigSunDisk.Intensity) ..
-    " moonDiskSize=" .. tostring(tConfigMoonDisk.Size) ..
-    " moonDiskIntensity=" .. tostring(tConfigMoonDisk.Intensity)
-  )
-  -- #endregion
 
   -- Legacy: old saves had bUserOverrideHDR
   if tConfig.bUserOverrideHDR ~= nil then

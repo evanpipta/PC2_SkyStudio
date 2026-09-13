@@ -1,6 +1,5 @@
 local global = _G
 local api = global.api
-local debug = api.debug
 local pairs = global.pairs
 local require = global.require
 local module = global.module
@@ -67,19 +66,6 @@ function SkyStudioUIManager:Activate()
     end
   end
 
-  -- #region agent log
-  debug.Trace(
-    "[SkyStudio][DBG:e61100][H2_H3] UIManager.Activate.ConfigState" ..
-    " saveSettingsToPark=" .. tostring(SkyStudioDataStore.bSaveSettingsToPark) ..
-    " loadedFromPark=" .. tostring(bLoadedFromPark) ..
-    " preset='" .. tostring(SkyStudioDataStore.sCurrentPresetName) .. "'" ..
-    " useVanillaLighting=" .. tostring(SkyStudioDataStore.bUseVanillaLighting) ..
-    " atmosphereOverride=" .. tostring(SkyStudioDataStore.bUserOverrideAtmosphere) ..
-    " sunDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideSunDisk) ..
-    " moonDiskOverride=" .. tostring(SkyStudioDataStore.bUserOverrideMoonDisk)
-  )
-  -- #endregion
-  
   -- Set callback to update UI when save completes
   SkyStudioDataStore.fnOnSaveComplete = function()
     trace("CALLBACK: fnOnSaveComplete called")
