@@ -147,6 +147,9 @@ SkyStudioDataStore.nParkTodCycleMoonDawnFadeEnd = 1
 SkyStudioDataStore.nParkTodCycleMoonDuskFadeStart = 179
 SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd = 180.5
 
+SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDawn = -0.5
+SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDusk = 180.5
+
 -- Sun time of day
 SkyStudioDataStore.bUserOverrideSunTimeOfDay = false     -- Override time of day, effectively the same as "fixed time of day" in vanilla
 SkyStudioDataStore.nUserSunTimeOfDay = 9                 -- Time of day in hours (24 hour clock)
@@ -389,6 +392,8 @@ SkyStudioDataStore.defaultValues = {
   nParkTodCycleMoonDawnFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDawnFadeEnd,
   nParkTodCycleMoonDuskFadeStart = SkyStudioDataStore.nParkTodCycleMoonDuskFadeStart,
   nParkTodCycleMoonDuskFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd,
+  nParkTodPrimaryLightShadowSwitchAngleDawn = SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDawn,
+  nParkTodPrimaryLightShadowSwitchAngleDusk = SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDusk,
   bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay,
   nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay,
   bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse,
@@ -454,6 +459,8 @@ function SkyStudioDataStore:SetDefaultValuesFromCurrentValues()
   SkyStudioDataStore.defaultValues.nParkTodCycleMoonDawnFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDawnFadeEnd
   SkyStudioDataStore.defaultValues.nParkTodCycleMoonDuskFadeStart = SkyStudioDataStore.nParkTodCycleMoonDuskFadeStart
   SkyStudioDataStore.defaultValues.nParkTodCycleMoonDuskFadeEnd = SkyStudioDataStore.nParkTodCycleMoonDuskFadeEnd
+  SkyStudioDataStore.defaultValues.nParkTodPrimaryLightShadowSwitchAngleDawn = SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDawn
+  SkyStudioDataStore.defaultValues.nParkTodPrimaryLightShadowSwitchAngleDusk = SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDusk
   SkyStudioDataStore.defaultValues.bUserOverrideSunTimeOfDay = SkyStudioDataStore.bUserOverrideSunTimeOfDay
   SkyStudioDataStore.defaultValues.nUserSunTimeOfDay = SkyStudioDataStore.nUserSunTimeOfDay
   SkyStudioDataStore.defaultValues.bUserEnableTimeLapse = SkyStudioDataStore.bUserEnableTimeLapse

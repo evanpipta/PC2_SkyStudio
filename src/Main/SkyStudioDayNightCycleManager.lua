@@ -95,10 +95,10 @@ local function EaseIn(t, steepness)
 end
 
 local function LerpDayNightFadeByAngle(nDawnValue, nNoonValue, nDuskValue, nMidnightValue, nSunAngle, nEasingParameter, _nDawnFadeEndDegrees, _nDuskFadeStartDegrees, _nDuskFadeEndDegrees, _nDawnFadeStartDegrees)
-  local nDawnFadeEndDegrees = _nDawnFadeEndDegrees or 90
-  local nDuskFadeStartDegrees = _nDuskFadeStartDegrees or 90
-  local nDuskFadeEndDegrees = _nDuskFadeEndDegrees or 270
-  local nDawnFadeStartDegrees = _nDawnFadeStartDegrees or 270
+  local nDawnFadeEndDegrees = (_nDawnFadeEndDegrees or 90) % 360
+  local nDuskFadeStartDegrees = (_nDuskFadeStartDegrees or 90) % 360
+  local nDuskFadeEndDegrees = (_nDuskFadeEndDegrees or 270) % 360
+  local nDawnFadeStartDegrees = (_nDawnFadeStartDegrees or 270) % 360
 
     local a = nSunAngle % 360
     nEasingParameter = nEasingParameter or 0.0
@@ -687,12 +687,15 @@ function Patched.UpdateLightingFromUserParams(self)
     moonFade = moonFade * SkyStudioDataStore.nParkTodCycleMoonGroundMultiplier
   end
   
-  -- Cutoff times in time of day cycle where shadow casting and main GI light switches between sun and moon
-  -- This is now done by the sun's angle in degrees to improve flexibility of other parameters
-  -- This could be put into the config but it's probably not necessary or useful
-  local nPrimaryLightSwitchDawnDegrees = -0.5
-  local nPrimaryLightSwitchDuskdegrees = 180.5
-  local bIsDaytime = nSunTimeOfDayDegrees % 360 < nPrimaryLightSwitchDuskdegrees or nSunTimeOfDayDegrees % 360 > 360 + nPrimaryLightSwitchDawnDegrees
+  -- Cutoff angles where shadow casting and main GI switch between sun and moon.
+  local nPrimaryLightSwitchDawnDegrees =
+    (SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDawn or -0.5) % 360
+  local nPrimaryLightSwitchDuskDegrees =
+    (SkyStudioDataStore.nParkTodPrimaryLightShadowSwitchAngleDusk or 180.5) % 360
+  local nNormalisedSunDegrees = nSunTimeOfDayDegrees % 360
+  local bIsDaytime =
+    nNormalisedSunDegrees < nPrimaryLightSwitchDuskDegrees or
+    nNormalisedSunDegrees > nPrimaryLightSwitchDawnDegrees
 
   -- Swap primary lightsource based on the sun angle
   if bIsDaytime and not self.primaryLightIsSun then
@@ -711,6 +714,30 @@ function Patched.UpdateLightingFromUserParams(self)
     api.transform.SetTransform(self.tLights.Secondary, TransformFromPosF(Vector3.Zero, vSunDir))
 
     self.primaryLightIsSun = false
+  end
+
+  local sFadeState =
+    tostring(bIsDaytime) .. ":" ..
+    tostring(sunFade <= 0.001) .. ":" ..
+    tostring(moonFade <= 0.001) .. ":" ..
+    tostring(self.primaryLightIsSun)
+  if self.sSkyStudioDebugFadeState ~= sFadeState then
+    self.sSkyStudioDebugFadeState = sFadeState
+    debug.Trace(
+      "[SkyStudio][DBG:e61100][H10] DirectionalLightFadeState" ..
+      " time=" .. tostring(SkyStudioDataStore.nUserSunTimeOfDay) ..
+      " sunAngle=" .. tostring(nNormalisedSunDegrees) ..
+      " sunFade=" .. tostring(sunFade) ..
+      " moonFade=" .. tostring(moonFade) ..
+      " isDaytime=" .. tostring(bIsDaytime) ..
+      " primaryLightIsSun=" .. tostring(self.primaryLightIsSun) ..
+      " switchDawn=" .. tostring(nPrimaryLightSwitchDawnDegrees) ..
+      " switchDusk=" .. tostring(nPrimaryLightSwitchDuskDegrees) ..
+      " sunFadeDawnStart=" .. tostring(SkyStudioDataStore.nParkTodCycleSunDawnFadeStart % 360) ..
+      " sunFadeDawnEnd=" .. tostring(SkyStudioDataStore.nParkTodCycleSunDawnFadeEnd % 360) ..
+      " sunFadeDuskStart=" .. tostring(SkyStudioDataStore.nParkTodCycleSunDuskFadeStart % 360) ..
+      " sunFadeDuskEnd=" .. tostring(SkyStudioDataStore.nParkTodCycleSunDuskFadeEnd % 360)
+    )
   end
 
   -- Apply fade + colour + transform
