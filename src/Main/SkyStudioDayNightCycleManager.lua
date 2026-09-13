@@ -257,7 +257,12 @@ local function SyncParkLightingTimeOverride(self)
     SkyStudioDataStore.bUserOverrideSunTimeOfDay
 
   if bActive then
-    local nTimeProp = ((SkyStudioDataStore.nUserSunTimeOfDay or 0) % 24) / 24
+    -- The vanilla TimeStepper has only 24 integer-indexed labels. Keep
+    -- SkyStudio's visual clock continuous, but give the native lighting clock
+    -- the nearest whole hour so its UI never indexes with a fractional value.
+    local nSkyStudioTime = (SkyStudioDataStore.nUserSunTimeOfDay or 0) % 24
+    local nNativeLightingHour = math.floor(nSkyStudioTime + 0.5) % 24
+    local nTimeProp = nNativeLightingHour / 24
     if not self.bSkyStudioParkLightingOverrideEnabled or self.nSkyStudioParkLightingOverrideProp ~= nTimeProp then
       self.ParkAPI:SetLightingTimeOfDayUserOverride(nTimeProp)
       if not self.bSkyStudioParkLightingOverrideEnabled then

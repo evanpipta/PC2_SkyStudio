@@ -380,6 +380,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   }
 
   componentWillUnmount() {
+    this.releaseFocus();
     Engine.removeListener("Show", this.onShow);
     Engine.removeListener("Hide", this.onHide);
     Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
@@ -397,6 +398,7 @@ class _SkyStudioUI extends preact.Component<{}, State> {
   };
 
   onShow = (data: Config) => {
+    this.releaseFocus();
     this.setState({
       ...this.state,
       visible: true,
@@ -410,7 +412,13 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     });
   };
 
-  onHide = () => this.setState({ visible: false });
+  onHide = () => {
+    this.releaseFocus();
+    this.setState({
+      visible: false,
+      controlsVisible: false,
+    });
+  };
 
   // Called when settings are updated from Lua (e.g., after loading a preset)
   onUpdateSettings = (data: Partial<Config>) => {
@@ -504,10 +512,24 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     }
   };
 
+  releaseFocus = () => {
+    try {
+      Focus.set("");
+    } catch {
+      // Focus module shape can vary between game versions.
+    }
+  };
+
   handleToggleControls = (value?: boolean) => {
+    const controlsVisible =
+      typeof value === "boolean" ? value : !this.state.controlsVisible;
+
+    if (!controlsVisible) {
+      this.releaseFocus();
+    }
+
     this.setState({
-      controlsVisible:
-        value !== undefined ? value : !this.state.controlsVisible,
+      controlsVisible,
       confirmResetAll: false,
       confirmResetMoon: false,
       confirmResetSun: false,
@@ -529,7 +551,6 @@ class _SkyStudioUI extends preact.Component<{}, State> {
     if (!e.button || !e.button.isPressed(true)) return false;
 
     if (e.inputName === InputName.Cancel || e.inputName === InputName.Back) {
-      Focus.set("");
       this.handleToggleControls(false);
       return true;
     }

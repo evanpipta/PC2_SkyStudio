@@ -175,6 +175,7 @@ class _SkyStudioUI extends preact.Component {
             });
         };
         this.onShow = (data) => {
+            this.releaseFocus();
             this.setState({
                 ...this.state,
                 visible: true,
@@ -187,7 +188,13 @@ class _SkyStudioUI extends preact.Component {
                 },
             });
         };
-        this.onHide = () => this.setState({ visible: false });
+        this.onHide = () => {
+            this.releaseFocus();
+            this.setState({
+                visible: false,
+                controlsVisible: false,
+            });
+        };
         // Called when settings are updated from Lua (e.g., after loading a preset)
         this.onUpdateSettings = (data) => {
             this.setState({
@@ -270,9 +277,21 @@ class _SkyStudioUI extends preact.Component {
                 delete this._colorPreviewOriginal[key];
             }
         };
+        this.releaseFocus = () => {
+            try {
+                Focus.set("");
+            }
+            catch {
+                // Focus module shape can vary between game versions.
+            }
+        };
         this.handleToggleControls = (value) => {
+            const controlsVisible = typeof value === "boolean" ? value : !this.state.controlsVisible;
+            if (!controlsVisible) {
+                this.releaseFocus();
+            }
             this.setState({
-                controlsVisible: value !== undefined ? value : !this.state.controlsVisible,
+                controlsVisible,
                 confirmResetAll: false,
                 confirmResetMoon: false,
                 confirmResetSun: false,
@@ -292,7 +311,6 @@ class _SkyStudioUI extends preact.Component {
             if (!e.button || !e.button.isPressed(true))
                 return false;
             if (e.inputName === InputName.Cancel || e.inputName === InputName.Back) {
-                Focus.set("");
                 this.handleToggleControls(false);
                 return true;
             }
@@ -771,6 +789,7 @@ class _SkyStudioUI extends preact.Component {
         focusDebuginterval = window.setInterval(this.updateFocusDebug, 250);
     }
     componentWillUnmount() {
+        this.releaseFocus();
         Engine.removeListener("Show", this.onShow);
         Engine.removeListener("Hide", this.onHide);
         Engine.removeListener("UpdatePresetList", this.onUpdatePresetList);
